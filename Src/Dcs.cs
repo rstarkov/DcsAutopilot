@@ -87,12 +87,11 @@ class DcsController
             _endpoint = task.Result.RemoteEndPoint;
             try
             {
-                var data = bytes.FromUtf8().Split(";").AsSpan();
-                data = data[..^1]; // skip empty semicolon section at the end
+                var data = bytes.FromUtf8().Split(";");
                 if (data[0] == "frame")
                 {
                     var fd = new FrameData();
-                    for (int i = 1; i < data.Length; i++)
+                    for (int i = 1; i < data.Length;)
                         switch (data[i++])
                         {
                             case "sess": fd.Session = double.Parse(data[i++]); break;
@@ -155,7 +154,7 @@ class DcsController
                 else if (data[0] == "bulk")
                 {
                     var bd = new BulkData();
-                    for (int i = 1; i < data.Length; i++)
+                    for (int i = 1; i < data.Length;)
                         switch (data[i++])
                         {
                             case "sess": bd.Session = double.Parse(data[i++]); break;
