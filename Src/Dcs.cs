@@ -128,6 +128,7 @@ class DcsController
                             case "airbrk": fd.Airbrakes = double.Parse(data[i++]); break;
                             case "wind": fd.WindX = double.Parse(data[i++]); fd.WindY = double.Parse(data[i++]); fd.WindZ = double.Parse(data[i++]); break;
                             default:
+                                if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
                                 Warnings.Add($"Unrecognized frame data entry: \"{data[i - 1]}\"");
                                 LastReceiveWithWarnings = bytes;
                                 goto exitloop; // can't continue parsing because we don't know how long this entry is
