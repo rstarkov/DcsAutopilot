@@ -1,15 +1,16 @@
 local socket = require("socket")
+local lfs=require('lfs')
 local UdpSocket = nil
 local LogFile = nil
 local Skips = 0
-local Session = os.time()
+local Session = socket.gettime()
 local Latency = 0
 local LastBulkData = 0
 
 
 
 function LuaExportStart()
-    LogFile = io.open("DcsAutopilot.log", "w")
+    LogFile = io.open(lfs.writedir().."Logs/DcsAutopilot.log", "w")
     LogFile:write("DcsAutopilot script started\n\n")
     LogDiagnostics()
 
@@ -40,7 +41,7 @@ function LuaExportAfterNextFrame()
     dt[#dt+1] = "time"
     dt[#dt+1] = LoGetModelTime()
     dt[#dt+1] = "sent"
-    dt[#dt+1] = os.time()
+    dt[#dt+1] = socket.gettime()
     dt[#dt+1] = "ltcy"
     dt[#dt+1] = Latency
     local ownshipExport = LoIsOwnshipExportAllowed()
@@ -80,8 +81,8 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = LoGetAltitudeAboveSeaLevel()
         dt[#dt+1] = "agl" -- cheaty?
         dt[#dt+1] = LoGetAltitudeAboveGroundLevel()
-        dt[#dt+1] = "balt" -- per INS?
-        dt[#dt+1] = LoGetAltitude()
+        dt[#dt+1] = "balt" -- this is just nil on the Hornet
+        dt[#dt+1] = LoGetAltitude() or 0
         dt[#dt+1] = "ralt"
         dt[#dt+1] = LoGetRadarAltimeter()
         dt[#dt+1] = "vspd"
@@ -133,7 +134,7 @@ function LuaExportAfterNextFrame()
     -- LoGetControlPanel_HSI
     -- LoGetFMData
     
-    if os.time() - LastBulkData > 1 then
+    if socket.gettime() - LastBulkData > 1 then
         SendBulkData()
     end
 end
@@ -157,7 +158,7 @@ function SendBulkData()
     end
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))
-    LastBulkData = os.time()
+    LastBulkData = socket.gettime()
 end
 
 
@@ -182,7 +183,7 @@ function LuaExportBeforeNextFrame()
         i = i + 1
         local cmd = data[i]
         if cmd == "ts" then
-            Latency = os.time() - tonumber(data[i+1])
+            Latency = socket.gettime() - tonumber(data[i+1])
         elseif cmd == "sc" then
             if args == 1 then
                 LoSetCommand(tonumber(data[i+1]))
