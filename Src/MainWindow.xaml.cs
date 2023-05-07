@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Threading;
+using RT.Util.Forms;
 
 namespace DcsAutopilot;
 
-public partial class MainWindow : Window
+public partial class MainWindow : ManagedWindow
 {
     private DcsController _dcs;
     private DispatcherTimer _refreshTimer = new();
 
-    public MainWindow()
+    public MainWindow() : base(App.Settings.MainWindow)
     {
         InitializeComponent();
         _dcs = new();
