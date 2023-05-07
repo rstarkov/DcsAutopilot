@@ -7,6 +7,9 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Button Name="btnStart" Content="Start" HorizontalAlignment="Left" Margin="56,34,0,0" VerticalAlignment="Top" Click="btnStart_Click"/>
+        <Button Name="btnStop" Content="Stop" HorizontalAlignment="Left" Margin="153,34,0,0" VerticalAlignment="Top" Click="btnStop_Click"/>
+        <Label Name="lblStatus" Content="Stopped" HorizontalAlignment="Left" Height="76" Margin="28,114,0,0" VerticalAlignment="Top" Width="257"/>
 
     </Grid>
 </Window>
