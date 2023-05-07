@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using RT.Util.Forms;
@@ -18,12 +20,22 @@ public partial class MainWindow : ManagedWindow
         _refreshTimer.Tick += refreshTimer_Tick;
     }
 
+    private Queue<(DateTime ts, int frames)> _fps = new();
+
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
         var status = _dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - _dcs.LastFrameUtc).TotalMilliseconds > 250)
             status = $"Stalled; waiting for DCS";
         lblStatus.Content = status;
+
+        var fpsnew = (DateTime.UtcNow, _dcs.Frames);
+        _fps.Enqueue(fpsnew);
+        while (_fps.Count > 0 && _fps.Peek().ts < DateTime.UtcNow.AddSeconds(-1))
+            _fps.Dequeue();
+        var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
+        var latency = _dcs.Latencies.Count() > 0 ? _dcs.Latencies.Average() : 0;
+        lblStats.Content = $"FPS: {fps:0}, latency: {latency * 1000:0.0}ms. Frames: {_dcs.Frames:#,0}, skips: {_dcs.Skips:#,0}. Bytes: {_dcs.LastFrameBytes:#,0}";
     }
 
     private void btnStart_Click(object sender, RoutedEventArgs e)
