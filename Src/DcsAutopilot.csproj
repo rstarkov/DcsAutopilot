@@ -6,6 +6,7 @@
     <Nullable>disable</Nullable>
     <UseWPF>true</UseWPF>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <ApplicationIcon>..\Assets\icon7.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
