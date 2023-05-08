@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -44,6 +45,8 @@ public partial class MainWindow : ManagedWindow
         var status = _dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - _dcs.LastFrameUtc).TotalMilliseconds > 250)
             status = $"Stalled; waiting for DCS";
+        if (_dcs.Warnings.Count > 0)
+            status = $"{_dcs.Warnings.Count} warnings: {_dcs.Warnings.First()} ...";
         lblStatus.Content = status;
 
         var fpsnew = (DateTime.UtcNow, _dcs.Frames);
@@ -53,6 +56,14 @@ public partial class MainWindow : ManagedWindow
         var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
         var latency = _dcs.Latencies.Count() > 0 ? _dcs.Latencies.Average() : 0;
         lblStats.Content = $"FPS: {fps:0}, latency: {latency * 1000:0.0}ms. Frames: {_dcs.Frames:#,0}, skips: {_dcs.Skips:#,0}. Bytes: {_dcs.LastFrameBytes:#,0}";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Altitude ASL: {_dcs.LastFrame?.AltitudeAsl.MetersToFeet():#,0.000} ft");
+        sb.AppendLine($"Vertical speed: {_dcs.LastFrame?.SpeedVertical.MetersToFeet() * 60:#,0.000} ft/min");
+        sb.AppendLine($"AoA: {_dcs.LastFrame?.AngleOfAttack:0.00}°    AoSS: {_dcs.LastFrame?.AngleOfSideSlip:0.000}°");
+        sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}");
+        sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch.ToDeg():0.00}°   Bank: {_dcs.LastFrame?.Bank.ToDeg():0.00}°   Hdg: {_dcs.LastFrame?.Heading.ToDeg():0.00}°");
+        lblInfo.Content = sb.ToString();
 
         void setSlider(Slider sl, double? value)
         {
