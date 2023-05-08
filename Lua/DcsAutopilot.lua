@@ -191,7 +191,7 @@ function LuaExportBeforeNextFrame()
                 LoSetCommand(tonumber(data[i+1]), tonumber(data[i+2]))
             end
         end
-        i = i + count + 1
+        i = i + args + 1
     end
 end
 
