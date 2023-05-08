@@ -23,7 +23,7 @@ class DcsController
     private CancellationTokenSource _cts;
     private Thread _thread;
     private double _session;
-    private Queue<double> _latencies = new();
+    private ConcurrentQueue<double> _latencies = new();
 
     public IFlightController FlightController { get; private set; }
     public int Port { get; private set; }
@@ -144,6 +144,7 @@ class DcsController
                         Status = "Session changed; synchronising";
                     else
                     {
+                        fd.dT = fd.SimTime - (LastFrame?.SimTime ?? 0);
                         var control = FlightController.ProcessFrame(fd);
                         LastControl = control;
                         if (control != null)
@@ -157,7 +158,7 @@ class DcsController
                         LastFrame = fd;
                         _latencies.Enqueue(fd.Latency);
                         while (_latencies.Count > 200)
-                            _latencies.Dequeue();
+                            _latencies.TryDequeue(out _);
                     }
                 }
                 else if (data[0] == "bulk")
@@ -228,7 +229,7 @@ class FrameData
     public bool ExportAllowed;
     public double FrameTimestamp, Latency;
 
-    public double SimTime;
+    public double SimTime, dT;
     public double AngleOfAttack, AngleOfSideSlip;
     public double PosX, PosY, PosZ;
     public double AccX, AccY, AccZ;
