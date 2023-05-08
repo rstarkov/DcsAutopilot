@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using RT.Util.Forms;
 
@@ -47,6 +48,16 @@ public partial class MainWindow : ManagedWindow
         var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
         var latency = _dcs.Latencies.Count() > 0 ? _dcs.Latencies.Average() : 0;
         lblStats.Content = $"FPS: {fps:0}, latency: {latency * 1000:0.0}ms. Frames: {_dcs.Frames:#,0}, skips: {_dcs.Skips:#,0}. Bytes: {_dcs.LastFrameBytes:#,0}";
+
+        void setSlider(Slider sl, double? value)
+        {
+            sl.IsEnabled = _dcs.IsRunning ? value != null : false;
+            sl.Value = _dcs.IsRunning ? value ?? 0 : 0;
+        }
+        setSlider(ctrlPitch, -_dcs.LastControl?.PitchAxis);
+        setSlider(ctrlRoll, _dcs.LastControl?.RollAxis);
+        setSlider(ctrlYaw, _dcs.LastControl?.YawAxis);
+        setSlider(ctrlThrottle, _dcs.LastControl?.ThrottleAxis);
     }
 
     private void btnStart_Click(object sender, RoutedEventArgs e)

@@ -8,14 +8,18 @@
         mc:Ignorable="d"
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
-        Title="DCS Autopilot" Height="450" Width="800">
-    <Grid>
+        Title="DCS Autopilot" Height="471" Width="800">
+    <Grid Margin="0,0,0,0">
         <Button Name="btnStart" Content="Start" HorizontalAlignment="Left" Margin="56,34,0,0" VerticalAlignment="Top" Click="btnStart_Click"/>
         <Button Name="btnStop" Content="Stop" HorizontalAlignment="Left" Margin="153,34,0,0" VerticalAlignment="Top" Click="btnStop_Click"/>
-        <Label Name="lblStatus" Content="Stopped" HorizontalAlignment="Left" Height="76" Margin="28,114,0,0" VerticalAlignment="Top" Width="257"/>
-        <Label Name="lblStats" Content="Stats" HorizontalAlignment="Left" Height="30" Margin="37,230,0,0" VerticalAlignment="Top" Width="380"/>
+        <Label Name="lblStatus" Content="Stopped" HorizontalAlignment="Left" Height="53" Margin="28,114,0,0" VerticalAlignment="Top" Width="329"/>
+        <Label Name="lblStats" Content="Stats" HorizontalAlignment="Left" Height="30" Margin="28,174,0,0" VerticalAlignment="Top" Width="380"/>
         <Slider Name="ctSliderTest1" HorizontalAlignment="Left" Height="21" Margin="307,34,0,0" VerticalAlignment="Top" Width="373" Minimum="-1000" Maximum="1000" />
         <Slider Name="ctSliderTest2" HorizontalAlignment="Left" Height="21" Margin="307,60,0,0" VerticalAlignment="Top" Width="373" Minimum="-1000" Maximum="1000" />
+        <Slider x:Name="ctrlRoll" HorizontalAlignment="Left" Margin="82,281,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
+        <Slider x:Name="ctrlPitch" HorizontalAlignment="Left" Margin="141,222,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
+        <Slider x:Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,222,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="1" TickFrequency="0.25" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
+        <Slider x:Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,391,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
 
     </Grid>
 </rtf:ManagedWindow>

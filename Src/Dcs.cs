@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -37,6 +37,9 @@ class DcsController
     public int LastFrameBytes { get; private set; }
     public DateTime LastFrameUtc { get; private set; }
     public IEnumerable<double> Latencies => _latencies;
+    public FrameData LastFrame { get; private set; }
+    public BulkData LastBulk { get; private set; }
+    public ControlData LastControl { get; private set; }
 
     public void Start(IFlightController controller, int udpPort = 9876)
     {
@@ -72,6 +75,9 @@ class DcsController
         Frames = 0;
         Skips = 0;
         LastFrameUtc = DateTime.MinValue;
+        LastFrame = null;
+        LastBulk = null;
+        LastControl = null;
         _latencies.Clear();
     }
 
@@ -139,6 +145,7 @@ class DcsController
                     else
                     {
                         var control = FlightController.ProcessFrame(fd);
+                        LastControl = control;
                         if (control != null)
                             Send(control);
 
@@ -147,6 +154,7 @@ class DcsController
                         Skips = fd.Skips;
                         LastFrameBytes = bytes.Length;
                         LastFrameUtc = DateTime.UtcNow;
+                        LastFrame = fd;
                         _latencies.Enqueue(fd.Latency);
                         while (_latencies.Count > 200)
                             _latencies.Dequeue();
@@ -172,6 +180,7 @@ class DcsController
                     else
                     {
                         _session = bd.Session;
+                        LastBulk = bd;
                         FlightController.NewSession(bd);
                         Status = "Session started; waiting for data";
                     }
