@@ -11,6 +11,8 @@ public partial class MainWindow : ManagedWindow
 {
     private DcsController _dcs;
     private DispatcherTimer _refreshTimer = new();
+    private DispatcherTimer _sliderTimer = new();
+    private SmoothMover _sliderMover = new(10.0, -1, 1);
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -18,6 +20,15 @@ public partial class MainWindow : ManagedWindow
         _dcs = new();
         _refreshTimer.Interval = TimeSpan.FromMilliseconds(100);
         _refreshTimer.Tick += refreshTimer_Tick;
+        _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
+        _sliderTimer.Tick += _sliderTimer_Tick;
+        _sliderTimer.Start();
+    }
+
+    private void _sliderTimer_Tick(object sender, EventArgs e)
+    {
+        var tgt = ctSliderTest2.Value / 1000.0;
+        ctSliderTest1.Value = _sliderMover.MoveTo(tgt, (DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds) * 1000.0;
     }
 
     private Queue<(DateTime ts, int frames)> _fps = new();
