@@ -1,11 +1,11 @@
-﻿using RT.Util.ExtensionMethods;
+using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
 class BasicAltitudeController : IFlightController
 {
     private BasicPid _vspeed2pitchPID = new() { P = 1, MinControl = -20.ToRad(), MaxControl = 20.ToRad() };
-    private BasicPid _pitch2axisPID = new() { P = 1, MinControl = -0.25, MaxControl = 0.25 };
+    private BasicPid _pitch2axisPID = new() { P = 4.2, I=3.05, D=1.44, MinControl = -0.3, MaxControl = 0.3 }; // oscillates at P=7 T=2.74s
     private SmoothMover _pitch = new(1, -1, 1);
 
     public double TargetAltitudeFt { get; set; } = 2000;
@@ -27,7 +27,6 @@ class BasicAltitudeController : IFlightController
         wantedPitch = 15.ToRad();
         var wantedPitchAxis = _pitch2axisPID.Update(wantedPitch - frame.Pitch, frame.dT);
         ctl.PitchAxis = _pitch.MoveTo(wantedPitchAxis, frame.SimTime);
-        ctl.PitchAxis = 0.1;
 
         return ctl;
     }
