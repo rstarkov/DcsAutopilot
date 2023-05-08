@@ -174,11 +174,14 @@ class DcsController
                     Status = "Session changed; synchronising";
                 else
                 {
-                    parsedFrame.dT = parsedFrame.SimTime - (LastFrame?.SimTime ?? 0);
-                    var control = FlightController.ProcessFrame(parsedFrame);
-                    LastControl = control;
-                    if (control != null)
-                        Send(control);
+                    if (LastFrame != null && LastFrame.SimTime != parsedFrame.SimTime) // don't do control on the very first frame, also filter out duplicate frames sent on pause / resume
+                    {
+                        parsedFrame.dT = parsedFrame.SimTime - LastFrame.SimTime;
+                        var control = FlightController.ProcessFrame(parsedFrame);
+                        LastControl = control;
+                        if (control != null)
+                            Send(control);
+                    }
 
                     Status = "Active control";
                     Frames++;

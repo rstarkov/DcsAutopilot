@@ -28,6 +28,8 @@ class SmoothMover
 
     public double MoveTo(double tgtpos, double time)
     {
+        if (time == _prevtime)
+            throw new ArgumentException($"{nameof(SmoothMover)}.{nameof(MoveTo)} called twice with the same time");
         tgtpos = tgtpos.Clip(_min, _max);
         var dt = time - _prevtime;
         if (dt > 1 || dt < 0)
