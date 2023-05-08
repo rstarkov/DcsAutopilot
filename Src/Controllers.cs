@@ -4,8 +4,8 @@ namespace DcsAutopilot;
 
 class BasicAltitudeController : IFlightController
 {
-    private BasicPid _vspeed2pitchPID = new() { P = 1, MinControl = -20.ToRad(), MaxControl = 20.ToRad() };
-    private BasicPid _pitch2axisPID = new() { P = 4.2, I=3.05, D=1.44, MinControl = -0.3, MaxControl = 0.3 }; // oscillates at P=7 T=2.74s
+    private BasicPid _vspeed2pitchPID = new() { P = 0.003, I = 0.00176, D = 0.00127 * 0.05, MinControl = -90.ToRad(), MaxControl = 90.ToRad() }; // oscillates at P=0.005 T=3.4s
+    private BasicPid _pitch2axisPID = new() { P = 4.2, I = 3.05, D = 1.44, MinControl = -0.3, MaxControl = 0.3 }; // oscillates at P=7 T=2.74s
     private SmoothMover _pitch = new(1, -1, 1);
 
     public double TargetAltitudeFt { get; set; } = 2000;
@@ -24,7 +24,6 @@ class BasicAltitudeController : IFlightController
         var ctl = new ControlData();
 
         var wantedPitch = _vspeed2pitchPID.Update(-frame.SpeedVertical, frame.dT);
-        wantedPitch = 15.ToRad();
         var wantedPitchAxis = _pitch2axisPID.Update(wantedPitch - frame.Pitch, frame.dT);
         ctl.PitchAxis = _pitch.MoveTo(wantedPitchAxis, frame.SimTime);
 
