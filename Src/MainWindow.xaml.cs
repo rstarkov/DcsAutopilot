@@ -15,6 +15,7 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _refreshTimer = new();
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
+    private SlowFlightController _ctrl;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -61,8 +62,9 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"Altitude ASL: {_dcs.LastFrame?.AltitudeAsl.MetersToFeet():#,0.000} ft");
         sb.AppendLine($"Vertical speed: {_dcs.LastFrame?.SpeedVertical.MetersToFeet() * 60:#,0.000} ft/min");
         sb.AppendLine($"AoA: {_dcs.LastFrame?.AngleOfAttack:0.00}°    AoSS: {_dcs.LastFrame?.AngleOfSideSlip:0.000}°");
-        sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}");
+        sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}    IAS: {_dcs.LastFrame?.SpeedIndicated.MsToKts():0.0} kts");
         sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch.ToDeg():0.00}°   Bank: {_dcs.LastFrame?.Bank.ToDeg():0.00}°   Hdg: {_dcs.LastFrame?.Heading.ToDeg():0.00}°");
+        sb.AppendLine("Controller: " + _ctrl?.Status);
         lblInfo.Content = sb.ToString();
 
         void setSlider(Slider sl, double? value)
@@ -79,7 +81,9 @@ public partial class MainWindow : ManagedWindow
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
-        _dcs.Start(new BasicAltitudeController());
+        _dcs.Start(_ctrl = new SlowFlightController());
+        btnStart.IsEnabled = !_dcs.IsRunning;
+        btnStop.IsEnabled = _dcs.IsRunning;
     }
 
     private void btnStop_Click(object sender, RoutedEventArgs e)
@@ -87,5 +91,7 @@ public partial class MainWindow : ManagedWindow
         _dcs.Stop();
         _refreshTimer.Stop();
         refreshTimer_Tick(sender, null);
+        btnStart.IsEnabled = !_dcs.IsRunning;
+        btnStop.IsEnabled = _dcs.IsRunning;
     }
 }
