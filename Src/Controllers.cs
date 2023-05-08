@@ -45,6 +45,7 @@ class BasicPid
     public double DerivativeSmoothing { get; set; } = 0.8;
     public double IntegrationLimit { get; set; } // derivative must be less than this to start integrating error
     private double _prevError;
+    public bool Integrating { get; private set; }
 
     public double Update(double error, double dt)
     {
@@ -54,7 +55,8 @@ class BasicPid
         double output = P * error + I * ErrorIntegral + D * Derivative;
 
         output = output.Clip(MinControl, MaxControl);
-        if (Math.Abs(Derivative) < IntegrationLimit)
+        Integrating = Math.Abs(Derivative) < IntegrationLimit && output > MinControl && output < MaxControl;
+        if (Integrating)
             ErrorIntegral += error * dt;
         return output;
     }
