@@ -91,6 +91,8 @@ class DcsController
                 return;
             var bytes = task.Result.Buffer;
             _endpoint = task.Result.RemoteEndPoint;
+            FrameData parsedFrame = null;
+            BulkData parsedBulk = null;
             try
             {
                 var data = bytes.FromUtf8().Split(";");
@@ -140,26 +142,7 @@ class DcsController
                                 goto exitloop; // can't continue parsing because we don't know how long this entry is
                         }
                     exitloop:;
-                    if (_session != fd.Session)
-                        Status = "Session changed; synchronising";
-                    else
-                    {
-                        fd.dT = fd.SimTime - (LastFrame?.SimTime ?? 0);
-                        var control = FlightController.ProcessFrame(fd);
-                        LastControl = control;
-                        if (control != null)
-                            Send(control);
-
-                        Status = "Active control";
-                        Frames++;
-                        Skips = fd.Skips;
-                        LastFrameBytes = bytes.Length;
-                        LastFrameUtc = DateTime.UtcNow;
-                        LastFrame = fd;
-                        _latencies.Enqueue(fd.Latency);
-                        while (_latencies.Count > 200)
-                            _latencies.TryDequeue(out _);
-                    }
+                    parsedFrame = fd;
                 }
                 else if (data[0] == "bulk")
                 {
@@ -176,21 +159,49 @@ class DcsController
                                 goto exitloop; // can't continue parsing because we don't know how long this entry is
                         }
                     exitloop:;
-                    if (_session == bd.Session)
-                        FlightController.ProcessBulkUpdate(bd);
-                    else
-                    {
-                        _session = bd.Session;
-                        LastBulk = bd;
-                        FlightController.NewSession(bd);
-                        Status = "Session started; waiting for data";
-                    }
+                    parsedBulk = bd;
                 }
             }
             catch (Exception e)
             {
                 Warnings.Add($"Exception while parsing UDP message: \"{e.Message}\"");
                 LastReceiveWithWarnings = bytes;
+            }
+
+            if (parsedFrame != null)
+            {
+                if (_session != parsedFrame.Session)
+                    Status = "Session changed; synchronising";
+                else
+                {
+                    parsedFrame.dT = parsedFrame.SimTime - (LastFrame?.SimTime ?? 0);
+                    var control = FlightController.ProcessFrame(parsedFrame);
+                    LastControl = control;
+                    if (control != null)
+                        Send(control);
+
+                    Status = "Active control";
+                    Frames++;
+                    Skips = parsedFrame.Skips;
+                    LastFrameBytes = bytes.Length;
+                    LastFrameUtc = DateTime.UtcNow;
+                    LastFrame = parsedFrame;
+                    _latencies.Enqueue(parsedFrame.Latency);
+                    while (_latencies.Count > 200)
+                        _latencies.TryDequeue(out _);
+                }
+            }
+            if (parsedBulk != null)
+            {
+                if (_session == parsedBulk.Session)
+                    FlightController.ProcessBulkUpdate(parsedBulk);
+                else
+                {
+                    _session = parsedBulk.Session;
+                    LastBulk = parsedBulk;
+                    FlightController.NewSession(parsedBulk);
+                    Status = "Session started; waiting for data";
+                }
             }
         }
     }
