@@ -1,4 +1,4 @@
-﻿<rtf:ManagedWindow x:Class="DcsAutopilot.MainWindow"
+<rtf:ManagedWindow x:Class="DcsAutopilot.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
+        SizeChanged="ManagedWindow_SizeLocationChanged" LocationChanged="ManagedWindow_SizeLocationChanged"
         Title="DCS Autopilot" Height="471" Width="800">
     <Grid Margin="0,0,0,0">
         <Button Name="btnStart" Content="Start" HorizontalAlignment="Left" Margin="56,34,0,0" VerticalAlignment="Top" Click="btnStart_Click"/>

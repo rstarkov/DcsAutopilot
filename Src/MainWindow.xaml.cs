@@ -26,6 +26,11 @@ public partial class MainWindow : ManagedWindow
         _sliderTimer.Start();
     }
 
+    private void ManagedWindow_SizeLocationChanged(object sender, EventArgs e)
+    {
+        App.SettingsFile.SaveInBackground();
+    }
+
     private void _sliderTimer_Tick(object sender, EventArgs e)
     {
         var tgt = ctSliderTest2.Value / 1000.0;
