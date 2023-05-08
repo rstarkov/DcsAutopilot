@@ -18,11 +18,19 @@ class SmoothMover
         _max = max;
     }
 
+    public void Reset(double pos)
+    {
+        _prevtime = 0;
+        _prevtgtpos = pos;
+        _pos = pos;
+        _speed = 0;
+    }
+
     public double MoveTo(double tgtpos, double time)
     {
         tgtpos = tgtpos.Clip(_min, _max);
         var dt = time - _prevtime;
-        if (dt > 1)
+        if (dt > 1 || dt < 0)
         {
             _pos = _speed = _prevtgtpos = 0; // reset - time change is too big
             _prevtime = time;
