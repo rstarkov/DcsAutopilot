@@ -12,6 +12,7 @@ class HornetSlowFlightController : IFlightController
     private BasicPid _bank2axisPID = new() { P = 5, I = 0, D = 0, MinControl = -1, MaxControl = 1, IntegrationLimit = 1.ToRad() /*rad/sec*/ }; // oscillates at P=4 T=1.7
     // for the afterburner phase
     private BasicPid _vspeed2axisSlowPID = new() { P = 0.02, I = 0.001, D = 0, MinControl = -0.25, MaxControl = 0.25, IntegrationLimit = 10 /*m/s / sec*/ };
+    private BasicPid _alt2axisSlowPID = new() { P = 0.02, I = 0.001, D = 0, MinControl = -0.25, MaxControl = 0.25, IntegrationLimit = 10 /*m/s / sec*/ };
     private BasicPid _pitch2axisSlowPID = new() { P = 6, I = 1, D = 0.3, MinControl = -1, MaxControl = 1, IntegrationLimit = 1.ToRad() /*rad/sec*/ };
     private BasicPid _bank2axisSlowPID = new() { P = 15, I = 0, D = 0, MinControl = -1, MaxControl = 1, IntegrationLimit = 1.ToRad() /*rad/sec*/ };
 
@@ -49,23 +50,29 @@ class HornetSlowFlightController : IFlightController
             wantedSpeed -= frame.dT / 20;
         else
             wantedSpeed = 101;
+        var wantedHeading = frame.SimTime < 435 ? 233.01 : 227.0;
+        var wantedBank = (wantedHeading.ToRad() - frame.Heading).Clip(-1.ToRad(), 1.ToRad());
+        var wantedAltitude = frame.SimTime < 100 ? 300 : frame.SimTime < 300 ? linterp(100, 300, 300, 150, frame.SimTime) : frame.SimTime < 380 ? linterp(300, 380, 150, 90, frame.SimTime) : 90;
+        var wantedVS = (0.05 * (wantedAltitude.FeetToMeters() - frame.AltitudeAsl)).Clip(-100.FeetToMeters(), 100.FeetToMeters());
         if (wantedSpeed > 101 || false /* true to prevent transition to the afterburner phase */)
         {
-            var wantedPitch = _vspeed2pitchPID.Update(-frame.SpeedVertical, frame.dT);
+            var wantedPitch = _vspeed2pitchPID.Update(wantedVS - frame.SpeedVertical, frame.dT);
             var wantedPitchAxis = _pitch2axisPID.Update(wantedPitch - frame.Pitch, frame.dT);
             ctl.PitchAxis = _pitch.MoveTo(wantedPitchAxis, frame.SimTime);
-            ctl.RollAxis = _bank2axisPID.Update(0 - frame.Bank, frame.dT);
+            ctl.RollAxis = _bank2axisPID.Update(wantedBank - frame.Bank, frame.dT);
             ctl.ThrottleAxis = _speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT);
         }
         else
         {
-            ctl.ThrottleAxis = 1.65 + _vspeed2axisSlowPID.Update(0 - frame.SpeedVertical, frame.dT);
+            ctl.ThrottleAxis = 1.65 + _vspeed2axisSlowPID.Update(wantedVS - frame.SpeedVertical, frame.dT);
             ctl.PitchAxis = _pitch.MoveTo(1, frame.SimTime);//_pitch.MoveTo(_pitch2axisSlowPID.Update(50.ToRad() - frame.Pitch, frame.dT), frame.SimTime);
-            ctl.RollAxis = _bank2axisSlowPID.Update(0 - frame.Bank, frame.dT);
+            ctl.RollAxis = _bank2axisSlowPID.Update(wantedBank - frame.Bank, frame.dT);
         }
 
         return ctl;
     }
+
+    private double linterp(double x1, double x2, double y1, double y2, double x) => y1 + (x - x1) / (x2 - x1) * (y2 - y1);
 }
 
 class BasicPid
