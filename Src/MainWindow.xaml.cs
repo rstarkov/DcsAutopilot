@@ -15,7 +15,7 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _refreshTimer = new();
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
-    private SlowFlightController _ctrl;
+    private HornetSlowFlightController _ctrl;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -81,7 +81,7 @@ public partial class MainWindow : ManagedWindow
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
-        _dcs.Start(_ctrl = new SlowFlightController());
+        _dcs.Start(_ctrl = new HornetSlowFlightController());
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
     }
