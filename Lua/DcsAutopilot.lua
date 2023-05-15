@@ -117,6 +117,12 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = wind.x
         dt[#dt+1] = wind.y
         dt[#dt+1] = wind.z
+        dt[#dt+1] = "joyp"
+        dt[#dt+1] = GetDevice(0):get_argument_value(71)
+        dt[#dt+1] = "joyr"
+        dt[#dt+1] = GetDevice(0):get_argument_value(74)
+        dt[#dt+1] = "joyy"
+        dt[#dt+1] = GetDevice(0):get_argument_value(500)
     end
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))

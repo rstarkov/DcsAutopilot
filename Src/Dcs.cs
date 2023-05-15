@@ -135,6 +135,9 @@ class DcsController
                             case "flap": fd.Flaps = double.Parse(data[i++]); break;
                             case "airbrk": fd.Airbrakes = double.Parse(data[i++]); break;
                             case "wind": fd.WindX = double.Parse(data[i++]); fd.WindY = double.Parse(data[i++]); fd.WindZ = double.Parse(data[i++]); break;
+                            case "joyp": fd.JoyPitch = double.Parse(data[i++]); break;
+                            case "joyr": fd.JoyRoll = double.Parse(data[i++]); break;
+                            case "joyy": fd.JoyYaw = double.Parse(data[i++]); break;
                             default:
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
                                 Warnings.Add($"Unrecognized frame data entry: \"{data[i - 1]}\"");
@@ -256,6 +259,7 @@ class FrameData
     public double Flaps, Airbrakes;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double WindX, WindY, WindZ;
+    public double JoyPitch, JoyRoll, JoyYaw;
 }
 
 class ControlData
