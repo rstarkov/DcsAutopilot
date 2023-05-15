@@ -15,7 +15,7 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _refreshTimer = new();
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
-    private HornetSlowFlightController _ctrl;
+    private IFlightController _ctrl;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -64,7 +64,10 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"AoA: {_dcs.LastFrame?.AngleOfAttack:0.00}°    AoSS: {_dcs.LastFrame?.AngleOfSideSlip:0.000}°");
         sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}    IAS: {_dcs.LastFrame?.SpeedIndicated.MsToKts():0.0} kts");
         sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch.ToDeg():0.00}°   Bank: {_dcs.LastFrame?.Bank.ToDeg():0.00}°   Hdg: {_dcs.LastFrame?.Heading.ToDeg():0.00}°");
+        sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}");
         sb.AppendLine("Controller: " + _ctrl?.Status);
+        sb.AppendLine();
+        sb.AppendLine($"Ang rates: pitch={_dcs.LastFrame?.AngRatePitch.ToDeg():0.000}   roll={_dcs.LastFrame?.AngRateRoll.ToDeg():0.000}   yaw={_dcs.LastFrame?.AngRateYaw.ToDeg():0.000}");
         lblInfo.Content = sb.ToString();
 
         void setSlider(Slider sl, double? value)
@@ -81,7 +84,7 @@ public partial class MainWindow : ManagedWindow
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
-        _dcs.Start(_ctrl = new HornetSlowFlightController());
+        _dcs.Start(_ctrl = new HornetAutoTrim());
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
     }

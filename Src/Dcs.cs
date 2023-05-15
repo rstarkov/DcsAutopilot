@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -14,6 +14,7 @@ interface IFlightController
     void NewSession(BulkData bulk);
     ControlData ProcessFrame(FrameData frame); // can return null
     void ProcessBulkUpdate(BulkData bulk);
+    string Status { get; }
 }
 
 class DcsController

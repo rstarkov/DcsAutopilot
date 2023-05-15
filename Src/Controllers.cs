@@ -1,7 +1,67 @@
-using System;
+﻿using System;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
+
+class HornetAutoTrim : IFlightController
+{
+    private string _status = "";
+    public string Status => _status;
+    public double _timeoutUntil;
+    private double _neutralPitch = 0.120;
+    private double _neutralRoll = 0;
+
+    public void NewSession(BulkData bulk)
+    {
+    }
+
+    public void ProcessBulkUpdate(BulkData bulk)
+    {
+    }
+
+    public ControlData ProcessFrame(FrameData frame)
+    {
+        var ctrl = new ControlData();
+        _status = "";
+        if (Math.Abs(frame.Bank.ToDeg()) > 15)
+        {
+            _status = "[bank limit]";
+            return ctrl;
+        }
+        if (Math.Abs(frame.JoyPitch - _neutralPitch) > 0.005 || Math.Abs(frame.JoyRoll - _neutralRoll) > 0.005)
+        {
+            _status = "[stick deflection]";
+            _timeoutUntil = frame.SimTime + 1.5;
+            return ctrl;
+        }
+        if (frame.SimTime < _timeoutUntil)
+        {
+            _status = "[stick timeout]";
+            return ctrl;
+        }
+        {
+            var rate = frame.AngRatePitch.ToDeg();
+            if (Math.Abs(rate) < 0.02) // in the Hornet one tick of pitch trim changes roll rate by about 0.02 deg/sec
+                _status += $" [pitch]";
+            else
+            {
+                _status += $" [PITCH]";
+                ctrl.PitchTrimRate = (-rate * 2.0).Clip(-1, 1);
+            }
+        }
+        {
+            var rate = frame.AngRateRoll.ToDeg();
+            if (Math.Abs(rate) < 0.10) // in the Hornet one tick of roll trim changes roll rate by about 0.1 deg/sec
+                _status += $" [roll]";
+            else
+            {
+                _status += $" [ROLL]";
+                ctrl.RollTrimRate = (-rate * 0.5).Clip(-1, 1);
+            }
+        }
+        return ctrl;
+    }
+}
 
 class HornetSlowFlightController : IFlightController
 {
