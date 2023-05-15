@@ -247,154 +247,110 @@ end
 
 function LogDiagnostics()
     LogFile:write("===== LoGetGlideDeviation() =====\n\n")
-    LogFile:write(tableShow(LoGetGlideDeviation()).."\n\n")
+    LogFile:write(debugdump(LoGetGlideDeviation()).."\n\n")
     LogFile:write("===== LoGetSideDeviation() =====\n\n")
-    LogFile:write(tableShow(LoGetSideDeviation()).."\n\n")
+    LogFile:write(debugdump(LoGetSideDeviation()).."\n\n")
     LogFile:write("===== LoGetSlipBallPosition() =====\n\n")
-    LogFile:write(tableShow(LoGetSlipBallPosition()).."\n\n")
+    LogFile:write(debugdump(LoGetSlipBallPosition()).."\n\n")
     LogFile:write("===== LoGetMagneticYaw() =====\n\n")
-    LogFile:write(tableShow(LoGetMagneticYaw()).."\n\n")
+    LogFile:write(debugdump(LoGetMagneticYaw()).."\n\n")
     
     LogFile:write("===== LoGetSelfData() =====\n\n")
-    LogFile:write(tableShow(LoGetSelfData()).."\n\n")
+    LogFile:write(debugdump(LoGetSelfData()).."\n\n")
     LogFile:write("===== LoGetEngineInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetEngineInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetEngineInfo()).."\n\n")
     LogFile:write("===== LoGetMechInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetMechInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetMechInfo()).."\n\n")
     LogFile:write("===== LoGetPayloadInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetPayloadInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetPayloadInfo()).."\n\n")
     LogFile:write("===== LoGetControlPanel_HSI() =====\n\n")
-    LogFile:write(tableShow(LoGetControlPanel_HSI()).."\n\n")
+    LogFile:write(debugdump(LoGetControlPanel_HSI()).."\n\n")
     LogFile:write("===== LoGetADIPitchBankYaw() =====\n\n")
-    LogFile:write(tableShow(LoGetADIPitchBankYaw()).."\n\n")
+    LogFile:write(debugdump(LoGetADIPitchBankYaw()).."\n\n")
     LogFile:write("===== LoGetFMData() =====\n\n")
-    LogFile:write(tableShow(LoGetFMData()).."\n\n")
+    LogFile:write(debugdump(LoGetFMData()).."\n\n")
     LogFile:write("===== LoGetBasicAtmospherePressure() =====\n\n")
-    LogFile:write(tableShow(LoGetBasicAtmospherePressure()).."\n\n")
+    LogFile:write(debugdump(LoGetBasicAtmospherePressure()).."\n\n")
     LogFile:write("===== LoGetMCPState() =====\n\n")
-    LogFile:write(tableShow(LoGetMCPState()).."\n\n")
+    LogFile:write(debugdump(LoGetMCPState()).."\n\n")
     LogFile:write("===== LoGetRoute() =====\n\n")
-    LogFile:write(tableShow(LoGetRoute()).."\n\n")
+    LogFile:write(debugdump(LoGetRoute()).."\n\n")
     LogFile:write("===== LoGetNavigationInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetNavigationInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetNavigationInfo()).."\n\n")
     LogFile:write("===== LoGetWingInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetWingInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetWingInfo()).."\n\n")
     LogFile:write("===== LoGetRadioBeaconsStatus() =====\n\n")
-    LogFile:write(tableShow(LoGetRadioBeaconsStatus()).."\n\n")
+    LogFile:write(debugdump(LoGetRadioBeaconsStatus()).."\n\n")
     LogFile:write("===== LoGetSnares() =====\n\n")
-    LogFile:write(tableShow(LoGetSnares()).."\n\n")
+    LogFile:write(debugdump(LoGetSnares()).."\n\n")
     --LoGetHeightWithObjects
 
     -- Available if IsSensorExportAllowed
     LogFile:write("===== LoGetTWSInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetTWSInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetTWSInfo()).."\n\n")
     LogFile:write("===== LoGetTargetInformation() =====\n\n")
-    LogFile:write(tableShow(LoGetTargetInformation()).."\n\n")
+    LogFile:write(debugdump(LoGetTargetInformation()).."\n\n")
     LogFile:write("===== LoGetLockedTargetInformation() =====\n\n")
-    LogFile:write(tableShow(LoGetLockedTargetInformation()).."\n\n")
+    LogFile:write(debugdump(LoGetLockedTargetInformation()).."\n\n")
     --Export.LoGetF15_TWS_Contacts
     LogFile:write("===== LoGetSightingSystemInfo() =====\n\n")
-    LogFile:write(tableShow(LoGetSightingSystemInfo()).."\n\n")
+    LogFile:write(debugdump(LoGetSightingSystemInfo()).."\n\n")
     LogFile:write("===== LoGetWingTargets() =====\n\n")
-    LogFile:write(tableShow(LoGetWingTargets()).."\n\n")
+    LogFile:write(debugdump(LoGetWingTargets()).."\n\n")
 
     LogFile:write("===== _G =====\n\n")
-    LogFile:write(tableShow(_G).."\n\n")
+    LogFile:write(debugdump(_G).."\n\n")
 end
 
 
 
-function basicSerialize(var) -- FROM SRS
-    if var == nil then
-        return "\"\""
-    else
-        if ((type(var) == 'number') or
-                (type(var) == 'boolean') or
-                (type(var) == 'function') or
-                (type(var) == 'table') or
-                (type(var) == 'userdata') ) then
-            return tostring(var)
-        elseif type(var) == 'string' then
-            var = string.format('%q', var)
-            return var
-        end
-    end
-end
-
-
-
-function tableShow(tbl, loc, indent, tableshow_tbls) -- FROM SRS --based on serialize_slmod, this is a _G serialization
-    tableshow_tbls = tableshow_tbls or {} --create table of tables
+function debugdump(value, loc, indent, seen)
+    seen = seen or {}
     loc = loc or ""
     indent = indent or ""
-    if type(tbl) == 'table' then --function only works for tables!
-        tableshow_tbls[tbl] = loc
-
-        local tbl_str = {}
-
-        tbl_str[#tbl_str + 1] = indent .. '{\n'
-
-        for ind,val in pairs(tbl) do -- serialize its fields
-            if type(ind) == "number" then
-                tbl_str[#tbl_str + 1] = indent
-                tbl_str[#tbl_str + 1] = loc .. '['
-                tbl_str[#tbl_str + 1] = tostring(ind)
-                tbl_str[#tbl_str + 1] = '] = '
+    if value == nil then
+        return "<nil>"
+    elseif type(value) == "number" or type(value) == "boolean" then
+        return tostring(value)
+    elseif type(value) == "string" then
+        return string.format("%q", value)
+    elseif seen[value] then
+        return "<seen " .. type(value) .. " at " .. seen[value] .. ">"
+    elseif type(value) == "function" then
+        seen[value] = loc
+        local func = tostring(value)
+        if debug and debug.getinfo then
+            local info = debug.getinfo(value, "S")
+            if info.what == "C" then
+                func = "<C function: " .. func .. ">"
             else
-                tbl_str[#tbl_str + 1] = indent
-                tbl_str[#tbl_str + 1] = loc .. '['
-                tbl_str[#tbl_str + 1] = basicSerialize(ind)
-                tbl_str[#tbl_str + 1] = '] = '
-            end
-
-            if ((type(val) == 'number') or (type(val) == 'boolean')) then
-                tbl_str[#tbl_str + 1] = tostring(val)
-                tbl_str[#tbl_str + 1] = ',\n'
-            elseif type(val) == 'string' then
-                tbl_str[#tbl_str + 1] = basicSerialize(val)
-                tbl_str[#tbl_str + 1] = ',\n'
-            elseif type(val) == 'nil' then -- won't ever happen, right?
-                tbl_str[#tbl_str + 1] = 'nil,\n'
-            elseif type(val) == 'table' then
-                if tableshow_tbls[val] then
-                    tbl_str[#tbl_str + 1] = tostring(val) .. ' already defined: ' .. tableshow_tbls[val] .. ',\n'
+                if (string.sub(info.source, 1, 2) == [[./]]) then
+                    func = "<function: " .. func .. "> (defined in " .. info.linedefined .. "-" .. info.lastlinedefined .. ", " .. info.source .. ")"
                 else
-                    tableshow_tbls[val] = loc ..    '[' .. basicSerialize(ind) .. ']'
-                    tbl_str[#tbl_str + 1] = tostring(val) .. ' '
-                    tbl_str[#tbl_str + 1] = tableShow(val,  loc .. '[' .. basicSerialize(ind).. ']', indent .. '        ', tableshow_tbls)
-                    tbl_str[#tbl_str + 1] = ',\n'
+                    func = "<function: " .. func .. "> (defined in " .. info.linedefined .. "-" .. info.lastlinedefined .. ")"
                 end
-            elseif type(val) == 'function' then
-                if debug and debug.getinfo then
-                    local fcnname = tostring(val)
-                    local info = debug.getinfo(val, "S")
-                    if info.what == "C" then
-                        tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', C function') .. ',\n'
-                    else
-                        if (string.sub(info.source, 1, 2) == [[./]]) then
-                            tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')' .. info.source) ..',\n'
-                        else
-                            tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')') ..',\n'
-                        end
-                    end
-
-                else
-                    tbl_str[#tbl_str + 1] = 'a function,\n'
-                end
-            elseif type(val) == 'userdata' then
-                tbl_str[#tbl_str + 1] = 'userdata '
-                tbl_str[#tbl_str + 1] = tableShow(getmetatable(val),  loc .. '[' .. basicSerialize(ind).. ']', indent .. '        ', tableshow_tbls)
-                tbl_str[#tbl_str + 1] = ',\n'
-            else
-                tbl_str[#tbl_str + 1] = 'unable to serialize value type ' .. basicSerialize(type(val)) .. ' at index ' .. tostring(ind)
             end
+        else
+            func = "<function: " .. func .. "> (debug info n/a)"
         end
-
-        tbl_str[#tbl_str + 1] = indent .. '}'
+        return func:gsub("function: function:", "function:")
+    elseif type(value) == "userdata" then
+        seen[value] = loc
+        return "<userdata> " .. debugdump(getmetatable(value),  loc .. "->metatable", indent .. "    ", seen)
+    elseif type(value) == "table" then
+        seen[value] = loc
+        local subindent = indent .. "    "
+        local tbl_str = {}
+        tbl_str[#tbl_str + 1] = "{\n"
+        for key, val in pairs(value) do
+            local keystr = debugdump(key, loc .. "->key", subindent, seen)
+            tbl_str[#tbl_str + 1] = subindent .. "[" .. keystr .. "] = "
+            tbl_str[#tbl_str + 1] = debugdump(val, loc .. "[" .. keystr.. "]", subindent, seen)
+            tbl_str[#tbl_str + 1] = "\n"
+        end
+        tbl_str[#tbl_str + 1] = indent .. "}"
         return table.concat(tbl_str)
-    elseif tbl == nil then
-        return "nil"
     else
-        return basicSerialize(tbl)
+        return "<unknown value type: ".. type(value) ..">"
     end
 end
