@@ -111,7 +111,7 @@ class DcsController
                             case "pitch": fd.Pitch = double.Parse(data[i++]); break;
                             case "bank": fd.Bank = double.Parse(data[i++]); break;
                             case "hdg": fd.Heading = double.Parse(data[i++]); break;
-                            case "ang": fd.AngVelX = double.Parse(data[i++]); fd.AngVelY = double.Parse(data[i++]); fd.AngVelZ = double.Parse(data[i++]); break;
+                            case "ang": fd.AngRateRoll = double.Parse(data[i++]); fd.AngRateYaw = -double.Parse(data[i++]); fd.AngRatePitch = double.Parse(data[i++]); break;
                             case "pos": fd.PosX = double.Parse(data[i++]); fd.PosY = double.Parse(data[i++]); fd.PosZ = double.Parse(data[i++]); break;
                             case "vel": fd.VelX = double.Parse(data[i++]); fd.VelY = double.Parse(data[i++]); fd.VelZ = double.Parse(data[i++]); break;
                             case "acc": fd.AccX = double.Parse(data[i++]); fd.AccY = double.Parse(data[i++]); fd.AccZ = double.Parse(data[i++]); break;
@@ -212,6 +212,9 @@ class DcsController
         }
     }
 
+    private double _pitchTrimRateCounter = 0;
+    private double _rollTrimRateCounter = 0;
+
     private void Send(ControlData data)
     {
         var cmd = new StringBuilder();
@@ -226,6 +229,45 @@ class DcsController
             cmd.Append($"2;sc;2003;{data.YawAxis.Value};");
         if (data.ThrottleAxis != null)
             cmd.Append($"2;sc;2004;{1 - data.ThrottleAxis.Value};");
+        //if (data.PitchTrim != null) // not supported on Hornet - need to refactor with airplane-specific controllers
+        //    cmd.Append($"2;sc;2022;{data.PitchTrim.Value};");
+        //if (data.RollTrim != null)
+        //    cmd.Append($"2;sc;2023;{data.RollTrim.Value};");
+        if (data.YawTrim != null)
+            cmd.Append($"2;sc;3001;{data.YawTrim.Value};");
+        // the following commands are Hornet specific; need to refactor with airplane-specific controllers
+        if (data.PitchTrimRate != null)
+        {
+            _pitchTrimRateCounter += data.PitchTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
+            if (_pitchTrimRateCounter >= 0.5)
+            {
+                cmd.Append($"4;pca3w;13;3015;3014;1;");
+                _pitchTrimRateCounter -= 1.0;
+            }
+            else if (_pitchTrimRateCounter < -0.5)
+            {
+                cmd.Append($"4;pca3w;13;3015;3014;-1;");
+                _pitchTrimRateCounter += 1.0;
+            }
+            else
+                cmd.Append($"4;pca3w;13;3015;3014;0;");
+        }
+        if (data.RollTrimRate != null)
+        {
+            _rollTrimRateCounter += data.RollTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
+            if (_rollTrimRateCounter >= 0.5)
+            {
+                cmd.Append($"4;pca3w;13;3016;3017;1;");
+                _rollTrimRateCounter -= 1.0;
+            }
+            else if (_rollTrimRateCounter < -0.5)
+            {
+                cmd.Append($"4;pca3w;13;3016;3017;-1;");
+                _rollTrimRateCounter += 1.0;
+            }
+            else
+                cmd.Append($"4;pca3w;13;3016;3017;0;");
+        }
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
@@ -254,7 +296,7 @@ class FrameData
     public double SpeedTrue, SpeedIndicated, SpeedMach, SpeedVertical;
     public double VelX, VelY, VelZ;
     public double Pitch, Bank, Heading;
-    public double AngVelX, AngVelY, AngVelZ;
+    public double AngRateRoll, AngRateYaw, AngRatePitch;
     public double FuelInternal, FuelExternal;
     public double Flaps, Airbrakes;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
@@ -269,6 +311,12 @@ class ControlData
     public double? RollAxis;
     public double? YawAxis;
     public double? ThrottleAxis;
+    public double? PitchTrim;
+    public double? RollTrim;
+    public double? YawTrim;
+    public double? PitchTrimRate;
+    public double? RollTrimRate;
+    public double? YawTrimRate;
 
     // trim axes? airbrakes? flaps? landing gear?
 }

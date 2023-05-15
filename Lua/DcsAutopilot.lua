@@ -2,10 +2,12 @@ local socket = require("socket")
 local lfs = require('lfs')
 local UdpSocket = nil
 local LogFile = nil
+local CurFrame = 0
 local Skips = 0
 local Session = socket.gettime()
 local Latency = 0
 local LastBulkData = 0
+local AutoResetPCA = { }
 
 
 
@@ -170,34 +172,87 @@ end
 
 
 function LuaExportBeforeNextFrame()
+    CurFrame = CurFrame + 1
+
     local received = UdpSocket:receive()
     if not received then
         Skips = Skips + 1
-        return
-    end
-
-    local data = { }
-    local dataN = 0 -- Lua can't efficiently track table size by itself. It just can't. Because Lua.
-    for val in string.gmatch(received, "([^;]*);") do
-        dataN = dataN + 1
-        data[dataN] = val
-    end
-
-    local i = 1
-    while data[i] do
-        local args = tonumber(data[i])
-        i = i + 1
-        local cmd = data[i]
-        if cmd == "ts" then
-            Latency = socket.gettime() - tonumber(data[i+1])
-        elseif cmd == "sc" then
-            if args == 1 then
-                LoSetCommand(tonumber(data[i+1]))
-            elseif args == 2 then
-                LoSetCommand(tonumber(data[i+1]), tonumber(data[i+2]))
-            end
+    else
+        local data = { }
+        local dataN = 0 -- Lua can't efficiently track table size by itself. It just can't. Because Lua.
+        for val in string.gmatch(received, "([^;]*);") do
+            dataN = dataN + 1
+            data[dataN] = val
         end
-        i = i + args + 1
+
+        local i = 1
+        while data[i] do
+            local args = tonumber(data[i])
+            i = i + 1
+            local cmd = data[i]
+            if cmd == "ts" then
+                Latency = socket.gettime() - tonumber(data[i+1])
+            elseif cmd == "sc" then
+                if args == 1 then
+                    LoSetCommand(tonumber(data[i+1]))
+                elseif args == 2 then
+                    LoSetCommand(tonumber(data[i+1]), tonumber(data[i+2]))
+                end
+            elseif cmd == "pca" then
+                GetDevice(tonumber(data[i+1])):performClickableAction(tonumber(data[i+2]), tonumber(data[i+3]))
+            elseif cmd == "pcaAR" then -- performClickableAction with auto-reset unless commanded again
+                local dev = tonumber(data[i+1])
+                local act = tonumber(data[i+2])
+                GetDevice(dev):performClickableAction(act, tonumber(data[i+3]))
+                AutoResetPCA[dev..";"..act] = { frame = CurFrame + 1, dev = dev, act = act, reset = tonumber(data[i+4]) }
+            elseif cmd == "pca3w" then -- performClickableAction three-way switch that bugs out if both directions commanded simultaneously
+                local dev = tonumber(data[i+1])
+                local actN = tonumber(data[i+2])
+                local actP = tonumber(data[i+3])
+                local key = dev..";"..actN..";"..actP
+                local val = tonumber(data[i+4])
+                local cur = AutoResetPCA[key] and AutoResetPCA[key].cur or 0
+                if cur == val then -- matches cur/val = 0/0, +/+, -/-
+                    if cur ~= 0 then
+                        AutoResetPCA[key].frame = CurFrame + 1
+                    end
+                elseif cur >= 0 and val >= 0 then -- matches cur/val = 0/+, +/0
+                    GetDevice(dev):performClickableAction(actP, val)
+                    --LogFile:write(LoGetModelTime() .. " ["..key.."] 1 GetDevice("..dev.."):pca("..actP..", "..val..")\n")
+                    if val == 0 then
+                        AutoResetPCA[key] = nil
+                    else
+                        AutoResetPCA[key] = { frame = CurFrame + 1, dev = dev, act = actP, reset = 0, cur = val }
+                    end
+                elseif cur <= 0 and val <= 0 then -- matches cur/val = 0/-, -/0
+                    GetDevice(dev):performClickableAction(actN, math.abs(val))
+                    --LogFile:write(LoGetModelTime() .. " ["..key.."] 2 GetDevice("..dev.."):pca("..actN..", "..math.abs(val)..")\n")
+                    if val == 0 then
+                        AutoResetPCA[key] = nil
+                    else
+                        AutoResetPCA[key] = { frame = CurFrame + 1, dev = dev, act = actN, reset = 0, cur = val }
+                    end
+                elseif cur > 0 then -- matches cur/val = +/-
+                    GetDevice(dev):performClickableAction(actP, 0)
+                    --LogFile:write(LoGetModelTime() .. " ["..key.."] 3 GetDevice("..dev.."):pca("..actP..", 0)\n")
+                    AutoResetPCA[key] = nil
+                elseif cur < 0 then -- matches cur/val = -/+
+                    GetDevice(dev):performClickableAction(actN, 0)
+                    --LogFile:write(LoGetModelTime() .. " ["..key.."] 4 GetDevice("..dev.."):pca("..actN..", 0)\n")
+                    AutoResetPCA[key] = nil
+                end
+            end
+            i = i + args + 1
+        end
+    end
+
+    -- release buttons that need to be released
+    for k, v in pairs(AutoResetPCA) do
+        if v.frame <= CurFrame then
+            GetDevice(v.dev):performClickableAction(v.act, v.reset)
+            --LogFile:write(LoGetModelTime() .. " ["..k.."] 0 GetDevice("..v.dev.."):pca("..v.act..", "..v.reset..")\n")
+            AutoResetPCA[k] = nil
+        end
     end
 end
 
