@@ -129,19 +129,6 @@ function LuaExportAfterNextFrame()
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))
 
-    -- for advanced AP functions
-    -- LoGetGlideDeviation
-    -- LoGetLockedTargetInformation
-    -- more functions to explore:
-    -- GetDevice
-    -- GetIndicator
-    -- LoGetAircraftDrawArgumentValue
-    -- LoGetBasicAtmospherePressure
-    -- LoGetADIPitchBankYaw
-    -- LoGetBasicAtmospherePressure
-    -- LoGetControlPanel_HSI
-    -- LoGetFMData
-    
     if socket.gettime() - LastBulkData > 1 then
         SendBulkData()
     end
@@ -259,6 +246,15 @@ end
 
 
 function LogDiagnostics()
+    LogFile:write("===== LoGetGlideDeviation() =====\n\n")
+    LogFile:write(tableShow(LoGetGlideDeviation()).."\n\n")
+    LogFile:write("===== LoGetSideDeviation() =====\n\n")
+    LogFile:write(tableShow(LoGetSideDeviation()).."\n\n")
+    LogFile:write("===== LoGetSlipBallPosition() =====\n\n")
+    LogFile:write(tableShow(LoGetSlipBallPosition()).."\n\n")
+    LogFile:write("===== LoGetMagneticYaw() =====\n\n")
+    LogFile:write(tableShow(LoGetMagneticYaw()).."\n\n")
+    
     LogFile:write("===== LoGetSelfData() =====\n\n")
     LogFile:write(tableShow(LoGetSelfData()).."\n\n")
     LogFile:write("===== LoGetEngineInfo() =====\n\n")
@@ -267,13 +263,40 @@ function LogDiagnostics()
     LogFile:write(tableShow(LoGetMechInfo()).."\n\n")
     LogFile:write("===== LoGetPayloadInfo() =====\n\n")
     LogFile:write(tableShow(LoGetPayloadInfo()).."\n\n")
+    LogFile:write("===== LoGetControlPanel_HSI() =====\n\n")
+    LogFile:write(tableShow(LoGetControlPanel_HSI()).."\n\n")
+    LogFile:write("===== LoGetADIPitchBankYaw() =====\n\n")
+    LogFile:write(tableShow(LoGetADIPitchBankYaw()).."\n\n")
+    LogFile:write("===== LoGetFMData() =====\n\n")
+    LogFile:write(tableShow(LoGetFMData()).."\n\n")
+    LogFile:write("===== LoGetBasicAtmospherePressure() =====\n\n")
+    LogFile:write(tableShow(LoGetBasicAtmospherePressure()).."\n\n")
+    LogFile:write("===== LoGetMCPState() =====\n\n")
+    LogFile:write(tableShow(LoGetMCPState()).."\n\n")
+    LogFile:write("===== LoGetRoute() =====\n\n")
+    LogFile:write(tableShow(LoGetRoute()).."\n\n")
+    LogFile:write("===== LoGetNavigationInfo() =====\n\n")
+    LogFile:write(tableShow(LoGetNavigationInfo()).."\n\n")
+    LogFile:write("===== LoGetWingInfo() =====\n\n")
+    LogFile:write(tableShow(LoGetWingInfo()).."\n\n")
+    LogFile:write("===== LoGetRadioBeaconsStatus() =====\n\n")
+    LogFile:write(tableShow(LoGetRadioBeaconsStatus()).."\n\n")
+    LogFile:write("===== LoGetSnares() =====\n\n")
+    LogFile:write(tableShow(LoGetSnares()).."\n\n")
+    --LoGetHeightWithObjects
 
-    LogFile:write("===== LoGetVectorVelocity() =====\n\n")
-    LogFile:write(tableShow(LoGetVectorVelocity()).."\n\n")
-    LogFile:write("===== LoGetAngularVelocity() =====\n\n")
-    LogFile:write(tableShow(LoGetAngularVelocity()).."\n\n")
-    LogFile:write("===== LoGetVectorWindVelocity() =====\n\n")
-    LogFile:write(tableShow(LoGetVectorWindVelocity()).."\n\n")
+    -- Available if IsSensorExportAllowed
+    LogFile:write("===== LoGetTWSInfo() =====\n\n")
+    LogFile:write(tableShow(LoGetTWSInfo()).."\n\n")
+    LogFile:write("===== LoGetTargetInformation() =====\n\n")
+    LogFile:write(tableShow(LoGetTargetInformation()).."\n\n")
+    LogFile:write("===== LoGetLockedTargetInformation() =====\n\n")
+    LogFile:write(tableShow(LoGetLockedTargetInformation()).."\n\n")
+    --Export.LoGetF15_TWS_Contacts
+    LogFile:write("===== LoGetSightingSystemInfo() =====\n\n")
+    LogFile:write(tableShow(LoGetSightingSystemInfo()).."\n\n")
+    LogFile:write("===== LoGetWingTargets() =====\n\n")
+    LogFile:write(tableShow(LoGetWingTargets()).."\n\n")
 
     LogFile:write("===== _G =====\n\n")
     LogFile:write(tableShow(_G).."\n\n")
@@ -358,6 +381,10 @@ function tableShow(tbl, loc, indent, tableshow_tbls) -- FROM SRS --based on seri
                 else
                     tbl_str[#tbl_str + 1] = 'a function,\n'
                 end
+            elseif type(val) == 'userdata' then
+                tbl_str[#tbl_str + 1] = 'userdata '
+                tbl_str[#tbl_str + 1] = tableShow(getmetatable(val),  loc .. '[' .. basicSerialize(ind).. ']', indent .. '        ', tableshow_tbls)
+                tbl_str[#tbl_str + 1] = ',\n'
             else
                 tbl_str[#tbl_str + 1] = 'unable to serialize value type ' .. basicSerialize(type(val)) .. ' at index ' .. tostring(ind)
             end
@@ -365,5 +392,9 @@ function tableShow(tbl, loc, indent, tableshow_tbls) -- FROM SRS --based on seri
 
         tbl_str[#tbl_str + 1] = indent .. '}'
         return table.concat(tbl_str)
+    elseif tbl == nil then
+        return "nil"
+    else
+        return basicSerialize(tbl)
     end
 end
