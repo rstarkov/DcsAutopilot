@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -40,7 +40,7 @@ class HornetAutoTrim : IFlightController
             return ctrl;
         }
         {
-            var rate = frame.AngRatePitch.ToDeg();
+            var rate = frame.GyroPitch.ToDeg();
             if (Math.Abs(rate) < 0.02) // in the Hornet one tick of pitch trim changes roll rate by about 0.02 deg/sec
                 _status += $" [pitch]";
             else
@@ -50,7 +50,7 @@ class HornetAutoTrim : IFlightController
             }
         }
         {
-            var rate = frame.AngRateRoll.ToDeg();
+            var rate = frame.GyroRoll.ToDeg();
             if (Math.Abs(rate) < 0.10) // in the Hornet one tick of roll trim changes roll rate by about 0.1 deg/sec
                 _status += $" [roll]";
             else

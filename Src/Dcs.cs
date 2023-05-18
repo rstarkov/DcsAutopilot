@@ -108,10 +108,10 @@ class DcsController
                             case "sent": fd.FrameTimestamp = double.Parse(data[i++]); break;
                             case "ltcy": fd.Latency = double.Parse(data[i++]); break;
                             case "exp": fd.ExportAllowed = data[i++] == "true"; break;
-                            case "pitch": fd.Pitch = double.Parse(data[i++]); break;
-                            case "bank": fd.Bank = double.Parse(data[i++]); break;
-                            case "hdg": fd.Heading = double.Parse(data[i++]); break;
-                            case "ang": fd.AngRateRoll = double.Parse(data[i++]); fd.AngRateYaw = -double.Parse(data[i++]); fd.AngRatePitch = double.Parse(data[i++]); break;
+                            case "pitch": fd.Pitch = double.Parse(data[i++]).ToDeg(); break;
+                            case "bank": fd.Bank = double.Parse(data[i++]).ToDeg(); break;
+                            case "hdg": fd.Heading = double.Parse(data[i++]).ToDeg(); break;
+                            case "ang": fd.GyroRoll = double.Parse(data[i++]).ToDeg(); fd.GyroYaw = -double.Parse(data[i++]).ToDeg(); fd.GyroPitch = double.Parse(data[i++]).ToDeg(); break;
                             case "pos": fd.PosX = double.Parse(data[i++]); fd.PosY = double.Parse(data[i++]); fd.PosZ = double.Parse(data[i++]); break;
                             case "vel": fd.VelX = double.Parse(data[i++]); fd.VelY = double.Parse(data[i++]); fd.VelZ = double.Parse(data[i++]); break;
                             case "acc": fd.AccX = double.Parse(data[i++]); fd.AccY = double.Parse(data[i++]); fd.AccZ = double.Parse(data[i++]); break;
@@ -124,7 +124,7 @@ class DcsController
                             case "ias": fd.SpeedIndicated = double.Parse(data[i++]); break;
                             case "mach": fd.SpeedMach = double.Parse(data[i++]); break;
                             case "aoa": fd.AngleOfAttack = double.Parse(data[i++]); break;
-                            case "aoss": fd.AngleOfSideSlip = double.Parse(data[i++]); break;
+                            case "aoss": fd.AngleOfSideSlip = -double.Parse(data[i++]); break;
                             case "fuint": fd.FuelInternal = double.Parse(data[i++]); break;
                             case "fuext": fd.FuelExternal = double.Parse(data[i++]); break;
                             case "surf":
@@ -299,14 +299,34 @@ class FrameData
     public double FrameTimestamp, Latency;
 
     public double SimTime, dT;
-    public double AngleOfAttack, AngleOfSideSlip;
+    /// <summary>Angle of attack in degrees; -90 (nose down relative to airflow) .. 0 (boresight aligned with airflow) .. 90 (nose up relative to airflow)</summary>
+    public double AngleOfAttack;
+    /// <summary>Angle of sideslip in degrees; -90 (nose to the left of the airflow) .. 0 (aligned) .. 90 (nose to the right of the airflow)</summary>
+    public double AngleOfSideSlip;
     public double PosX, PosY, PosZ;
     public double AccX, AccY, AccZ;
-    public double AltitudeAsl, AltitudeAgl, AltitudeBaro, AltitudeRadar;
-    public double SpeedTrue, SpeedIndicated, SpeedMach, SpeedVertical;
-    public double VelX, VelY, VelZ;
-    public double Pitch, Bank, Heading;
-    public double AngRateRoll, AngRateYaw, AngRatePitch;
+    /// <summary>True ASL altitude in meters. Not affected by the pressure setting.</summary>
+    public double AltitudeAsl;
+    /// <summary>True AGL altitude in meters. Not affected by the pressure setting. Not affected by buildings. High altitude lakes are "ground" for the purpose of this reading.</summary>
+    public double AltitudeAgl;
+    /// <summary>Barometric altitude in meters. Possibly affected by the pressure setting, but always reads 0 on Hornet.</summary>
+    public double AltitudeBaro;
+    /// <summary>Radar altitude in meters. Affected by buildings. Not affected by the radar range limit (eg in Hornet).</summary>
+    public double AltitudeRadar;
+    public double SpeedTrue, SpeedIndicated, SpeedMach, SpeedVertical; // meters/second; details untested
+    public double VelX, VelY, VelZ; // meters/second; details untested
+    /// <summary>Pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up).</summary>
+    public double Pitch;
+    /// <summary>Bank angle in degrees relative to the horizon; -180 (upside down) .. -90 (left wing straight down) .. 0 (level) .. 90 (right wing straight down) .. 180 (upside down)</summary>
+    public double Bank;
+    /// <summary>Compass heading in degrees. This is the true heading (not magnetic) and is not affected by the FCS setting. 0..360.</summary>
+    public double Heading;
+    /// <summary>Angular pitch rate in degrees/second. Positive is pitching up. Relative to the wing axis: this is not the same as the rate of change of <see cref="Pitch"/> over time; it's what a gyro would read. A 90 deg bank turn would have a large pitch rate even as the horizon-relative <see cref="Pitch"/> stays constant.</summary>
+    public double GyroPitch;
+    /// <summary>Angular roll rate in degrees/second. Positive is roll to the right. Relative to the boresight axis: this is not the same as the rate of change of <see cref="Bank"/> over time; it's what a gyro would read.</summary>
+    public double GyroRoll;
+    /// <summary>Angular yaw rate in degrees/second. Positive is yaw to the right. Relative to the vertical airplane axis: this is not the same as the rate of change of <see cref="Heading"/> over time; it's what a gyro would read.</summary>
+    public double GyroYaw;
     public double FuelInternal, FuelExternal;
     public double Flaps, Airbrakes;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;

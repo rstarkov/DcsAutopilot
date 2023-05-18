@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -75,11 +75,11 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"Vertical speed: {_dcs.LastFrame?.SpeedVertical.MetersToFeet() * 60:#,0.000} ft/min");
         sb.AppendLine($"AoA: {_dcs.LastFrame?.AngleOfAttack:0.00}°    AoSS: {_dcs.LastFrame?.AngleOfSideSlip:0.000}°");
         sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}    IAS: {_dcs.LastFrame?.SpeedIndicated.MsToKts():0.0} kts");
-        sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch.ToDeg():0.00}°   Bank: {_dcs.LastFrame?.Bank.ToDeg():0.00}°   Hdg: {_dcs.LastFrame?.Heading.ToDeg():0.00}°");
+        sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch:0.00}°   Bank: {_dcs.LastFrame?.Bank:0.00}°   Hdg: {_dcs.LastFrame?.Heading:0.00}°");
+        sb.AppendLine($"Gyros: pitch={_dcs.LastFrame?.GyroPitch:0.00}   roll={_dcs.LastFrame?.GyroRoll:0.00}   yaw={_dcs.LastFrame?.GyroYaw:0.00}");
         sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}");
         sb.AppendLine("Controller: " + _ctrl?.Status);
         sb.AppendLine();
-        sb.AppendLine($"Ang rates: pitch={_dcs.LastFrame?.AngRatePitch.ToDeg():0.000}   roll={_dcs.LastFrame?.AngRateRoll.ToDeg():0.000}   yaw={_dcs.LastFrame?.AngRateYaw.ToDeg():0.000}");
         lblInfo.Text = sb.ToString();
 
         void setSlider(Slider sl, double? value)
@@ -130,7 +130,8 @@ public partial class MainWindow : ManagedWindow
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
-        _line1.Data.Clear();
+        foreach (var line in ctChart.Lines)
+            line.Data.Clear();
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
