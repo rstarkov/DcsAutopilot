@@ -80,7 +80,7 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine("Controller: " + _ctrl?.Status);
         sb.AppendLine();
         sb.AppendLine($"Ang rates: pitch={_dcs.LastFrame?.AngRatePitch.ToDeg():0.000}   roll={_dcs.LastFrame?.AngRateRoll.ToDeg():0.000}   yaw={_dcs.LastFrame?.AngRateYaw.ToDeg():0.000}");
-        lblInfo.Content = sb.ToString();
+        lblInfo.Text = sb.ToString();
 
         void setSlider(Slider sl, double? value)
         {

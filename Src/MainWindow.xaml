@@ -9,35 +9,58 @@
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
         SizeChanged="ManagedWindow_SizeLocationChanged" LocationChanged="ManagedWindow_SizeLocationChanged"
+        Style="{DynamicResource CustomWindowStyle}"
         Title="DCS Autopilot" Height="471" Width="800">
+    <Window.Resources>
+        <Style TargetType="{x:Type TabControl}">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,5,0,0" />
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="4*" />
-            <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
-        <TabControl Grid.Row="0" Grid.Column="0" Margin="10,5,0,0">
-            <TabItem Header="Hornet">
-                <Grid Margin="0,0,0,0">
-                    <Slider Name="ctrlRoll" HorizontalAlignment="Left" Margin="82,281,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
-                    <Slider Name="ctrlPitch" HorizontalAlignment="Left" Margin="141,222,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
-                    <Slider Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,222,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="2" TickFrequency="0.5" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
-                    <Slider Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,391,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
-                    <Label Name="lblInfo" Content="Info " HorizontalAlignment="Left" Height="298" Margin="232,13,0,0" VerticalAlignment="Top" Width="381" />
-                    <local:Chart x:Name="ctChart" Width="200" Height="150" Margin="200,200,0,0"/>
+        <TabControl Grid.Row="0" Margin="10,5,10,0" >
+            <TabItem Header="Flight">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="7*" />
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel Grid.Column="1">
+                        <StackPanel />
+                    </DockPanel>
                 </Grid>
             </TabItem>
-            <TabItem Header="Debug">
+            <TabItem Header="Special">
                 <Grid>
-                    <Slider Name="ctSliderTest1" HorizontalAlignment="Left" Height="21" Margin="24,318,0,0" VerticalAlignment="Top" Width="373" Minimum="-1000" Maximum="1000" />
-                    <Slider Name="ctSliderTest2" HorizontalAlignment="Left" Height="21" Margin="24,344,0,0" VerticalAlignment="Top" Width="373" Minimum="-1000" Maximum="1000" />
+                    <TextBlock>Stuff like slow fly, climb performance etc</TextBlock>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Dev">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="4*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0">
+                        <Slider Name="ctrlRoll" HorizontalAlignment="Left" Margin="82,181,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
+                        <Slider Name="ctrlPitch" HorizontalAlignment="Left" Margin="141,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
+                        <Slider Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="2" TickFrequency="0.5" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
+                        <Slider Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,291,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
+                        <Slider Name="ctSliderTest1" HorizontalAlignment="Left" Height="21" Margin="10,10,0,0" VerticalAlignment="Top" Width="300" Minimum="-1000" Maximum="1000" />
+                        <Slider Name="ctSliderTest2" HorizontalAlignment="Left" Height="21" Margin="10,36,0,0" VerticalAlignment="Top" Width="300" Minimum="-1000" Maximum="1000" />
+                    </Grid>
+                    <DockPanel Grid.Column="1">
+                        <local:Chart x:Name="ctChart" Height="150" DockPanel.Dock="Bottom" />
+                        <TextBlock Name="lblInfo" TextWrapping="WrapWithOverflow">Info</TextBlock>
+                    </DockPanel>
                 </Grid>
             </TabItem>
         </TabControl>
-        <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,8">
+        <DockPanel Grid.Row="1" Margin="0,8,0,8">
             <Button Name="btnStart" Content="Start" VerticalAlignment="Stretch" Click="btnStart_Click" Width="40" Margin="10,0,0,0" />
             <Button Name="btnStop" Content="Stop" VerticalAlignment="Stretch" Click="btnStop_Click" Width="40" Margin="10,0,0,0" />
             <Label Name="lblStatus" Content="Stopped" VerticalAlignment="Center" Margin="10,0,0,0" Padding="0" />
