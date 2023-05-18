@@ -38,6 +38,8 @@ function LuaExportAfterNextFrame()
     dt[#dt+1] = "frame"
     dt[#dt+1] = "sess"
     dt[#dt+1] = Session
+    dt[#dt+1] = "fr"
+    dt[#dt+1] = CurFrame
     dt[#dt+1] = "skips"
     dt[#dt+1] = Skips
     dt[#dt+1] = "time"

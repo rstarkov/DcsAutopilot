@@ -102,6 +102,7 @@ class DcsController
                         switch (data[i++])
                         {
                             case "sess": fd.Session = double.Parse(data[i++]); break;
+                            case "fr": fd.Frame = int.Parse(data[i++]); break;
                             case "skips": fd.Skips = int.Parse(data[i++]); break;
                             case "time": fd.SimTime = double.Parse(data[i++]); break;
                             case "sent": fd.FrameTimestamp = double.Parse(data[i++]); break;
@@ -192,7 +193,7 @@ class DcsController
                     }
 
                     Status = "Active control";
-                    Frames++;
+                    Frames = parsedFrame.Frame;
                     Skips = parsedFrame.Skips;
                     LastFrameBytes = bytes.Length;
                     LastFrameUtc = DateTime.UtcNow;
@@ -293,7 +294,7 @@ class BulkData
 class FrameData
 {
     public double Session;
-    public int Skips;
+    public int Frame, Skips;
     public bool ExportAllowed;
     public double FrameTimestamp, Latency;
 
