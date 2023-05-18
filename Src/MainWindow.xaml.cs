@@ -34,6 +34,7 @@ public partial class MainWindow : ManagedWindow
         _line2.Pen = new Pen(Brushes.Lime, 1);
         foreach (var line in ctChart.Lines)
             line.Pen.Freeze();
+        btnStop_Click(null, null);
     }
 
     private void ManagedWindow_SizeLocationChanged(object sender, EventArgs e)
@@ -64,7 +65,10 @@ public partial class MainWindow : ManagedWindow
             _fps.Dequeue();
         var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
         var latency = _dcs.Latencies.Count() > 0 ? _dcs.Latencies.Average() : 0;
-        lblStats.Content = $"FPS: {fps:0}, latency: {latency * 1000:0.0}ms. Frames: {_dcs.Frames:#,0}, skips: {_dcs.Skips:#,0}. Bytes: {_dcs.LastFrameBytes:#,0}";
+        var statsStr = $"FPS: {fps:0}   Skips: {_dcs.Skips:#,0} of {_dcs.Frames:#,0}   Bytes: {_dcs.LastFrameBytes:#,0}";
+        if (latency > 0)
+            statsStr = $"Latency: {latency * 1000:0.0}ms   " + statsStr;
+        lblStats.Content = statsStr;
 
         var sb = new StringBuilder();
         sb.AppendLine($"Altitude ASL: {_dcs.LastFrame?.AltitudeAsl.MetersToFeet():#,0.000} ft");
@@ -142,5 +146,7 @@ public partial class MainWindow : ManagedWindow
         refreshTimer_Tick(sender, null);
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
+        lblStats.Content = "";
+        _fps.Clear();
     }
 }
