@@ -22,6 +22,7 @@
         <Slider Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,222,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="2" TickFrequency="0.5" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
         <Slider Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,391,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
         <Label Name="lblInfo" Content="Info " HorizontalAlignment="Left" Height="298" Margin="381,122,0,0" VerticalAlignment="Top" Width="381" />
+        <local:Chart x:Name="ctChart" Width="200" Height="150" Margin="200,200,0,0"/>
 
     </Grid>
 </rtf:ManagedWindow>

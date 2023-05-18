@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using RT.Util.Forms;
 
@@ -16,6 +17,7 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private IFlightController _ctrl;
+    private ChartLine _line1 = new(), _line2 = new();
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -26,6 +28,12 @@ public partial class MainWindow : ManagedWindow
         _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
         _sliderTimer.Tick += _sliderTimer_Tick;
         _sliderTimer.Start();
+        ctChart.Lines.Add(_line1);
+        ctChart.Lines.Add(_line2);
+        _line1.Pen = new Pen(Brushes.Red, 1);
+        _line2.Pen = new Pen(Brushes.Lime, 1);
+        foreach (var line in ctChart.Lines)
+            line.Pen.Freeze();
     }
 
     private void ManagedWindow_SizeLocationChanged(object sender, EventArgs e)
@@ -79,12 +87,50 @@ public partial class MainWindow : ManagedWindow
         setSlider(ctrlRoll, _dcs.LastControl?.RollAxis);
         setSlider(ctrlYaw, _dcs.LastControl?.YawAxis);
         setSlider(ctrlThrottle, _dcs.LastControl?.ThrottleAxis);
+
+        ctChart.InvalidateVisual();
+    }
+
+    private class ChartPopulate : IFlightController
+    {
+        private MainWindow _wnd;
+        private int _skip = 0;
+
+        public ChartPopulate(MainWindow wnd)
+        {
+            _wnd = wnd;
+        }
+
+        public string Status => "";
+
+        public void NewSession(BulkData bulk)
+        {
+        }
+
+        public void ProcessBulkUpdate(BulkData bulk)
+        {
+        }
+
+        public ControlData ProcessFrame(FrameData frame)
+        {
+            if (_skip % 3 == 0)
+            {
+                _wnd._line1.Data.Enqueue(frame.Pitch.ToDeg());
+                _wnd._line2.Data.Enqueue(frame.Bank.ToDeg());
+            }
+            _skip++;
+            return null;
+        }
     }
 
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
-        _dcs.Start(_ctrl = new HornetAutoTrim());
+        _line1.Data.Clear();
+        _dcs.FlightControllers.Clear();
+        _dcs.FlightControllers.Add(new ChartPopulate(this));
+        _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
+        _dcs.Start();
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
     }

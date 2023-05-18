@@ -26,7 +26,7 @@ class DcsController
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
-    public IFlightController FlightController { get; private set; }
+    public List<IFlightController> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
     public ConcurrentBag<string> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
     public byte[] LastReceiveWithWarnings { get; private set; }
@@ -42,11 +42,10 @@ class DcsController
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
 
-    public void Start(IFlightController controller, int udpPort = 9876)
+    public void Start(int udpPort = 9876)
     {
         if (IsRunning)
             throw new InvalidOperationException("Controller is already running.");
-        FlightController = controller ?? throw new ArgumentNullException(nameof(controller));
         Port = udpPort;
         _udp = new UdpClient(Port, AddressFamily.InterNetwork);
         _endpoint = new IPEndPoint(IPAddress.Any, 0);
@@ -70,7 +69,6 @@ class DcsController
         _endpoint = null;
         _cts = null;
         _thread = null;
-        FlightController = null;
         IsRunning = false;
         Status = "Stopped";
         Frames = 0;
@@ -181,7 +179,13 @@ class DcsController
                     if (LastFrame != null && LastFrame.SimTime != parsedFrame.SimTime) // don't do control on the very first frame, also filter out duplicate frames sent on pause / resume
                     {
                         parsedFrame.dT = parsedFrame.SimTime - LastFrame.SimTime;
-                        var control = FlightController.ProcessFrame(parsedFrame);
+                        ControlData control = null;
+                        foreach (var ctl in FlightControllers)
+                        {
+                            var cd = ctl.ProcessFrame(parsedFrame);
+                            if (cd != null)
+                                control = cd; // todo: merge axes
+                        }
                         LastControl = control;
                         if (control != null)
                             Send(control);
@@ -201,12 +205,16 @@ class DcsController
             if (parsedBulk != null)
             {
                 if (_session == parsedBulk.Session)
-                    FlightController.ProcessBulkUpdate(parsedBulk);
+                {
+                    foreach (var ctrl in FlightControllers)
+                        ctrl.ProcessBulkUpdate(parsedBulk);
+                }
                 else
                 {
                     _session = parsedBulk.Session;
                     LastBulk = parsedBulk;
-                    FlightController.NewSession(parsedBulk);
+                    foreach (var ctrl in FlightControllers)
+                        ctrl.NewSession(parsedBulk);
                     Status = "Session started; waiting for data";
                 }
             }
