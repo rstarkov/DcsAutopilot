@@ -30,17 +30,10 @@ class ClimbPerfStraightController : IFlightController
     {
     }
 
+    public StraightClimbTest Test;
     public string Stage { get; private set; } = "prep";
     public double TgtPitch { get; private set; }
-
-    public double FuelAtStart { get; private set; }
-    public double FuelAtDone { get; private set; }
-    public double MaxAltFt { get; private set; } = 0;
-
-    public double TestLevelOffAltFt;
-    public double TestThrottle;
-    public double TestPreClimbSpeedKts;
-    public double TestClimbAngle;
+    private double _startX, _startZ;
 
     public ControlData ProcessFrame(FrameData frame)
     {
@@ -48,10 +41,10 @@ class ClimbPerfStraightController : IFlightController
         var wantedHeading = 0;
         var wantedBank = _hdg2bankPID.Update(angdiff(wantedHeading - frame.Heading), frame.dT);
         var velPitch = Math.Atan2(frame.VelY, Math.Sqrt(frame.VelX * frame.VelX + frame.VelZ * frame.VelZ)).ToDeg();
-        MaxAltFt = Math.Max(MaxAltFt, frame.AltitudeAsl.MetersToFeet());
+        Test.Result.MaxAltitudeFt = Math.Max(Test.Result.MaxAltitudeFt, frame.AltitudeAsl.MetersToFeet());
         var wasStage = Stage;
 
-        _speed2axisPID.MaxControl = TestThrottle;
+        _speed2axisPID.MaxControl = Test.Config.Throttle;
 
         if (Stage == "prep")
         {
@@ -63,7 +56,10 @@ class ClimbPerfStraightController : IFlightController
             if (frame.SimTime >= 20)
             {
                 Stage = "lowaccel";
-                FuelAtStart = frame.FuelInternal;
+                Test.Result.RawFuelAtStartInt = frame.FuelInternal;
+                Test.Result.RawFuelAtStartExt = frame.FuelExternal;
+                _startX = frame.PosX;
+                _startZ = frame.PosZ;
             }
         }
         else if (Stage == "lowaccel")
@@ -71,8 +67,8 @@ class ClimbPerfStraightController : IFlightController
             var wantedAlt = 200;
             var wantedPitch = _alt2pitchPID.Update(wantedAlt.FeetToMeters() - frame.AltitudeAsl, frame.dT);
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - velPitch, frame.dT), frame.SimTime);
-            ctl.ThrottleAxis = _throttle.MoveTo(TestThrottle, frame.SimTime);
-            if (frame.SpeedIndicated >= TestPreClimbSpeedKts.KtsToMs())
+            ctl.ThrottleAxis = _throttle.MoveTo(Test.Config.Throttle, frame.SimTime);
+            if (frame.SpeedIndicated >= Test.Config.PreClimbSpeedKts.KtsToMs())
             {
                 Stage = "pitchup";
                 TgtPitch = 0;
@@ -80,24 +76,27 @@ class ClimbPerfStraightController : IFlightController
         }
         else if (Stage == "pitchup")
         {
-            TgtPitch += ((TestClimbAngle - velPitch) / 3).Clip(0.1, 3) * frame.dT;
+            TgtPitch += ((Test.Config.ClimbAngle - velPitch) / 3).Clip(0.1, 3) * frame.dT;
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(TgtPitch - velPitch, frame.dT), frame.SimTime);
-            ctl.ThrottleAxis = _throttle.MoveTo(TestThrottle, frame.SimTime);
-            if (TgtPitch >= TestClimbAngle)
+            ctl.ThrottleAxis = _throttle.MoveTo(Test.Config.Throttle, frame.SimTime);
+            if (TgtPitch >= Test.Config.ClimbAngle)
             {
                 Stage = "climb";
-                TgtPitch = TestClimbAngle;
+                TgtPitch = Test.Config.ClimbAngle;
             }
         }
         else if (Stage == "climb")
         {
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(TgtPitch - velPitch, frame.dT), frame.SimTime);
-            ctl.ThrottleAxis = _throttle.MoveTo(TestThrottle, frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(Test.Config.Throttle, frame.SimTime);
             //var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * 0.90;
             //ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
-            if (frame.AltitudeAsl.MetersToFeet() < MaxAltFt - 100)
+            if (frame.AltitudeAsl.MetersToFeet() < Test.Result.MaxAltitudeFt - 100)
+            {
                 Stage = "failed";
-            if (frame.AltitudeAsl > TestLevelOffAltFt.FeetToMeters())
+                Test.Result.FailReason = "climb";
+            }
+            if (frame.AltitudeAsl > Test.Config.LevelOffAltFt.FeetToMeters())
                 Stage = "pitchdown";
         }
         else if (Stage == "pitchdown")
@@ -118,12 +117,15 @@ class ClimbPerfStraightController : IFlightController
         {
             var wantedPitch = 0;
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - velPitch, frame.dT), frame.SimTime);
-            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * 0.90 + 5; // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
+            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5; // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
             ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
-            if (frame.SpeedMach >= 0.90) // 289.2 kts IAS @ 35k
+            if (frame.SpeedMach >= Test.Config.FinalTargetMach) // 289.2 kts IAS @ 35k
             {
                 Stage = "done";
-                FuelAtDone = frame.FuelInternal;
+                Test.Result.RawFuelAtEndInt = frame.FuelInternal;
+                Test.Result.RawFuelAtEndExt = frame.FuelExternal;
+                Test.Result.ClimbDuration = frame.SimTime - 20;
+                Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
             }
         }
         else

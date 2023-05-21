@@ -13,17 +13,25 @@ internal class Program_ClimbPerf
     {
         Console.CursorVisible = false;
 
-        DoFlightTest(2.0, 350, 30, loadLeveloffTgt("lvloff.txt"));
+        var config = new StraightClimbTest.TestConfig
+        {
+            FinalTargetAltitudeFt = 35000,
+            FinalTargetMach = 0.90,
+            Throttle = 2.0,
+            PreClimbSpeedKts = 350,
+            ClimbAngle = 30,
+            LevelOffAltFt = loadLeveloffTgt("lvloff.txt"),
+        };
+        DoFlightTest(config);
     }
 
-    static (double maxAltFt, bool completed) DoFlightTest(double throttle, double preClimbSpeedKts, double climbAngleDeg, double leveloffAltFt)
+    static StraightClimbTest DoFlightTest(StraightClimbTest.TestConfig cfg)
     {
         Log.Clear();
         var ctrl = new ClimbPerfStraightController();
-        ctrl.TestThrottle = throttle;
-        ctrl.TestPreClimbSpeedKts = preClimbSpeedKts;
-        ctrl.TestClimbAngle = climbAngleDeg;
-        ctrl.TestLevelOffAltFt = leveloffAltFt;
+        ctrl.Test = new();
+        ctrl.Test.LogName = $"straightclimb--{cfg.FinalTargetAltitudeFt:0}-{cfg.FinalTargetMach:0.00}--{cfg.Throttle:0.0}-{cfg.PreClimbSpeedKts:0}-{cfg.ClimbAngle:0}.csv";
+        ctrl.Test.Config = cfg;
 
         var dcs = new DcsController();
         dcs.FlightControllers.Add(ctrl);
@@ -34,7 +42,7 @@ internal class Program_ClimbPerf
             {
                 Thread.Sleep(100);
                 PrintLine(0, $"{dcs.LastFrame?.SimTime:0.0} - {dcs.Status}");
-                PrintLine(1, $"{ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}; lvloff={ctrl.TestLevelOffAltFt:#,0}; max={ctrl.MaxAltFt:#,0}");
+                PrintLine(1, $"{ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}; lvloff={ctrl.Test.Config.LevelOffAltFt:#,0}; max={ctrl.Test.Result.MaxAltitudeFt:#,0}");
                 if (Log.Count > 0)
                 {
                     var lines = new List<string>();
@@ -42,14 +50,10 @@ internal class Program_ClimbPerf
                         lines.Add(line);
                     File.AppendAllLines("log.csv", lines);
                 }
-                if (ctrl.Status == "done")
+                if (ctrl.Status == "done" || ctrl.Status == "failed")
                 {
-                    File.AppendAllLines("lvloff.txt", new[] { Ut.FormatCsvRow(ctrl.TestLevelOffAltFt, ctrl.MaxAltFt, dcs.LastFrame.Skips, ctrl.FuelAtDone * 10803) });
-                    return (ctrl.MaxAltFt, true);
-                }
-                if (ctrl.Status == "failed")
-                {
-                    return (ctrl.MaxAltFt, false);
+                    File.AppendAllLines("lvloff.txt", new[] { Ut.FormatCsvRow(ctrl.Test.Config.LevelOffAltFt, ctrl.Test.Result.MaxAltitudeFt, dcs.LastFrame.Skips, ctrl.Test.Result.RawFuelAtEndInt * 10803) });
+                    return ctrl.Test;
                 }
             }
         }
@@ -81,5 +85,34 @@ internal class Program_ClimbPerf
     {
         Console.SetCursorPosition(0, row);
         Console.Write(line.PadRight(Console.WindowWidth));
+    }
+}
+
+class StraightClimbTest
+{
+    public string LogName;
+
+    public TestConfig Config = new();
+    public class TestConfig
+    {
+        public double FinalTargetMach;
+        public double FinalTargetAltitudeFt;
+
+        public double Throttle;
+        public double PreClimbSpeedKts;
+        public double ClimbAngle;
+        public double LevelOffAltFt;
+    }
+
+    public TestResult Result = new();
+    public class TestResult
+    {
+        public double MaxAltitudeFt;
+        public double RawFuelAtStartInt, RawFuelAtStartExt, RawFuelAtEndInt, RawFuelAtEndExt;
+        public double FuelUsedLb;
+        public double ClimbDuration;
+        public double ClimbDistance;
+
+        public string FailReason; // or null for success
     }
 }
