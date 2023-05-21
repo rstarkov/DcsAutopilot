@@ -9,7 +9,7 @@ using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-interface IFlightController
+public interface IFlightController
 {
     void NewSession(BulkData bulk);
     ControlData ProcessFrame(FrameData frame); // can return null
@@ -17,7 +17,7 @@ interface IFlightController
     string Status { get; }
 }
 
-class DcsController
+public class DcsController
 {
     private UdpClient _udp;
     private IPEndPoint _endpoint;
@@ -284,14 +284,14 @@ class DcsController
     }
 }
 
-class BulkData
+public class BulkData
 {
     public double Session;
     public bool ExportAllowed;
     public string Aircraft;
 }
 
-class FrameData
+public class FrameData
 {
     public double Session;
     public int Frame, Skips;
@@ -334,7 +334,7 @@ class FrameData
     public double JoyPitch, JoyRoll, JoyYaw;
 }
 
-class ControlData
+public class ControlData
 {
     public double? FrameTimestamp; // for latency reports
     public double? PitchAxis;

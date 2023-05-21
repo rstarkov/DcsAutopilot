@@ -2,7 +2,7 @@
 
 namespace DcsAutopilot;
 
-static class Util
+public static class Util
 {
     public static double ToDeg(this double rad) => rad / Math.PI * 180;
     public static double ToRad(this double deg) => deg / 180.0 * Math.PI;

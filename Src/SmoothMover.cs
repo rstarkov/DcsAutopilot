@@ -3,7 +3,7 @@ using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-class SmoothMoverFilter
+public class SmoothMoverFilter
 {
     private double xv0, xv1, xv2;
     private double yv0, yv1, yv2;
@@ -29,7 +29,7 @@ class SmoothMoverFilter
     }
 }
 
-class SmoothMover
+public class SmoothMover
 {
     private double _prevtime, _prevtgtpos;
     private double _pos;

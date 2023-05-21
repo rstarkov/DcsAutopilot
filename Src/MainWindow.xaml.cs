@@ -22,7 +22,6 @@ public partial class MainWindow : ManagedWindow
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private IFlightController _ctrl;
     public static ChartLine LineR = new(), LineG = new(), LineY = new();
-    public static ConcurrentQueue<string> Log = new();
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -101,14 +100,6 @@ public partial class MainWindow : ManagedWindow
 
         ctChart.InvalidateVisual();
 
-        if (Log.Count > 0)
-        {
-            var lines = new List<string>();
-            while (Log.TryDequeue(out var line))
-                lines.Add(line);
-            File.AppendAllLines("log.csv", lines);
-        }
-
         var tgt = LineY.Data.Count == 0 ? 0 : LineY.Data.Average();
         var intersections = LineY.Data.ConsecutivePairs(false).SelectIndexWhere(p => (p.Item1 < tgt && p.Item2 > tgt) || (p.Item2 < tgt && p.Item2 > tgt)).ToList();
         var times = ctChart.Times.ToList();
@@ -171,8 +162,7 @@ public partial class MainWindow : ManagedWindow
             line.Data.Clear();
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
-        //_dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
-        _dcs.FlightControllers.Add(_ctrl = new HornetClimbPerfController());
+        _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
         _dcs.Start();
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
