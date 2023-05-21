@@ -21,6 +21,9 @@ internal class Program_ClimbPerf
             PreClimbSpeedKts = 350,
             ClimbAngle = 30,
             LevelOffAltFt = loadLeveloffTgt("lvloff.txt"),
+            METotalMassLb = 37737,
+            MEFuelMassIntLb = 10803,
+            MEFuelMassExtLb = 0,
         };
         DoFlightTest(config);
     }
@@ -52,8 +55,10 @@ internal class Program_ClimbPerf
                 }
                 if (ctrl.Status == "done" || ctrl.Status == "failed")
                 {
-                    File.AppendAllLines("lvloff.txt", new[] { Ut.FormatCsvRow(ctrl.Test.Config.LevelOffAltFt, ctrl.Test.Result.MaxAltitudeFt, dcs.LastFrame.Skips, ctrl.Test.Result.RawFuelAtEndInt * 10803) });
-                    return ctrl.Test;
+                    var t = ctrl.Test;
+                    t.Result.FuelUsedLb = (t.Result.RawFuelAtEndInt - t.Result.RawFuelAtStartInt) * t.Config.MEFuelMassIntLb + (t.Result.RawFuelAtEndExt - t.Result.RawFuelAtStartExt) * t.Config.MEFuelMassExtLb;
+                    File.AppendAllLines("lvloff.txt", new[] { Ut.FormatCsvRow(t.Config.LevelOffAltFt, t.Result.MaxAltitudeFt, dcs.LastFrame.Skips, t.Result.RawFuelAtEndInt * 10803) });
+                    return t;
                 }
             }
         }
@@ -102,6 +107,10 @@ class StraightClimbTest
         public double PreClimbSpeedKts;
         public double ClimbAngle;
         public double LevelOffAltFt;
+
+        public double METotalMassLb; // per mission editor
+        public double MEFuelMassIntLb;
+        public double MEFuelMassExtLb;
     }
 
     public TestResult Result = new();
