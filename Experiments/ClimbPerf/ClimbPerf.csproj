@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="RT.Serialization.Xml" Version="2.0.1743" />
     <PackageReference Include="RT.Util.Core" Version="2.0.1743" />
   </ItemGroup>
 

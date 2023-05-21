@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using DcsAutopilot;
+using RT.Serialization;
 using RT.Util;
 using RT.Util.ExtensionMethods;
 
@@ -9,11 +10,14 @@ internal class Program_ClimbPerf
 {
     private static string LogPath;
     public static ConcurrentQueue<string> Log = new();
+    private static List<StraightClimbTest> TestLogs = new();
 
     static void Main(string[] args)
     {
         LogPath = args[0];
         Console.CursorVisible = false;
+        if (File.Exists(Path.Combine(LogPath, "tests.xml")))
+            TestLogs = ClassifyXml.DeserializeFile<List<StraightClimbTest>>(Path.Combine(LogPath, "tests.xml"));
 
         var config = new StraightClimbTest.TestConfig
         {
@@ -22,12 +26,14 @@ internal class Program_ClimbPerf
             Throttle = 2.0,
             PreClimbSpeedKts = 350,
             ClimbAngle = 30,
-            LevelOffAltFt = loadLeveloffTgt("lvloff.txt"),
             METotalMassLb = 37737,
             MEFuelMassIntLb = 10803,
             MEFuelMassExtLb = 0,
         };
-        DoFlightTest(config);
+        config.LevelOffAltFt = CalcLevelOffTarget(config);
+        var testlog = DoFlightTest(config);
+        TestLogs.Add(testlog);
+        ClassifyXml.SerializeToFile(TestLogs, Path.Combine(LogPath, "tests.xml"));
     }
 
     static StraightClimbTest DoFlightTest(StraightClimbTest.TestConfig cfg)
@@ -73,22 +79,25 @@ internal class Program_ClimbPerf
         }
     }
 
-    private static double loadLeveloffTgt(string filename)
+    static double CalcLevelOffTarget(StraightClimbTest.TestConfig cfg)
     {
-        if (!File.Exists(filename))
-            return 33000;
-        var data = Ut.ParseCsvFile(filename).Select(r => (tgt: double.Parse(r[0]), final: double.Parse(r[1]))).ToList();
+        bool sameConfig(StraightClimbTest.TestConfig cfg2) => cfg.FinalTargetAltitudeFt == cfg2.FinalTargetAltitudeFt && cfg.FinalTargetMach == cfg2.FinalTargetMach
+            && cfg.Throttle == cfg2.Throttle && cfg.PreClimbSpeedKts == cfg2.PreClimbSpeedKts && cfg.ClimbAngle == cfg2.ClimbAngle
+            && cfg.METotalMassLb == cfg2.METotalMassLb && cfg.MEFuelMassIntLb == cfg2.MEFuelMassIntLb && cfg.MEFuelMassExtLb == cfg2.MEFuelMassExtLb;
+        var data = TestLogs.Where(t => sameConfig(t.Config)).Select(t => (tgt: t.Config.LevelOffAltFt, final: t.Result.MaxAltitudeFt)).ToList();
+        if (data.Count == 0)
+            return cfg.FinalTargetAltitudeFt - 2000;
         if (data.Count == 1)
-            return data[0].tgt - (data[0].final - 35000) * 1.2;
-        var lo = data.Where(d => d.final < 35000).MaxElementOrDefault(d => d.tgt);
-        var hi = data.Where(d => d.final > 35000).MinElementOrDefault(d => d.tgt);
+            return data[0].tgt - (data[0].final - cfg.FinalTargetAltitudeFt) * 1.2;
+        var lo = data.Where(d => d.final < cfg.FinalTargetAltitudeFt).MaxElementOrDefault(d => d.tgt);
+        var hi = data.Where(d => d.final > cfg.FinalTargetAltitudeFt).MinElementOrDefault(d => d.tgt);
         if (lo == default || hi == default)
         {
-            var nearest = data.OrderBy(d => Math.Abs(d.final - 35000)).Take(2).ToList();
+            var nearest = data.OrderBy(d => Math.Abs(d.final - cfg.FinalTargetAltitudeFt)).Take(2).ToList();
             lo = nearest[0]; // lo doesn't have to actually be less than hi
             hi = nearest[1];
         }
-        return lo.tgt + (35000 - lo.final) / (hi.final - lo.final) * (hi.tgt - lo.tgt);
+        return lo.tgt + (cfg.FinalTargetAltitudeFt - lo.final) / (hi.final - lo.final) * (hi.tgt - lo.tgt);
     }
 
     static void PrintLine(int row, string line)
