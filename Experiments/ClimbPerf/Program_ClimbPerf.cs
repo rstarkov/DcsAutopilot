@@ -7,10 +7,12 @@ namespace ClimbPerf;
 
 internal class Program_ClimbPerf
 {
+    private static string LogPath;
     public static ConcurrentQueue<string> Log = new();
 
     static void Main(string[] args)
     {
+        LogPath = args[0];
         Console.CursorVisible = false;
 
         var config = new StraightClimbTest.TestConfig
@@ -31,10 +33,13 @@ internal class Program_ClimbPerf
     static StraightClimbTest DoFlightTest(StraightClimbTest.TestConfig cfg)
     {
         Log.Clear();
+        var logRand = Random.Shared.NextString(6, "abcdefghijklmnopqrstuvwxyz0123456789");
         var ctrl = new ClimbPerfStraightController();
         ctrl.Test = new();
-        ctrl.Test.LogName = $"straightclimb--{cfg.FinalTargetAltitudeFt:0}-{cfg.FinalTargetMach:0.00}--{cfg.Throttle:0.0}-{cfg.PreClimbSpeedKts:0}-{cfg.ClimbAngle:0}.csv";
+        ctrl.Test.LogName = $"straightclimb--{cfg.FinalTargetAltitudeFt:0}-{cfg.FinalTargetMach:0.00}--{cfg.Throttle:0.0}-{cfg.PreClimbSpeedKts:0}-{cfg.ClimbAngle:0}--{logRand}.csv";
         ctrl.Test.Config = cfg;
+        var logFilename = Path.Combine(LogPath, "csv", ctrl.Test.LogName);
+        Directory.CreateDirectory(Path.GetDirectoryName(logFilename));
 
         var dcs = new DcsController();
         dcs.FlightControllers.Add(ctrl);
@@ -51,7 +56,7 @@ internal class Program_ClimbPerf
                     var lines = new List<string>();
                     while (Log.TryDequeue(out var line))
                         lines.Add(line);
-                    File.AppendAllLines("log.csv", lines);
+                    File.AppendAllLines(logFilename, lines);
                 }
                 if (ctrl.Status == "done" || ctrl.Status == "failed")
                 {
