@@ -1,11 +1,15 @@
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
+using RT.Util;
+using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
 
 namespace DcsAutopilot;
@@ -17,7 +21,8 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private IFlightController _ctrl;
-    private ChartLine _line1 = new(), _line2 = new();
+    public static ChartLine LineR = new(), LineG = new(), LineY = new();
+    public static ConcurrentQueue<string> Log = new();
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -28,10 +33,12 @@ public partial class MainWindow : ManagedWindow
         _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
         _sliderTimer.Tick += _sliderTimer_Tick;
         _sliderTimer.Start();
-        ctChart.Lines.Add(_line1);
-        ctChart.Lines.Add(_line2);
-        _line1.Pen = new Pen(Brushes.Red, 1);
-        _line2.Pen = new Pen(Brushes.Lime, 1);
+        ctChart.Lines.Add(LineR);
+        ctChart.Lines.Add(LineG);
+        ctChart.Lines.Add(LineY);
+        LineR.Pen = new Pen(Brushes.Red, 1);
+        LineG.Pen = new Pen(Brushes.Lime, 1);
+        LineY.Pen = new Pen(Brushes.Yellow, 1);
         foreach (var line in ctChart.Lines)
             line.Pen.Freeze();
         btnStop_Click(null, null);
@@ -93,6 +100,32 @@ public partial class MainWindow : ManagedWindow
         setSlider(ctrlThrottle, _dcs.LastControl?.ThrottleAxis);
 
         ctChart.InvalidateVisual();
+
+        if (Log.Count > 0)
+        {
+            var lines = new List<string>();
+            while (Log.TryDequeue(out var line))
+                lines.Add(line);
+            File.AppendAllLines("log.csv", lines);
+        }
+
+        var tgt = LineY.Data.Count == 0 ? 0 : LineY.Data.Average();
+        var intersections = LineY.Data.ConsecutivePairs(false).SelectIndexWhere(p => (p.Item1 < tgt && p.Item2 > tgt) || (p.Item2 < tgt && p.Item2 > tgt)).ToList();
+        var times = ctChart.Times.ToList();
+        var periods = intersections.Select(i => times[i]).SelectConsecutivePairs(false, (p1, p2) => p2 - p1).Order().ToList();
+        var period = periods.Count >= 3 ? periods[periods.Count / 2] : -1;
+        if (period != -1)
+            Title = period.ToString();
+        //var enable = false;
+        //if (enable)
+        //{
+        //    foreach (var pt in LineG.Data.Zip(LineY.Data, LineR.Data))
+        //        File.AppendAllLines("lines.csv", new[] { Ut.FormatCsvRow(pt.First, pt.Second, pt.Third) });
+        //}
+        if (_ctrl?.Status.Contains("pitchdown") == true)
+            Background = Brushes.Red;
+        else if (_ctrl?.Status.Contains("done") == true)
+            Background = Brushes.Blue;
     }
 
     private class ChartPopulate : IFlightController
@@ -119,8 +152,12 @@ public partial class MainWindow : ManagedWindow
         {
             if (_skip % 3 == 0)
             {
-                _wnd._line1.Data.Enqueue(frame.Pitch.ToDeg());
-                _wnd._line2.Data.Enqueue(frame.Bank.ToDeg());
+                _wnd.ctChart.Times.Enqueue(frame.SimTime);
+                LineY.Data.Enqueue(Math.Atan2(frame.VelY, Math.Sqrt(frame.VelX * frame.VelX + frame.VelZ * frame.VelZ)));
+                //LineY.Data.Enqueue(frame.AccY);
+                //LineY.Data.Enqueue(frame.Pitch);
+                LineR.Data.Enqueue(_wnd._dcs.LastControl?.PitchAxis ?? 0);
+                //LineR.Data.Enqueue(frame.Bank);
             }
             _skip++;
             return null;
@@ -134,7 +171,8 @@ public partial class MainWindow : ManagedWindow
             line.Data.Clear();
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
-        _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
+        //_dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
+        _dcs.FlightControllers.Add(_ctrl = new HornetClimbPerfController());
         _dcs.Start();
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;

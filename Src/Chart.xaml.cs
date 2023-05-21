@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -15,6 +16,7 @@ public class ChartLine
 public partial class Chart : UserControl
 {
     public ConcurrentBag<ChartLine> Lines = new();
+    public ConcurrentQueue<double> Times = new();
 
     public Chart()
     {
@@ -25,12 +27,12 @@ public partial class Chart : UserControl
     protected override void OnRender(DrawingContext dc)
     {
         dc.DrawRectangle(Brushes.Black, null, new Rect(0, 0, ActualWidth, ActualHeight));
+        var xscale = 1 / 3.0;
         foreach (var line in Lines)
         {
             if (line.Data.Count < 2)
                 continue;
             Point? ptPrev = null;
-            var xscale = 1 / 3.0;
             while (line.Data.Count > ActualWidth / xscale)
                 line.Data.TryDequeue(out _);
             var mm = line.Data.MinMaxSumCount();
@@ -48,5 +50,7 @@ public partial class Chart : UserControl
             }
             //dc.DrawGeometry(null, line.Pen, geometry); // far far slower than the lines
         }
+        while (Times.Count > ActualWidth / xscale)
+            Times.TryDequeue(out _);
     }
 }
