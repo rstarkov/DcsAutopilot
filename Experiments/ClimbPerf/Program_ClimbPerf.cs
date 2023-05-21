@@ -23,6 +23,7 @@ internal class Program_ClimbPerf
         ctrl.TestThrottle = throttle;
         ctrl.TestPreClimbSpeedKts = preClimbSpeedKts;
         ctrl.TestClimbAngle = climbAngleDeg;
+        ctrl.TestLevelOffAltFt = leveloffAltFt;
 
         var dcs = new DcsController();
         dcs.FlightControllers.Add(ctrl);
