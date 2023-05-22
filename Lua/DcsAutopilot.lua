@@ -153,6 +153,9 @@ function SendBulkData()
         dt[#dt+1] = sdata.Name
         --LoGetPayloadInfo()
     end
+    local ver = LoGetVersionInfo()
+    dt[#dt+1] = "ver"
+    dt[#dt+1] = string.format("%d.%d.%d.%d", ver.ProductVersion[1], ver.ProductVersion[2], ver.ProductVersion[3], ver.ProductVersion[4])
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))
     LastBulkData = socket.gettime()

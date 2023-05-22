@@ -252,6 +252,8 @@ class StraightClimbTest
 {
     public DateTime StartedUtc;
     public string LogName;
+    public string DcsVersion;
+    public int Skips;
 
     public TestConfig Config = new();
     public record class TestConfig

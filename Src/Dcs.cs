@@ -156,6 +156,7 @@ public class DcsController
                             case "sess": bd.Session = double.Parse(data[i++]); break;
                             case "exp": bd.ExportAllowed = data[i++] == "true"; break;
                             case "aircraft": bd.Aircraft = data[i++]; break;
+                            case "ver": bd.DcsVersion = data[i++]; break;
                             default:
                                 Warnings.Add($"Unrecognized bulk data entry: \"{data[i - 1]}\"");
                                 LastReceiveWithWarnings = bytes;
@@ -289,6 +290,7 @@ public class BulkData
     public double Session;
     public bool ExportAllowed;
     public string Aircraft;
+    public string DcsVersion;
 }
 
 public class FrameData
