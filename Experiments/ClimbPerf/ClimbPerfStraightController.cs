@@ -34,7 +34,7 @@ class ClimbPerfStraightController : IFlightController
     public StraightClimbTest Test;
     public string Stage { get; private set; } = "prep";
     public double TgtPitch { get; private set; }
-    private double _startX, _startZ;
+    private double _startX, _startZ, _minVelPitch;
 
     public ControlData ProcessFrame(FrameData frame)
     {
@@ -119,15 +119,17 @@ class ClimbPerfStraightController : IFlightController
             {
                 Stage = "highaccel";
                 _velpitch2axisSmoothPID.ErrorIntegral = 0;
+                _minVelPitch = frame.VelPitch;
             }
         }
         else if (Stage == "highaccel")
         {
+            _minVelPitch = Math.Min(_minVelPitch, frame.VelPitch);
             var wantedPitch = 0;
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - frame.VelPitch, frame.dT), frame.SimTime);
             var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
             ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
-            if (frame.SpeedMach >= Test.Config.FinalTargetMach) // 289.2 kts IAS @ 35k
+            if (frame.SpeedMach >= Test.Config.FinalTargetMach && _minVelPitch < 0.1) // this phase starts at 4 deg vel.pitch; we don't want to consider the test ended if the aircraft never properly levelled off (as we could then achieve better numbers with a slightly earlier level-off). So require the vel pitch to drop to essentially zero (but don't enforce the exact pitch at end time as we can't control it with absolute precision)
                 Stage = "done";
             if (frame.AltitudeAsl.MetersToFeet() < Test.Result.MaxAltitudeFt - 500)
             {
