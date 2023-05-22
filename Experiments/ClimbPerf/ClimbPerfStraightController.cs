@@ -40,8 +40,15 @@ class ClimbPerfStraightController : IFlightController
         var ctl = new ControlData();
         var wantedHeading = 0;
         var wantedBank = _hdg2bankPID.Update(angdiff(wantedHeading - frame.Heading), frame.dT);
-        Test.Result.MaxAltitudeFt = Math.Max(Test.Result.MaxAltitudeFt, frame.AltitudeAsl.MetersToFeet());
         var wasStage = Stage;
+        if (Stage != "done" && Stage != "failed" && Stage != "prep")
+        {
+            Test.Result.MaxAltitudeFt = Math.Max(Test.Result.MaxAltitudeFt, frame.AltitudeAsl.MetersToFeet());
+            Test.Result.RawFuelAtEndInt = frame.FuelInternal;
+            Test.Result.RawFuelAtEndExt = frame.FuelExternal;
+            Test.Result.ClimbDuration = frame.SimTime - 20;
+            Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
+        }
 
         _speed2axisPID.MaxControl = Test.Config.Throttle;
 
@@ -119,13 +126,7 @@ class ClimbPerfStraightController : IFlightController
             var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
             ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
             if (frame.SpeedMach >= Test.Config.FinalTargetMach) // 289.2 kts IAS @ 35k
-            {
                 Stage = "done";
-                Test.Result.RawFuelAtEndInt = frame.FuelInternal;
-                Test.Result.RawFuelAtEndExt = frame.FuelExternal;
-                Test.Result.ClimbDuration = frame.SimTime - 20;
-                Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
-            }
             if (frame.AltitudeAsl.MetersToFeet() < Test.Result.MaxAltitudeFt - 500)
             {
                 Stage = "failed";
