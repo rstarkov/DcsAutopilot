@@ -1,0 +1,2 @@
+﻿FlashWindow
+GetConsoleWindow

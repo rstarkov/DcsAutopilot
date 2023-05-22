@@ -96,7 +96,7 @@ class ClimbPerfStraightController : IFlightController
                 Stage = "failed";
                 Test.Result.FailReason = "climb";
             }
-            if (frame.AltitudeAsl > Test.Config.LevelOffAltFt.FeetToMeters())
+            if (frame.AltitudeAsl > Test.LevelOffAltFt.FeetToMeters())
                 Stage = "pitchdown";
         }
         else if (Stage == "pitchdown")
@@ -104,8 +104,8 @@ class ClimbPerfStraightController : IFlightController
             //_tgtPitch -= 1.5 * frame.dT;
             //ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(_tgtPitch - velPitch, frame.dT), frame.SimTime);
             ctl.PitchAxis = _g2pitchPID.Update(0 - frame.AccY, frame.dT);
-            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * 0.90 + 5; // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
             wantedBank = 0;
             if (velPitch <= 4)
             {
@@ -117,8 +117,8 @@ class ClimbPerfStraightController : IFlightController
         {
             var wantedPitch = 0;
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - velPitch, frame.dT), frame.SimTime);
-            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5; // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
             if (frame.SpeedMach >= Test.Config.FinalTargetMach) // 289.2 kts IAS @ 35k
             {
                 Stage = "done";
@@ -126,6 +126,11 @@ class ClimbPerfStraightController : IFlightController
                 Test.Result.RawFuelAtEndExt = frame.FuelExternal;
                 Test.Result.ClimbDuration = frame.SimTime - 20;
                 Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
+            }
+            if (frame.AltitudeAsl.MetersToFeet() < Test.Result.MaxAltitudeFt - 500)
+            {
+                Stage = "failed";
+                Test.Result.FailReason = "drop"; // eg because it just barely made the level-off alt at very slow speed
             }
         }
         else
