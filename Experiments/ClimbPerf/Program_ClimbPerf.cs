@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using DcsAutopilot;
 using RT.Serialization;
 using RT.Util;
 using RT.Util.ExtensionMethods;
+using Windows.Win32;
+using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace ClimbPerf;
 
@@ -19,6 +22,12 @@ internal class Program_ClimbPerf
         if (File.Exists(Path.Combine(LogPath, "tests.xml")))
             TestLogs = ClassifyXml.DeserializeFile<List<StraightClimbTest>>(Path.Combine(LogPath, "tests.xml"));
         GenResults();
+
+        Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
+        Console.WriteLine($"Press ENTER when ready, then switch to DCS within 5 seconds.");
+        Console.ReadLine();
+        Console.WriteLine($"SWITCH TO DCS NOW!");
+        Thread.Sleep(5000);
 
         var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450 }, (throttle, speed) => (throttle, speed)).ToList();
         foreach (var scenario in scenarios)
@@ -75,17 +84,42 @@ internal class Program_ClimbPerf
                     Console.WriteLine($"throttle={t.Config.Throttle:0.0} speed={t.Config.PreClimbSpeedKts:0} angle={t.Config.ClimbAngle:0} lvloff={t.LevelOffAltFt:0} --- alt={t.Result.MaxAltitudeFt:0} fuel={t.Result.FuelUsedLb:0} dur={t.Result.ClimbDuration:0} dist={t.Result.ClimbDistance:#,0} {t.Result.FailReason}");
 
                 // Run the flight test!
+                DcsRestartMission(); // this returns right after the mission starts loading, and we then have a few seconds to initialise and be ready for the first frame's UDP data
                 var testlog = DoFlightTest(config, levelOffAltFt);
                 TestLogs.Add(testlog);
                 ClassifyXml.SerializeToFile(TestLogs, Path.Combine(LogPath, "tests.xml"));
                 GenResults();
-                PInvoke.FlashWindow(PInvoke.GetConsoleWindow(), true);
-                Console.WriteLine();
-                Console.WriteLine($"TEST ENDED. PRESS ENTER ONCE READY FOR THE NEXT ONE.");
-                Console.ReadLine();
-                Console.Clear();
             }
         }
+    }
+
+    private static void DcsRestartMission()
+    {
+        // Restart mission
+        SendScancode(42, true); // LShift
+        Thread.Sleep(100);
+        SendScancode(19, true); // R
+        Thread.Sleep(100);
+        SendScancode(19, false); // R
+        Thread.Sleep(100);
+        SendScancode(42, false); // LShift
+        // Wait for restart to begin
+        Thread.Sleep(1000);
+        // Post Escape and call it a day; DCS buffers that and processes it the moment the mission is ready.
+        SendScancode(1, true); // Esc
+        Thread.Sleep(100);
+        SendScancode(1, false); // Esc
+    }
+
+    static void SendScancode(ushort scan, bool down)
+    {
+        // Sending key combos like Shift+R doesn't work if it's one big array of down/up events. We must make multiple calls to SendInput.
+        var inputs = new INPUT[1];
+        inputs[0].type = INPUT_TYPE.INPUT_KEYBOARD;
+        inputs[0].Anonymous.ki.wVk = 0;
+        inputs[0].Anonymous.ki.wScan = scan;
+        inputs[0].Anonymous.ki.dwFlags = down ? 0 : KEYBD_EVENT_FLAGS.KEYEVENTF_KEYUP;
+        PInvoke.SendInput(inputs, Marshal.SizeOf<INPUT>());
     }
 
     static void GenResults()
