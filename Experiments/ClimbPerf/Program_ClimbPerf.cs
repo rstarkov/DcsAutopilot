@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using DcsAutopilot;
 using RT.Serialization;
 using RT.Util;
+using RT.Util.Consoles;
 using RT.Util.ExtensionMethods;
 using Windows.Win32;
 using Windows.Win32.UI.Input.KeyboardAndMouse;
@@ -14,6 +15,7 @@ internal class Program_ClimbPerf
     private static string LogPath;
     public static ConcurrentQueue<string> Log = new();
     private static List<StraightClimbTest> TestLogs = new();
+    public static double FinalAltitudeRange = 10; // can edit; reducing will automatically retest only those scenarios that lie outside this range
 
     static void Main(string[] args)
     {
@@ -79,9 +81,18 @@ internal class Program_ClimbPerf
                 }
 
                 // Print a few recent tests
-                Console.SetCursorPosition(0, 10);
-                foreach (var t in TestLogs.TakeLast(5))
-                    Console.WriteLine($"throttle={t.Config.Throttle:0.0} speed={t.Config.PreClimbSpeedKts:0} angle={t.Config.ClimbAngle:0} lvloff={t.LevelOffAltFt:0} --- alt={t.Result.MaxAltitudeFt:0} fuel={t.Result.FuelUsedLb:0} dur={t.Result.ClimbDuration:0} dist={t.Result.ClimbDistance:#,0} {t.Result.FailReason}");
+                Console.Clear();
+                Console.WriteLine($"Straight line climb to M{config.FinalTargetMach:0.0} @ {config.FinalTargetAltitudeFt:0}");
+                Console.WriteLine();
+                foreach (var (t, i) in TestLogs.Select((t, i) => (t, i)).TakeLast(9))
+                {
+                    var str = $"#{i + 1}: throttle={t.Config.Throttle:0.0} speed={t.Config.PreClimbSpeedKts:0} angle={t.Config.ClimbAngle,2:0} lvloff={t.LevelOffAltFt:0} --- ".Color(ConsoleColor.Gray);
+                    if (t.Result.FailReason == null)
+                        str += $"alt=" + $"{t.Result.MaxAltitudeFt:0}".Color(Math.Abs(t.Result.MaxAltitudeFt - t.Config.FinalTargetAltitudeFt) <= FinalAltitudeRange ? ConsoleColor.Green : ConsoleColor.White) + $" fuel={t.Result.FuelUsedLb:0} dur={t.Result.ClimbDuration:0} dist={t.Result.ClimbDistance:#,0}";
+                    else
+                        str += $"failed because: {t.Result.FailReason}".Color(ConsoleColor.Red);
+                    ConsoleUtil.WriteLine(str);
+                }
 
                 // Run the flight test!
                 DcsRestartMission(); // this returns right after the mission starts loading, and we then have a few seconds to initialise and be ready for the first frame's UDP data
@@ -171,10 +182,10 @@ internal class Program_ClimbPerf
             while (true)
             {
                 Thread.Sleep(100);
-                PrintLine(0, $"Straight line climb to {cfg.FinalTargetAltitudeFt:0} @ M{cfg.FinalTargetMach:0.0}");
-                PrintLine(1, $"Testing throttle={cfg.Throttle:0.0}, speed={cfg.PreClimbSpeedKts:0}, angle={cfg.ClimbAngle:0}, lvloff={levelOffAltFt:0}");
-                PrintLine(3, $"{dcs.LastFrame?.SimTime ?? 0:0.0} - {dcs.Status}");
-                PrintLine(4, $"{ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}; lvloff={ctrl.Test.LevelOffAltFt:#,0}; max={ctrl.Test.Result.MaxAltitudeFt:#,0}");
+                PrintLine(11, $"#{TestLogs.Count + 1}: throttle={cfg.Throttle:0.0} speed={cfg.PreClimbSpeedKts:0} angle={cfg.ClimbAngle,2:0} lvloff={levelOffAltFt:0} --- alt=" + $"{ctrl.Test.Result.MaxAltitudeFt:0}".Color(ConsoleColor.Cyan) + $" fuel={ctrl.Test.Result.FuelUsedLb:0} dur={ctrl.Test.Result.ClimbDuration:0} dist={ctrl.Test.Result.ClimbDistance:#,0}");
+
+                PrintLine(13, $"{dcs.LastFrame?.SimTime ?? 0:0.0} - {dcs.Status}");
+                PrintLine(14, $"{ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}; lvloff={ctrl.Test.LevelOffAltFt:#,0}; max={ctrl.Test.Result.MaxAltitudeFt:#,0}");
                 if (Log.Count > 0)
                 {
                     var lines = new List<string>();
@@ -207,10 +218,10 @@ internal class Program_ClimbPerf
         && cfg1.Throttle == cfg2.Throttle && cfg1.PreClimbSpeedKts == cfg2.PreClimbSpeedKts
         && cfg1.METotalMassLb == cfg2.METotalMassLb && cfg1.MEFuelMassIntLb == cfg2.MEFuelMassIntLb && cfg1.MEFuelMassExtLb == cfg2.MEFuelMassExtLb;
 
-    static void PrintLine(int row, string line)
+    static void PrintLine(int row, ConsoleColoredString line)
     {
         Console.SetCursorPosition(0, row);
-        Console.Write(line.PadRight(Console.WindowWidth));
+        ConsoleUtil.Write(line.PadRight(Console.WindowWidth));
     }
 }
 
@@ -270,7 +281,7 @@ class StraightClimbTestGroup
             throw new InvalidOperationException();
         var cfg = tests.First().Config;
         var nearest = tests.Where(t => t.Result.FailReason == null).MinElementOrDefault(t => Math.Abs(t.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt));
-        if (nearest != null && Math.Abs(nearest.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt) < 10)
+        if (nearest != null && Math.Abs(nearest.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt) <= Program_ClimbPerf.FinalAltitudeRange)
         {
             IsCompleted = true;
             FuelUsedLb = nearest.Result.FuelUsedLb;
