@@ -321,6 +321,8 @@ public class FrameData
     public double Bank;
     /// <summary>Compass heading in degrees. This is the true heading (not magnetic) and is not affected by the FCS setting. 0..360.</summary>
     public double Heading;
+    /// <summary>Velocity pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up). This is where the velocity vector points.</summary>
+    public double VelPitch => Math.Atan2(VelY, Math.Sqrt(VelX * VelX + VelZ * VelZ)).ToDeg();
     /// <summary>Angular pitch rate in degrees/second. Positive is pitching up. Relative to the wing axis: this is not the same as the rate of change of <see cref="Pitch"/> over time; it's what a gyro would read. A 90 deg bank turn would have a large pitch rate even as the horizon-relative <see cref="Pitch"/> stays constant.</summary>
     public double GyroPitch;
     /// <summary>Angular roll rate in degrees/second. Positive is roll to the right. Relative to the boresight axis: this is not the same as the rate of change of <see cref="Bank"/> over time; it's what a gyro would read.</summary>
