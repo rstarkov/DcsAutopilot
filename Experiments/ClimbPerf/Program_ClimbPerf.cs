@@ -179,13 +179,32 @@ internal class Program_ClimbPerf
         dcs.Start();
         try
         {
+            var prevTime = DateTime.UtcNow;
+            var prevFrames = 0;
             while (true)
             {
+                var overhead = DateTime.UtcNow - prevTime;
                 Thread.Sleep(100);
+                var lf = dcs.LastFrame;
+                var lc = dcs.LastControl;
+                var fps = ((lf?.Frame ?? 0) - prevFrames) / (DateTime.UtcNow - prevTime).TotalSeconds;
+                prevTime = DateTime.UtcNow;
+                prevFrames = lf?.Frame ?? 0;
+
                 PrintLine(11, $"#{TestLogs.Count + 1}: throttle={cfg.Throttle:0.0} speed={cfg.PreClimbSpeedKts:0} angle={cfg.ClimbAngle,2:0} lvloff={levelOffAltFt:0} --- alt=" + $"{ctrl.Test.Result.MaxAltitudeFt:0}".Color(ConsoleColor.Cyan) + $" fuel={ctrl.Test.Result.FuelUsedLb:0} dur={ctrl.Test.Result.ClimbDuration:0} dist={ctrl.Test.Result.ClimbDistance:#,0}");
 
-                PrintLine(13, $"{dcs.LastFrame?.SimTime ?? 0:0.0} - {dcs.Status}");
-                PrintLine(14, $"{ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}; lvloff={ctrl.Test.LevelOffAltFt:#,0}; max={ctrl.Test.Result.MaxAltitudeFt:#,0}");
+                PrintLine(14, $"SIM:  {lf?.SimTime ?? 0:0.0}s --- {dcs.Status} --- {overhead.TotalMilliseconds:0}ms overhead --- {fps:0} FPS --- {lf?.Skips ?? 0} skips");
+                PrintLine(15, $"CTRL: stage={ctrl.Stage}; tgtpitch={ctrl.TgtPitch:0.0}");
+
+                ConsoleColoredString fmt(string num, string suff, int len, ConsoleColor numClr = ConsoleColor.White) => (num.Color(numClr) + suff.Color(ConsoleColor.DarkGray)).PadRight(len + suff.Length);
+                PrintLine(18, "    Altitude         Speed           Pitch             Bank".Color(ConsoleColor.DarkGray));
+                PrintLine(19, "    " + fmt($"{lf?.AltitudeAsl.MetersToFeet() ?? 0:#,0}", " ft", 6) + "        " + fmt($"{lf?.SpeedIndicated.MsToKts() ?? 0:0.00}", " IAS", 6) + "      " + fmt($"{lf?.Pitch ?? 0:0.00}", "° bore", 6) + "      " + fmt($"{lf?.Bank ?? 0:0.00}", "°", 5));
+                PrintLine(20, "    " + fmt($"{lf?.SpeedVertical.MetersToFeet() ?? 0:#,0}", " ft/min", 6) + "    " + fmt($"{lf?.SpeedMach ?? 0:0.0000}", " Mach", 6) + "     " + fmt($"{lf?.VelPitch ?? 0:0.00}", "° vector", 5, ConsoleColor.Yellow) + "     " + fmt($"{lf?.Heading ?? 0:0.00}", "° hdg", 6));
+
+                PrintLine(22, "    G-force          Throttle        Elevator          Aileron".Color(ConsoleColor.DarkGray));
+                PrintLine(23, "    " + fmt($"{lf?.AccY ?? 0:0.00}", " vert", 5) + "       " + fmt($"{lc?.ThrottleAxis ?? 0:0.0000}", "", 6) + "          " + fmt($"{lc?.PitchAxis ?? 0:0.0000}", "", 7) + "            " + fmt($"{lc?.RollAxis ?? 0:0.0000}", "", 6));
+                PrintLine(24, "    " + fmt($"{lf?.AccX ?? 0:0.00}", " horz", 5));
+
                 if (Log.Count > 0)
                 {
                     var lines = new List<string>();
