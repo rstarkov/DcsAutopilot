@@ -17,6 +17,10 @@ internal class Program_ClimbPerf
     private static List<StraightClimbTest> TestLogs = new();
     public static double FinalAltitudeRange = 10; // can edit; reducing will automatically retest only those scenarios that lie outside this range
 
+    // this code is restartable; a test run can be interrupted at any point and resumed with no penalty
+    // test ranges, scenarios, and acceptance criteria can be adjusted in the middle of a run; any reusable old test results will be reused automatically,
+    // and only the minimum necessary additional tests will be executed
+
     static void Main(string[] args)
     {
         LogPath = args[0];
@@ -25,6 +29,7 @@ internal class Program_ClimbPerf
             TestLogs = ClassifyXml.DeserializeFile<List<StraightClimbTest>>(Path.Combine(LogPath, "tests.xml"));
         GenResults();
 
+        // later: first decide if we even need to run any tests
         Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
         Console.WriteLine($"Press ENTER when ready, then switch to DCS within 5 seconds.");
         Console.ReadLine();
@@ -36,6 +41,8 @@ internal class Program_ClimbPerf
         {
             while (true)
             {
+                // The aircraft and the weather are not recorded; different aircraft / weather conditions must be tested with different target folders. This includes QNH (which impacts performance)
+                // The Mission Editor mass parameters MUST be entered (DCS won't tell us what these are, but ME can show them).
                 var config = new StraightClimbTest.TestConfig // must be a new instance every time!
                 {
                     FinalTargetAltitudeFt = 35000,
