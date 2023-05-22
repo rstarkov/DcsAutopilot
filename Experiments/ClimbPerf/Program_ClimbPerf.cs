@@ -36,7 +36,7 @@ internal class Program_ClimbPerf
         Console.WriteLine($"SWITCH TO DCS NOW!");
         Thread.Sleep(5000);
 
-        var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450 }, (throttle, speed) => (throttle, speed)).ToList();
+        var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450, 500 }, (throttle, speed) => (throttle, speed)).ToList();
         foreach (var scenario in scenarios)
         {
             while (true)

@@ -35,6 +35,7 @@ class ClimbPerfStraightController : IFlightController
     public string Stage { get; private set; } = "prep";
     public double TgtPitch { get; private set; }
     private double _startX, _startZ, _minVelPitch;
+    private Queue<(double time, double mach)> _speedHist = new();
 
     public ControlData ProcessFrame(FrameData frame)
     {
@@ -135,6 +136,15 @@ class ClimbPerfStraightController : IFlightController
             {
                 Stage = "failed";
                 Test.Result.FailReason = "drop"; // eg because it just barely made the level-off alt at very slow speed
+            }
+            // detect failure to accelerate: if we've got 60 sec of speed data and the change over 60 sec is less than 10% of the remaining speed difference
+            _speedHist.Enqueue((frame.SimTime, frame.SpeedMach));
+            while (_speedHist.Peek().time < frame.SimTime - 61)
+                _speedHist.Dequeue();
+            if ((frame.SimTime - _speedHist.Peek().time > 59) && (frame.SpeedMach - _speedHist.Peek().mach < 0.1 * (Test.Config.FinalTargetMach - frame.SpeedMach)))
+            {
+                Stage = "failed";
+                Test.Result.FailReason = "finalaccel";
             }
         }
         else
