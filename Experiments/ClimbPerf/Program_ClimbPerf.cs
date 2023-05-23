@@ -32,14 +32,6 @@ internal class Program_ClimbPerf
         GenResults();
         DeleteUnusedLogs();
 
-        // later: first decide if we even need to run any tests
-        Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
-        Console.WriteLine($"Press ENTER when ready, then switch to DCS within 5 seconds.");
-        Console.ReadLine();
-        Console.WriteLine($"SWITCH TO DCS NOW!");
-        Thread.Sleep(5000);
-        _dcsWindow = PInvoke.GetForegroundWindow();
-
         var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450, 500 }, (throttle, speed) => (throttle, speed)).ToList();
         foreach (var scenario in scenarios)
         {
@@ -114,6 +106,9 @@ internal class Program_ClimbPerf
                     // later: we could actually interpolate based on nearby tests
                 }
 
+                // Ready for a test - first call to this prompts the user to focus DCS
+                DcsFindWindow();
+
                 // Print a few recent tests
                 Console.Clear();
                 Console.WriteLine($"Straight line climb to M{config.FinalTargetMach:0.0} @ {config.FinalTargetAltitudeFt:0}");
@@ -135,6 +130,19 @@ internal class Program_ClimbPerf
                 ClassifyXml.SerializeToFile(TestLogs, Path.Combine(LogPath, "tests.xml"));
                 GenResults();
             }
+        }
+    }
+
+    private static void DcsFindWindow()
+    {
+        if (_dcsWindow == default)
+        {
+            Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
+            Console.WriteLine($"Press ENTER when ready, then switch to DCS within 5 seconds.");
+            Console.ReadLine();
+            Console.WriteLine($"SWITCH TO DCS NOW!");
+            Thread.Sleep(5000);
+            _dcsWindow = PInvoke.GetForegroundWindow();
         }
     }
 
