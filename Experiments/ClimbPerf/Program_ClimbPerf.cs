@@ -6,6 +6,7 @@ using RT.Util;
 using RT.Util.Consoles;
 using RT.Util.ExtensionMethods;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace ClimbPerf;
@@ -16,6 +17,7 @@ internal class Program_ClimbPerf
     public static ConcurrentQueue<string> Log = new();
     private static List<StraightClimbTest> TestLogs = new();
     public static double FinalAltitudeRange = 10; // can edit; reducing will automatically retest only those scenarios that lie outside this range
+    private static HWND _dcsWindow;
 
     // this code is restartable; a test run can be interrupted at any point and resumed with no penalty
     // test ranges, scenarios, and acceptance criteria can be adjusted in the middle of a run; any reusable old test results will be reused automatically,
@@ -35,6 +37,7 @@ internal class Program_ClimbPerf
         Console.ReadLine();
         Console.WriteLine($"SWITCH TO DCS NOW!");
         Thread.Sleep(5000);
+        _dcsWindow = PInvoke.GetForegroundWindow();
 
         var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450, 500 }, (throttle, speed) => (throttle, speed)).ToList();
         foreach (var scenario in scenarios)
@@ -113,6 +116,13 @@ internal class Program_ClimbPerf
 
     private static void DcsRestartMission()
     {
+        // Ensure DCS has focus
+        while (PInvoke.GetForegroundWindow() != _dcsWindow)
+        {
+            Console.WriteLine($"Focusing DCS...");
+            PInvoke.SetForegroundWindow(_dcsWindow);
+            Thread.Sleep(1000);
+        }
         // Restart mission
         SendScancode(42, true); // LShift
         Thread.Sleep(100);
