@@ -82,7 +82,7 @@ internal class Program_ClimbPerf
                         double subdivAngle(double ang)
                         {
                             var doneLo = byAngle.Keys.Where(a => a < ang).MaxOrDefault(ang);
-                            var doneHi = byAngle.Keys.Where(a => a > ang).MinOrDefault(ang);
+                            var doneHi = byAngle.Keys.Where(a => a > ang && a < lowestFailed).MinOrDefault(ang);
                             var nextLo = Math.Ceiling((ang + doneLo) / 2);
                             var nextHi = Math.Floor((doneHi + ang) / 2);
                             if (nextHi - ang > ang - nextLo)
