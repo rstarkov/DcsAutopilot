@@ -30,6 +30,7 @@ internal class Program_ClimbPerf
         if (File.Exists(Path.Combine(LogPath, "tests.xml")))
             TestLogs = ClassifyXml.DeserializeFile<List<StraightClimbTest>>(Path.Combine(LogPath, "tests.xml"));
         GenResults();
+        DeleteUnusedLogs();
 
         // later: first decide if we even need to run any tests
         Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
@@ -262,6 +263,27 @@ internal class Program_ClimbPerf
     {
         Console.SetCursorPosition(0, row);
         ConsoleUtil.Write(line.PadRight(Console.WindowWidth));
+    }
+
+    private static void DeleteUnusedLogs()
+    {
+        var logFiles = new DirectoryInfo(Path.Combine(LogPath, "csv")).GetFiles("*.csv");
+        var unlinkedFiles = logFiles.Where(f => !TestLogs.Any(t => t.LogName == f.Name)).ToArray();
+        if (unlinkedFiles.Length == 0)
+            return;
+        foreach (var f in unlinkedFiles)
+            Console.WriteLine(f.Name);
+        Console.WriteLine();
+        Console.WriteLine($"Found {unlinkedFiles.Length} unused log files (above) out of {logFiles.Length} total files. Press Y to delete them now.");
+        bool delete = Console.ReadKey().Key == ConsoleKey.Y;
+        Console.WriteLine();
+        if (delete)
+        {
+            foreach (var f in unlinkedFiles)
+                f.Delete();
+            Console.WriteLine("Deleted.");
+        }
+        Console.WriteLine();
     }
 }
 
