@@ -73,17 +73,40 @@ internal class Program_ClimbPerf
                 {
                     // Pick a new climb angle to test. Every angle is either complete or failed (there could be none)
                     // First sweep with 8 degree steps until failure
-                    var lowestFailed = byAngle.Values.Where(g => g.IsFailed).MinElementOrDefault(g => g.Angle)?.Angle ?? 99;
+                    var lowestFailed = byAngle.Values.Where(g => g.IsFailed).MinOrDefault(g => g.Angle, 99);
                     var sweep = Enumerable.Range(1, 99).Where(a => a % 8 == 0 && a < lowestFailed);
-                    var untestedSweep = sweep.FirstOrDefault(a => !byAngle.ContainsKey(a));
-                    if (untestedSweep != default)
-                        config.ClimbAngle = untestedSweep;
-                    else
+                    config.ClimbAngle = sweep.FirstOrDefault(a => !byAngle.ContainsKey(a));
+                    if (config.ClimbAngle == default)
                     {
-                        // TODO: then subdivide every range by 2 if it looks like it might contain the optimum
-                        // what if the optimum is right near the fail limit or at 8?
-                        // Otherwise we have nothing left to test for this scenario!
-                        break;
+                        // The sweep is done. Next we repeatedly subdivide the ranges on both sides of the optimum until there's a data point 1 degree either side of the optimum
+                        double subdivAngle(double ang)
+                        {
+                            var doneLo = byAngle.Keys.Where(a => a < ang).MaxOrDefault(ang);
+                            var doneHi = byAngle.Keys.Where(a => a > ang).MinOrDefault(ang);
+                            var nextLo = Math.Ceiling((ang + doneLo) / 2);
+                            var nextHi = Math.Floor((doneHi + ang) / 2);
+                            if (nextHi - ang > ang - nextLo)
+                                return nextHi;
+                            if (nextLo < ang)
+                                return nextLo;
+                            if (nextHi != ang || nextLo != ang)
+                                throw new Exception("wnacxm"); // just an assertion; can't happen?
+                            return default;
+                        }
+                        var best = byAngle.Values.Where(g => g.IsCompleted).MinElement(g => g.FuelUsedLb).Angle;
+                        config.ClimbAngle = subdivAngle(best);
+                        if (config.ClimbAngle == default)
+                        {
+                            // The tests around the best value are done. Finally we subdivide the end of the range to find the actual max angle
+                            if (lowestFailed == 99)
+                                throw new Exception("afnlzn"); // later: we'll deal with planes that can climb to tgt altitude straight up when we run into this
+                            config.ClimbAngle = subdivAngle(lowestFailed);
+                            if (config.ClimbAngle == default)
+                            {
+                                // All done for this scenario!
+                                break;
+                            }
+                        }
                     }
 
                     // Our initial guesstimate of the level off altitude for this setup, given a complete lack of any better information
