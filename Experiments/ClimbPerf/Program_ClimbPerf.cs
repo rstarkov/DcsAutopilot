@@ -32,7 +32,7 @@ internal class Program_ClimbPerf
         GenResults();
         DeleteUnusedLogs();
 
-        var scenarios = new[] { 2.0, 1.8, 1.6, 1.9, 1.7, 1.5 }.SelectMany(throttle => new[] { 300, 400, 200, 250, 350, 450, 500 }, (throttle, speed) => (throttle, speed)).ToList();
+        var scenarios = new[] { 1.5, 2.0, 1.8, 1.6, 1.9, 1.7 }.SelectMany(throttle => new[] { 300, 400, 200, 500, 250, 350, 450 }, (throttle, speed) => (throttle, speed)).ToList();
         foreach (var scenario in scenarios)
         {
             while (true)
@@ -89,11 +89,11 @@ internal class Program_ClimbPerf
                         config.ClimbAngle = subdivAngle(best);
                         if (config.ClimbAngle == default)
                         {
-                            // The tests around the best value are done. Finally we subdivide the end of the range to find the actual max angle
+                            // The tests around the best value are done. Finally we subdivide the end of the range to find the actual max angle (this adds a lot of extra tests though)
                             if (lowestFailed == 99)
                                 throw new Exception("afnlzn"); // later: we'll deal with planes that can climb to tgt altitude straight up when we run into this
-                            config.ClimbAngle = subdivAngle(lowestFailed);
-                            if (config.ClimbAngle == default)
+                            //config.ClimbAngle = subdivAngle(lowestFailed);
+                            //if (config.ClimbAngle == default)
                             {
                                 // All done for this scenario!
                                 break;
@@ -397,6 +397,8 @@ class StraightClimbTestGroup
         if (tests.Count() == 1)
         {
             LevelOffAlt = tests.First().LevelOffAltFt - (tests.First().Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt) * 1.2;
+            if (LevelOffAlt > cfg.FinalTargetAltitudeFt)
+                LevelOffAlt = cfg.FinalTargetAltitudeFt - (tests.First().Result.MaxAltitudeFt - tests.First().LevelOffAltFt);
             return;
         }
 
