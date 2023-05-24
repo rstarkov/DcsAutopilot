@@ -146,15 +146,19 @@ internal class Program_ClimbPerf
         }
     }
 
-    private static void DcsRestartMission()
+    private static void DcsFocus()
     {
-        // Ensure DCS has focus
         while (PInvoke.GetForegroundWindow() != _dcsWindow)
         {
             Console.WriteLine($"Focusing DCS...");
             PInvoke.SetForegroundWindow(_dcsWindow);
             Thread.Sleep(1000);
         }
+    }
+
+    private static void DcsRestartMission()
+    {
+        DcsFocus();
         // Restart mission
         SendScancode(42, true); // LShift
         Thread.Sleep(100);
@@ -169,6 +173,18 @@ internal class Program_ClimbPerf
         SendScancode(1, true); // Esc
         Thread.Sleep(100);
         SendScancode(1, false); // Esc
+    }
+
+    static void DcsSpeedUp()
+    {
+        DcsFocus();
+        SendScancode(29, true); // LCtrl
+        Thread.Sleep(100);
+        SendScancode(45, true); // X
+        Thread.Sleep(100);
+        SendScancode(45, false); // X
+        Thread.Sleep(100);
+        SendScancode(29, false); // LCtrl
     }
 
     static void SendScancode(ushort scan, bool down)
@@ -270,12 +286,19 @@ internal class Program_ClimbPerf
         var dcs = new DcsController();
         dcs.FlightControllers.Add(ctrl);
         dcs.Start();
+        bool seenFirstFrame = false;
         try
         {
             var prevTime = DateTime.UtcNow;
             var prevFrames = 0;
             while (true)
             {
+                if (dcs.Frames > 0 && !seenFirstFrame)
+                {
+                    seenFirstFrame = true;
+                    DcsSpeedUp(); // this can Thread.Sleep but it's okay; nothing time-sensitive happens in this loop anyway
+                }
+
                 var overhead = DateTime.UtcNow - prevTime;
                 Thread.Sleep(100);
                 var lf = dcs.LastFrame;
@@ -289,7 +312,7 @@ internal class Program_ClimbPerf
                 PrintLine(11, $"#{TestLogs.Count + 1}: throttle={cfg.Throttle:0.0} speed={cfg.PreClimbSpeedKts:0} angle={cfg.ClimbAngle,2:0} lvloff={levelOffAltFt:0} --- alt=" + cyan($"{ctrl.Test.Result.MaxAltitudeFt:0}") + " fuel=" + cyan($"{fuelSoFar:0}") + " dur=" + cyan($"{ctrl.Test.Result.ClimbDuration:0}") + " dist=" + cyan($"{ctrl.Test.Result.ClimbDistance:#,0}"));
 
                 var sep = " --- ".Color(ConsoleColor.DarkGray);
-                PrintLine(14, $"    {lf?.SimTime ?? 0:0.0}s" + sep + $"{overhead.TotalMilliseconds:0}ms overhead" + sep + $"{fps:0} FPS" + sep + $"{lf?.Skips ?? 0} skips" + sep + $"{dcs.Status}");
+                PrintLine(14, $"    {lf?.SimTime ?? 0:0.0}s" + sep + $"{overhead.TotalMilliseconds:00}ms overhead" + sep + $"{fps:0} ({ctrl.Test.EffectiveFps:0}) FPS" + sep + $"{lf?.Skips ?? 0} skips" + sep + $"{dcs.Status}");
                 PrintLine(15, $"    Stage: {ctrl.Stage}   tgtpitch: {ctrl.TgtPitch:0.0}");
 
                 ConsoleColoredString fmt(string num, string suff, int len, ConsoleColor numClr = ConsoleColor.White) => (num.Color(numClr) + suff.Color(ConsoleColor.DarkGray)).PadRight(len + suff.Length);
@@ -368,6 +391,7 @@ class StraightClimbTest
     public string LogName;
     public string DcsVersion;
     public int Skips;
+    public double EffectiveFps;
 
     public TestConfig Config = new();
     public record class TestConfig

@@ -51,6 +51,7 @@ class ClimbPerfStraightController : IFlightController
             Test.Result.ClimbDuration = frame.SimTime - 20;
             Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
             Test.Skips = frame.Skips;
+            Test.EffectiveFps = frame.Frame / frame.SimTime;
         }
 
         _speed2axisPID.MaxControl = Test.Config.Throttle;
