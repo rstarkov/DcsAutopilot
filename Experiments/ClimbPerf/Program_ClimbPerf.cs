@@ -187,7 +187,51 @@ internal class Program_ClimbPerf
         var biggroups = TestLogs.GroupBy(t => (t.Config.FinalTargetAltitudeFt, t.Config.FinalTargetMach, t.Config.METotalMassLb));
         foreach (var bg in biggroups)
         {
-            var filename = Path.Combine(LogPath, $"results-{bg.Key.FinalTargetAltitudeFt:0}-{bg.Key.FinalTargetMach}-{bg.Key.METotalMassLb}.csv");
+            // all results unprocessed
+            var allres = bg.GroupBy(t => t.Config).Select(g => (c: g.Key, r: new StraightClimbTestGroup(g.Key.ClimbAngle, g))).ToList();
+            File.WriteAllLines(Path.Combine(LogPath, $"all-{bg.Key.FinalTargetAltitudeFt:0}-{bg.Key.FinalTargetMach}-{bg.Key.METotalMassLb}.csv"),
+                allres.Select(x => Ut.FormatCsvRow(x.c.Throttle, x.c.PreClimbSpeedKts, x.c.ClimbAngle, x.r.LevelOffAlt, x.r.ClimbDuration, x.r.ClimbDistance, x.r.FuelUsedLb, x.r.IsFailed, x.r.IsCompleted)));
+
+            string filename;
+            void printCsvTableToFile<T>(IEnumerable<T> data, Func<T, double> getX, Func<T, double> getY, Func<T, double> getVal)
+            {
+                var xs = data.Select(getX).Distinct().Order();
+                var ys = data.Select(getY).Distinct().Order();
+                File.AppendAllLines(filename, new[] { Ut.FormatCsvRow("".Concat(xs.Select(s => $"{s:0.0}"))) });
+                foreach (var y in ys)
+                {
+                    var row = new List<string>();
+                    row.Add($"{y:0}");
+                    foreach (var x in xs)
+                    {
+                        var match = data.Where(d => getX(d) == x && getY(d) == y);
+                        row.Add(!match.Any() ? "" : $"{getVal(match.First()):0}");
+                    }
+                    File.AppendAllLines(filename, new[] { Ut.FormatCsvRow(row) });
+                }
+            }
+            void makeOptBy(string filenamePrefix, Func<StraightClimbTestGroup, double> optimalBy, string byText)
+            {
+                filename = Path.Combine(LogPath, $"{filenamePrefix}-{bg.Key.FinalTargetAltitudeFt:0}-{bg.Key.FinalTargetMach}-{bg.Key.METotalMassLb}.csv");
+                File.Delete(filename);
+                var sg = allres.Where(x => x.r.IsCompleted).GroupBy(x => (x.c.Throttle, x.c.PreClimbSpeedKts)).Select(g => (g.Key.Throttle, g.Key.PreClimbSpeedKts, r: g.MinElement(x => optimalBy(x.r)))).ToList();
+                File.AppendAllLines(filename, new[] { $"=== Optimal climb angle by {byText} ===" });
+                printCsvTableToFile(sg, d => d.Throttle, d => d.PreClimbSpeedKts, d => d.r.c.ClimbAngle);
+                File.AppendAllLines(filename, new[] { $"=== Fuel used ===" });
+                printCsvTableToFile(sg, d => d.Throttle, d => d.PreClimbSpeedKts, d => d.r.r.FuelUsedLb);
+                File.AppendAllLines(filename, new[] { $"=== Duration ===" });
+                printCsvTableToFile(sg, d => d.Throttle, d => d.PreClimbSpeedKts, d => d.r.r.ClimbDuration);
+                File.AppendAllLines(filename, new[] { $"=== Distance ===" });
+                printCsvTableToFile(sg, d => d.Throttle, d => d.PreClimbSpeedKts, d => d.r.r.ClimbDistance);
+            }
+
+            // optimal climb angle by fuel usage
+            makeOptBy("results-opt-fuel", g => g.FuelUsedLb, "fuel usage");
+            makeOptBy("results-opt-dur", g => g.ClimbDuration, "climb duration");
+            makeOptBy("results-opt-dist", g => g.ClimbDistance, "climb distance");
+
+            // grouped by throttle: speed vs angle table of fuel used
+            filename = Path.Combine(LogPath, $"results-{bg.Key.FinalTargetAltitudeFt:0}-{bg.Key.FinalTargetMach}-{bg.Key.METotalMassLb}.csv");
             File.Delete(filename);
             foreach (var throttle in bg.Select(t => t.Config.Throttle).Distinct().Order())
             {
