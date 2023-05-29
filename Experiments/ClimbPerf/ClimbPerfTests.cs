@@ -11,7 +11,7 @@ using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace ClimbPerf;
 
-internal class Program_ClimbPerf
+static class ClimbPerfTests
 {
     private static string LogPath;
     public static ConcurrentQueue<string> Log = new();
@@ -23,7 +23,7 @@ internal class Program_ClimbPerf
     // test ranges, scenarios, and acceptance criteria can be adjusted in the middle of a run; any reusable old test results will be reused automatically,
     // and only the minimum necessary additional tests will be executed
 
-    static void Main(string[] args)
+    public static void Run(string[] args)
     {
         LogPath = args[0];
         Console.CursorVisible = false;
@@ -444,7 +444,7 @@ class StraightClimbTestGroup
             throw new InvalidOperationException();
         var cfg = tests.First().Config;
         var nearest = tests.Where(t => t.Result.FailReason == null).MinElementOrDefault(t => Math.Abs(t.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt));
-        if (nearest != null && Math.Abs(nearest.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt) <= Program_ClimbPerf.FinalAltitudeRange)
+        if (nearest != null && Math.Abs(nearest.Result.MaxAltitudeFt - cfg.FinalTargetAltitudeFt) <= ClimbPerfTests.FinalAltitudeRange)
         {
             IsCompleted = true;
             FuelUsedLb = nearest.Result.FuelUsedLb;

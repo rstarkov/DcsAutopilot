@@ -154,11 +154,11 @@ class ClimbPerfStraightController : IFlightController
 
         if (wasStage != "done" && wasStage != "failed")
         {
-            Program_ClimbPerf.Log.Enqueue(Ut.FormatCsvRow(frame.SimTime, frame.FuelInternal, frame.FuelExternal, frame.AltitudeAsl.MetersToFeet(), frame.Pitch, frame.VelPitch, frame.AngleOfAttack, frame.SpeedTrue.MsToKts(), frame.SpeedIndicated.MsToKts(), frame.SpeedMach, frame.SpeedVertical.MetersToFeet(), frame.PosX, frame.PosZ, frame.PosY, frame.AccY, ctl.ThrottleAxis, ctl.RollAxis));
+            ClimbPerfTests.Log.Enqueue(Ut.FormatCsvRow(frame.SimTime, frame.FuelInternal, frame.FuelExternal, frame.AltitudeAsl.MetersToFeet(), frame.Pitch, frame.VelPitch, frame.AngleOfAttack, frame.SpeedTrue.MsToKts(), frame.SpeedIndicated.MsToKts(), frame.SpeedMach, frame.SpeedVertical.MetersToFeet(), frame.PosX, frame.PosZ, frame.PosY, frame.AccY, ctl.ThrottleAxis, ctl.RollAxis));
             if (Stage == "done")
-                Program_ClimbPerf.Log.Enqueue("DONE");
+                ClimbPerfTests.Log.Enqueue("DONE");
             if (Stage == "failed")
-                Program_ClimbPerf.Log.Enqueue("FAILED");
+                ClimbPerfTests.Log.Enqueue("FAILED");
         }
 
         return ctl;
