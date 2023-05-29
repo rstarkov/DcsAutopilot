@@ -1,9 +1,14 @@
-using System;
+﻿using System;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-public class SmoothMoverFilter
+public interface ISmoothMover
+{
+    double MoveTo(double tgtpos, double time);
+}
+
+public class SmoothMoverFilter : ISmoothMover
 {
     private double xv0, xv1, xv2;
     private double yv0, yv1, yv2;
@@ -29,7 +34,7 @@ public class SmoothMoverFilter
     }
 }
 
-public class SmoothMover
+public class SmoothMover : ISmoothMover
 {
     private double _prevtime, _prevtgtpos;
     private double _pos;
