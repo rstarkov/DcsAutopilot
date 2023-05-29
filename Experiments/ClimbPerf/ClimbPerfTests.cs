@@ -1,13 +1,9 @@
-using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Concurrent;
 using DcsAutopilot;
 using RT.Serialization;
 using RT.Util;
 using RT.Util.Consoles;
 using RT.Util.ExtensionMethods;
-using Windows.Win32;
-using Windows.Win32.Foundation;
-using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace ClimbPerf;
 
@@ -17,7 +13,6 @@ static class ClimbPerfTests
     public static ConcurrentQueue<string> Log = new();
     private static List<StraightClimbTest> TestLogs = new();
     public static double FinalAltitudeRange = 10; // can edit; reducing will automatically retest only those scenarios that lie outside this range
-    private static HWND _dcsWindow;
 
     // this code is restartable; a test run can be interrupted at any point and resumed with no penalty
     // test ranges, scenarios, and acceptance criteria can be adjusted in the middle of a run; any reusable old test results will be reused automatically,
@@ -106,9 +101,6 @@ static class ClimbPerfTests
                     // later: we could actually interpolate based on nearby tests
                 }
 
-                // Ready for a test - first call to this prompts the user to focus DCS
-                DcsFindWindow();
-
                 // Print a few recent tests
                 Console.Clear();
                 Console.WriteLine($"Straight line climb to M{config.FinalTargetMach:0.0} @ {config.FinalTargetAltitudeFt:0}");
@@ -124,78 +116,13 @@ static class ClimbPerfTests
                 }
 
                 // Run the flight test!
-                DcsRestartMission(); // this returns right after the mission starts loading, and we then have a few seconds to initialise and be ready for the first frame's UDP data
+                DcsWindow.RestartMission(); // this returns right after the mission starts loading, and we then have a few seconds to initialise and be ready for the first frame's UDP data
                 var testlog = DoFlightTest(config, levelOffAltFt);
                 TestLogs.Add(testlog);
                 ClassifyXml.SerializeToFile(TestLogs, Path.Combine(LogPath, "tests.xml"));
                 GenResults();
             }
         }
-    }
-
-    private static void DcsFindWindow()
-    {
-        if (_dcsWindow == default)
-        {
-            Console.WriteLine($"Start the mission in DCS but don't press FLY on the final Briefing screen.");
-            Console.WriteLine($"Press ENTER when ready, then switch to DCS within 5 seconds.");
-            Console.ReadLine();
-            Console.WriteLine($"SWITCH TO DCS NOW!");
-            Thread.Sleep(5000);
-            _dcsWindow = PInvoke.GetForegroundWindow();
-        }
-    }
-
-    private static void DcsFocus()
-    {
-        while (PInvoke.GetForegroundWindow() != _dcsWindow)
-        {
-            Console.WriteLine($"Focusing DCS...");
-            PInvoke.SetForegroundWindow(_dcsWindow);
-            Thread.Sleep(1000);
-        }
-    }
-
-    private static void DcsRestartMission()
-    {
-        DcsFocus();
-        // Restart mission
-        SendScancode(42, true); // LShift
-        Thread.Sleep(100);
-        SendScancode(19, true); // R
-        Thread.Sleep(100);
-        SendScancode(19, false); // R
-        Thread.Sleep(100);
-        SendScancode(42, false); // LShift
-        // Wait for restart to begin
-        Thread.Sleep(1000);
-        // Post Escape and call it a day; DCS buffers that and processes it the moment the mission is ready.
-        SendScancode(1, true); // Esc
-        Thread.Sleep(100);
-        SendScancode(1, false); // Esc
-    }
-
-    static void DcsSpeedUp()
-    {
-        DcsFocus();
-        SendScancode(29, true); // LCtrl
-        Thread.Sleep(100);
-        SendScancode(45, true); // X
-        Thread.Sleep(100);
-        SendScancode(45, false); // X
-        Thread.Sleep(100);
-        SendScancode(29, false); // LCtrl
-    }
-
-    static void SendScancode(ushort scan, bool down)
-    {
-        // Sending key combos like Shift+R doesn't work if it's one big array of down/up events. We must make multiple calls to SendInput.
-        var inputs = new INPUT[1];
-        inputs[0].type = INPUT_TYPE.INPUT_KEYBOARD;
-        inputs[0].Anonymous.ki.wVk = 0;
-        inputs[0].Anonymous.ki.wScan = scan;
-        inputs[0].Anonymous.ki.dwFlags = down ? 0 : KEYBD_EVENT_FLAGS.KEYEVENTF_KEYUP;
-        PInvoke.SendInput(inputs, Marshal.SizeOf<INPUT>());
     }
 
     static void GenResults()
@@ -296,7 +223,7 @@ static class ClimbPerfTests
                 if (dcs.Frames > 0 && !seenFirstFrame)
                 {
                     seenFirstFrame = true;
-                    DcsSpeedUp(); // this can Thread.Sleep but it's okay; nothing time-sensitive happens in this loop anyway
+                    DcsWindow.SpeedUp(); // this can Thread.Sleep but it's okay; nothing time-sensitive happens in this loop anyway
                 }
 
                 var overhead = DateTime.UtcNow - prevTime;

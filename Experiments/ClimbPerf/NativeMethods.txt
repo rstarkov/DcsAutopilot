@@ -1,3 +1,0 @@
-﻿SendInput
-GetForegroundWindow
-SetForegroundWindow
