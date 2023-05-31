@@ -30,7 +30,7 @@ public class SmoothMoverFilter : ISmoothMover
         yv0 = yv1;
         yv1 = yv2;
         yv2 = xv0 + xv1 * 2 + xv2 - yv0 * 0.5731643146 - yv1 * (-1.4939637515);
-        return yv1.Clip(_min, _max);
+        return yv2.Clip(_min, _max);
     }
 }
 
