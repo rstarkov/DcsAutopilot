@@ -2,7 +2,7 @@
 using RT.Util;
 using RT.Util.ExtensionMethods;
 
-namespace ClimbPerf;
+namespace DcsExperiments;
 
 class ClimbPerfStraightController : IFlightController
 {

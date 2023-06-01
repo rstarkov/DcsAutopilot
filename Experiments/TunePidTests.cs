@@ -1,7 +1,7 @@
 using DcsAutopilot;
 using RT.Util.ExtensionMethods;
 
-namespace ClimbPerf;
+namespace DcsExperiments;
 
 class TunePidTests
 {

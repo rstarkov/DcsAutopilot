@@ -5,7 +5,7 @@ using RT.Util;
 using RT.Util.Consoles;
 using RT.Util.ExtensionMethods;
 
-namespace ClimbPerf;
+namespace DcsExperiments;
 
 static class ClimbPerfTests
 {

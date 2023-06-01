@@ -1,6 +1,6 @@
 ﻿using DcsAutopilot;
 
-namespace ClimbPerf;
+namespace DcsExperiments;
 
 class TunePidController : IFlightController
 {

@@ -1,4 +1,4 @@
-﻿namespace ClimbPerf;
+﻿namespace DcsExperiments;
 
 class Program
 {
