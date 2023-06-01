@@ -2,6 +2,7 @@
 
 public static class Filters
 {
+    public static IFilter None => new NullFilter();
     public static IFilter BesselD5 => new IirOrder2Filter { B0 = 0.022562748285759465, B1 = 0.04512549657151893, B2 = 0.022562748285759465, A1 = 1.4585675700036072, A2 = -0.548818563146645 }; // fs=0.05460; 5 sample delay at f=0
     public static IFilter BesselD10 => new IirOrder2Filter { B0 = 0.006480433048102745, B1 = 0.01296086609620549, B2 = 0.006480433048102745, A1 = 1.7148814350679784, A2 = -0.7408031672603894 }; // fs=0.02750; 10 sample delay at f=0
     public static IFilter BesselD20 => new IirOrder2Filter { B0 = 0.0017407547134617684, B1 = 0.0034815094269235367, B2 = 0.0017407547134617684, A1 = 1.8537602284019106, A2 = -0.8607232472557577 }; // fs=0.01377; 20 sample delay at f=0
@@ -11,6 +12,12 @@ public interface IFilter
 {
     IFilter New();
     double Step(double v);
+}
+
+public class NullFilter : IFilter
+{
+    public IFilter New() => new NullFilter();
+    public double Step(double v) => v;
 }
 
 public class IirOrder2Filter : IFilter
