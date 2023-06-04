@@ -55,7 +55,7 @@ function LuaExportAfterNextFrame()
         local sdata = LoGetSelfData()
         local engine = LoGetEngineInfo()
         local mech = LoGetMechInfo()
-        
+
         dt[#dt+1] = "pitch"
         dt[#dt+1] = sdata.Pitch
         dt[#dt+1] = "bank"
@@ -351,6 +351,12 @@ function debugdump(value, loc, indent, seen)
             local keystr = debugdump(key, loc .. "->key", subindent, seen)
             tbl_str[#tbl_str + 1] = subindent .. "[" .. keystr .. "] = "
             tbl_str[#tbl_str + 1] = debugdump(val, loc .. "[" .. keystr.. "]", subindent, seen)
+            tbl_str[#tbl_str + 1] = "\n"
+        end
+        local mt = getmetatable(value)
+        if mt then
+            tbl_str[#tbl_str + 1] = subindent .. "[meta] = "
+            tbl_str[#tbl_str + 1] = debugdump(mt, loc .. "->metatable", subindent, seen)
             tbl_str[#tbl_str + 1] = "\n"
         end
         tbl_str[#tbl_str + 1] = indent .. "}"
