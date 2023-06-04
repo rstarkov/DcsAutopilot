@@ -18,6 +18,7 @@ class TunePidController : IFlightController
     public double ErrSpeed, ErrRoll, ErrPitch;
     public double ErrRateSpeed, ErrRateRoll, ErrRatePitch;
     public Action<FrameData> Tick;
+    public Action<FrameData, ControlData> PostProcess;
 
     public void NewSession(BulkData bulk)
     {
@@ -67,6 +68,7 @@ class TunePidController : IFlightController
         if (SmoothPitch != null)
             ctl.PitchAxis = SmoothPitch.MoveTo(ctl.PitchAxis.Value, frame.SimTime);
 
+        PostProcess?.Invoke(frame, ctl);
         return ctl;
     }
 }
