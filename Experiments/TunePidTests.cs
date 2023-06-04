@@ -3,10 +3,8 @@ using RT.Util.ExtensionMethods;
 
 namespace DcsExperiments;
 
-class TunePidTests
+class TunePidTests : MultiTester
 {
-    private DcsController _dcs;
-    private TunePidController _ctrl;
     private List<string> _log = new();
 
     public void Run(string[] args)
@@ -71,49 +69,6 @@ class TunePidTests
                 Console.WriteLine($"===== Re-eval: from {num(was)} to {num(bestEval)} =====");
             }
         }
-    }
-
-    private void Restart()
-    {
-        _dcs?.Stop();
-        DcsWindow.RestartMission();
-        _ctrl = new();
-        _ctrl.PidSpeedIndicated = new();
-        _ctrl.PidBank = new();
-        _ctrl.PidVelPitch = new();
-        _dcs = new();
-        _dcs.FlightControllers.Add(_ctrl);
-        _dcs.Start();
-        while (_dcs.Status != "Active control" || _dcs.LastFrameUtc < DateTime.UtcNow.AddMilliseconds(-50))
-            Thread.Sleep(100);
-        DcsWindow.SpeedUp();
-    }
-
-    private void DefaultPids()
-    {
-        _ctrl.PidSpeedIndicated = new BasicPid { MinControl = 0, MaxControl = 2, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1);
-        _ctrl.PidBank = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3);
-        _ctrl.PidVelPitch = new BasicPid { MinControl = -0.5, MaxControl = 0.3, IntegrationLimit = 0.1 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.20, 2.45);
-    }
-
-    private void InitialConditions()
-    {
-        Console.WriteLine("Initial conditions...");
-        if (_dcs == null || _dcs.LastFrame == null || _dcs.LastFrame?.FuelInternal < 0.8 || _dcs.LastFrame.AltitudeAsl < 1000.FeetToMeters() || (DateTime.UtcNow - _dcs.LastFrameUtc).TotalSeconds > 5)
-            Restart();
-        DefaultPids();
-        _ctrl.TgtPitch = 0;
-        _ctrl.TgtRoll = 0;
-        _ctrl.TgtSpeed = 300.KtsToMs();
-        while (true)
-        {
-            Thread.Sleep(100);
-            var altError = 10_000 - _dcs.LastFrame.AltitudeAsl.MetersToFeet();
-            _ctrl.TgtPitch = Math.Abs(altError) < 200 ? 0 : (0.01 * altError).Clip(-20, 20);
-            if (Math.Abs(altError) < 200 && Math.Abs(_ctrl.ErrSpeed) < 1.KtsToMs() && Math.Abs(_ctrl.ErrPitch) < 0.1 && Math.Abs(_ctrl.ErrRoll) < 0.1 && Math.Abs(_ctrl.ErrRateSpeed) < 0.1 && Math.Abs(_ctrl.ErrRatePitch) < 0.05 && Math.Abs(_ctrl.ErrRateRoll) < 0.05)
-                break;
-        }
-        Console.WriteLine("Initial conditions done.");
     }
 
     private double Evaluate(int n, double[] vector)
@@ -186,30 +141,6 @@ class TunePidTests
         Console.WriteLine($"   saved to {logname}");
         File.WriteAllLines(logname, _log);
         return (firstCross, maxErrorAfterCross, totalErrorAfterCross, smoothness);
-    }
-
-    private void Stabilise(double speedTolerance = 1)
-    {
-        Console.WriteLine("Stabilising...");
-        DefaultPids();
-        var unstable = new List<string>();
-        while (true)
-        {
-            Thread.Sleep(100);
-
-            bool s(double error, double limit, string name)
-            {
-                if (Math.Abs(error) <= limit) return true;
-                unstable.Add(name);
-                return false;
-            }
-            unstable.Clear();
-            if (s(_ctrl.ErrSpeed, speedTolerance.KtsToMs(), "speed") && s(_ctrl.ErrRateSpeed, 0.1 * speedTolerance, "speed-rate") && s(_ctrl.ErrPitch, 1, "pitch") && s(_ctrl.ErrRatePitch, 0.1, "pitch-rate") && s(_ctrl.ErrRoll, 1, "roll") && s(_ctrl.ErrRateRoll, 0.1, "roll-rate"))
-                break;
-            //Console.Title = "Unstable: " + unstable.JoinString(", ");
-        }
-        //Console.Title = "Stable";
-        //Console.WriteLine($"Stabilising done. pitch={_ctrl.ErrPitch:0.0}/{_ctrl.ErrRatePitch:0.00}  speed={_ctrl.ErrSpeed:0.0}/{_ctrl.ErrRateSpeed:0.00}");
     }
 
     private string num(double v) => v.Rounded(5);
