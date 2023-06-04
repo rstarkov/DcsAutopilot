@@ -6,7 +6,88 @@ class AxisResponseMap : MultiTester
 {
     public void Run(string[] args)
     {
-        MapPitchAxis();
+        MapYawAxis();
+    }
+
+    private void MapRollAxis()
+    {
+        var rates = new List<double>();
+        InitialPitchError = 0.5;
+        InitialPitchErrorRate = 0.1;
+        InitialRollError = 0.5;
+        InitialRollErrorRate = 0.01;
+        InitialAltitudeError = 500;
+        InitialAltitude = 10_000;
+        InitialSpeed = 300;
+        foreach (var input in Util.Range(0.001, 0.001, 0.020).Concat(Util.Range(0.03, 0.01, 0.10)).Concat(Util.Range(0.2, 0.1, 1.0)))
+            foreach (var sign in new[] { 1, -1 })
+            {
+                InitialConditions();
+                var startTime = _dcs.LastFrame.SimTime;
+                var done = false;
+                double pitch = double.NaN;
+                rates.Clear();
+                _ctrl.TgtSpeed = InitialSpeed.KtsToMs();
+                _ctrl.TgtPitch = 0;
+                _ctrl.PostProcess = (frame, control) =>
+                {
+                    if (done) return;
+                    if (double.IsNaN(pitch)) pitch = control.PitchAxis.Value;
+                    control.RollAxis = input * sign;
+                    control.PitchAxis = pitch;
+                    if (frame.SimTime - startTime > 1)
+                        rates.Add(frame.GyroRoll);
+                    if (frame.SimTime - startTime > (input < 0.02 ? 15 : input < 0.1 ? 10 : 5))
+                        done = true;
+                };
+                while (!done)
+                    Thread.Sleep(100);
+                rates.Sort();
+                double median(List<double> vals) => vals[vals.Count / 2];
+                var result = $"{input * sign},{rates.Average()},{median(rates)}";
+                Console.WriteLine(result);
+                File.AppendAllLines($"axis-roll.csv", new[] { result });
+            }
+    }
+
+    private void MapYawAxis()
+    {
+        var rates = new List<double>();
+        InitialPitchError = 0.5;
+        InitialPitchErrorRate = 0.05;
+        InitialRollError = 0.5;
+        InitialRollErrorRate = 0.05;
+        InitialAltitudeError = 500;
+        InitialAltitude = 10_000;
+        InitialSpeed = 300;
+        foreach (var input in Util.Range(0.001, 0.001, 0.020).Concat(Util.Range(0.03, 0.01, 0.10)).Concat(Util.Range(0.2, 0.1, 1.0)))
+            foreach (var sign in new[] { 1, -1 })
+            {
+                InitialConditions();
+                var startTime = _dcs.LastFrame.SimTime;
+                var done = false;
+                double max = 0;
+                rates.Clear();
+                _ctrl.TgtSpeed = InitialSpeed.KtsToMs();
+                _ctrl.TgtPitch = 0;
+                _ctrl.PostProcess = (frame, control) =>
+                {
+                    if (done) return;
+                    control.YawAxis = input * sign;
+                    max = sign == 1 ? Math.Max(max, frame.GyroYaw) : Math.Min(max, frame.GyroYaw); // yaw "settles" and the gyro just reports our rate of heading change, so we really want the max rate
+                    if (frame.SimTime - startTime > 1)
+                        rates.Add(frame.GyroYaw);
+                    if (frame.SimTime - startTime > 5)
+                        done = true;
+                };
+                while (!done)
+                    Thread.Sleep(100);
+                rates.Sort();
+                double median(List<double> vals) => vals[vals.Count / 2];
+                var result = $"{input * sign},{max},{rates.Average()},{median(rates)}";
+                Console.WriteLine(result);
+                File.AppendAllLines($"axis-yaw.csv", new[] { result });
+            }
     }
 
     private void MapPitchAxis()

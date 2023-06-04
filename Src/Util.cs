@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace DcsAutopilot;
 
@@ -27,5 +28,11 @@ public static class Util
         if (n >= mul * 0.0000001) return $"{n:#,0.0000000}";
         if (n >= mul * 0.00000001) return $"{n:#,0.00000000}";
         return n.ToString();
+    }
+
+    public static IEnumerable<double> Range(double start, double step, double endInclusive)
+    {
+        for (var v = start; v < endInclusive + 0.5 * step; v += step)
+            yield return v;
     }
 }
