@@ -212,16 +212,5 @@ class TunePidTests
         //Console.WriteLine($"Stabilising done. pitch={_ctrl.ErrPitch:0.0}/{_ctrl.ErrRatePitch:0.00}  speed={_ctrl.ErrSpeed:0.0}/{_ctrl.ErrRateSpeed:0.00}");
     }
 
-    private string num(double n)
-    {
-        if (n >= 10_000) return $"{n:#,0}";
-        if (n >= 1000) return $"{n:#,0.0}";
-        if (n >= 100) return $"{n:0.00}";
-        if (n >= 10) return $"{n:0.000}";
-        if (n >= 1) return $"{n:0.0000}";
-        if (n >= 0.1) return $"{n:0.00000}";
-        if (n >= 0.01) return $"{n:0.000000}";
-        if (n >= 0.001) return $"{n:0.0000000}";
-        return n.ToString();
-    }
+    private string num(double v) => v.Rounded(5);
 }

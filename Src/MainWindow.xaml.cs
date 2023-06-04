@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -100,23 +100,15 @@ public partial class MainWindow : ManagedWindow
 
         ctChart.InvalidateVisual();
 
-        var tgt = LineY.Data.Count == 0 ? 0 : LineY.Data.Average();
-        var intersections = LineY.Data.ConsecutivePairs(false).SelectIndexWhere(p => (p.Item1 < tgt && p.Item2 > tgt) || (p.Item2 < tgt && p.Item2 > tgt)).ToList();
-        var times = ctChart.Times.ToList();
-        var periods = intersections.Select(i => times[i]).SelectConsecutivePairs(false, (p1, p2) => p2 - p1).Order().ToList();
-        var period = periods.Count >= 3 ? periods[periods.Count / 2] : -1;
-        if (period != -1)
-            Title = period.ToString();
-        //var enable = false;
-        //if (enable)
-        //{
-        //    foreach (var pt in LineG.Data.Zip(LineY.Data, LineR.Data))
-        //        File.AppendAllLines("lines.csv", new[] { Ut.FormatCsvRow(pt.First, pt.Second, pt.Third) });
-        //}
-        if (_ctrl?.Status.Contains("pitchdown") == true)
-            Background = Brushes.Red;
-        else if (_ctrl?.Status.Contains("done") == true)
-            Background = Brushes.Blue;
+        string oscPeriod(ChartLine line)
+        {
+            var tgt = line.Data.Count == 0 ? 0 : line.Data.Average();
+            var intersections = line.Data.ConsecutivePairs(false).SelectIndexWhere(p => (p.Item1 < tgt && p.Item2 > tgt) || (p.Item2 < tgt && p.Item2 > tgt)).ToList();
+            var times = ctChart.Times.ToList();
+            var periods = intersections.Select(i => times[i]).SelectConsecutivePairs(false, (p1, p2) => p2 - p1).Order().ToList();
+            return periods.Count < 3 ? "n/a" : periods[periods.Count / 2].Rounded();
+        }
+        lblChartInfo.Text = $"Oscillation:  R={oscPeriod(LineR)}  G={oscPeriod(LineG)}  Y={oscPeriod(LineY)}";
     }
 
     private class ChartPopulate : IFlightController

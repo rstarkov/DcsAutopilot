@@ -55,6 +55,7 @@
                     </Grid>
                     <DockPanel Grid.Column="1">
                         <local:Chart x:Name="ctChart" Height="150" DockPanel.Dock="Bottom" />
+                        <TextBlock Name="lblChartInfo" TextWrapping="WrapWithOverflow" DockPanel.Dock="Bottom" Margin="0,0,0,4">Chart Info</TextBlock>
                         <TextBlock Name="lblInfo" TextWrapping="WrapWithOverflow">Info</TextBlock>
                     </DockPanel>
                 </Grid>
