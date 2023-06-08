@@ -103,7 +103,7 @@ public partial class MainWindow : ManagedWindow
         string oscPeriod(ChartLine line)
         {
             var tgt = line.Data.Count == 0 ? 0 : line.Data.Average();
-            var intersections = line.Data.ConsecutivePairs(false).SelectIndexWhere(p => (p.Item1 < tgt && p.Item2 > tgt) || (p.Item2 < tgt && p.Item2 > tgt)).ToList();
+            var intersections = line.Data.ConsecutivePairs(false).SelectIndexWhere(p => p.Item1 < tgt && p.Item2 > tgt).ToList();
             var times = ctChart.Times.ToList();
             var periods = intersections.Select(i => times[i]).SelectConsecutivePairs(false, (p1, p2) => p2 - p1).Order().ToList();
             return periods.Count < 3 ? "n/a" : periods[periods.Count / 2].Rounded();

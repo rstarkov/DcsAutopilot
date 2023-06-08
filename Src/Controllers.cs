@@ -116,7 +116,7 @@ class HornetSlowFlightController : IFlightController
             wantedSpeed = 101;
         var wantedHeading = frame.SimTime < 435 ? 233.01 : 227.0;
         var wantedBank = (wantedHeading.ToRad() - frame.Heading).Clip(-1.ToRad(), 1.ToRad());
-        var wantedAltitude = frame.SimTime < 100 ? 300 : frame.SimTime < 300 ? linterp(100, 300, 300, 150, frame.SimTime) : frame.SimTime < 380 ? linterp(300, 380, 150, 90, frame.SimTime) : 90;
+        var wantedAltitude = frame.SimTime < 100 ? 300 : frame.SimTime < 300 ? Util.Linterp(100, 300, 300, 150, frame.SimTime) : frame.SimTime < 380 ? Util.Linterp(300, 380, 150, 90, frame.SimTime) : 90;
         var wantedVS = (0.05 * (wantedAltitude.FeetToMeters() - frame.AltitudeAsl)).Clip(-100.FeetToMeters(), 100.FeetToMeters());
         if (wantedSpeed > 101 || false /* true to prevent transition to the afterburner phase */)
         {
@@ -135,8 +135,6 @@ class HornetSlowFlightController : IFlightController
 
         return ctl;
     }
-
-    private double linterp(double x1, double x2, double y1, double y2, double x) => y1 + (x - x1) / (x2 - x1) * (y2 - y1);
 }
 
 public class BasicPid
