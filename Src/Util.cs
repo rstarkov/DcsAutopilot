@@ -32,12 +32,6 @@ public static class Util
         return n.ToString();
     }
 
-    public static IEnumerable<double> Range(double start, double step, double endInclusive)
-    {
-        for (var v = start; v < endInclusive + 0.5 * step; v += step)
-            yield return v;
-    }
-
     public static double Linterp(double x1, double x2, double y1, double y2, double x) => y1 + (x - x1) / (x2 - x1) * (y2 - y1);
 
     public static double Median(this IEnumerable<double> values, double removeOutliersFraction = 0)
