@@ -13,9 +13,11 @@ abstract class MultiTester
         _ctrl.PidSpeedIndicated = new BasicPid { MinControl = 0, MaxControl = 1.6, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1);
         _ctrl.PidBank = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3);
         _ctrl.PidVelPitch = new BasicPid { MinControl = -0.5, MaxControl = 0.3, IntegrationLimit = 0.1 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.20, 2.45);
+        _ctrl.PidYawSideslip = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 0.1 /*deg/sec*/ }.SetZiNiNone(0.7, 1.28);
         _ctrl.FilterDt = Filters.BesselD20;
         _ctrl.FilterPitch = Filters.BesselD5;
         _ctrl.FilterBank = Filters.BesselD5;
+        _ctrl.FilterYaw = Filters.BesselD5;
         _ctrl.FilterSpeed = Filters.BesselD5;
     }
 
@@ -45,6 +47,8 @@ abstract class MultiTester
     protected double InitialPitchErrorRate = 0.05;
     protected double InitialRollError = 0.1;
     protected double InitialRollErrorRate = 0.05;
+    protected double InitialYawError = 0.1;
+    protected double InitialYawErrorRate = 0.05;
 
     protected void InitialConditions()
     {
@@ -79,7 +83,8 @@ abstract class MultiTester
             if (0 == s(altError, InitialAltitudeError, "altitude")
                 + s(_ctrl.ErrSpeed, InitialSpeedError.KtsToMs(), "speed") + s(_ctrl.ErrRateSpeed, InitialSpeedErrorRate.KtsToMs(), "speed-rate")
                 + s(_ctrl.ErrPitch, InitialPitchError, "pitch") + s(_ctrl.ErrRatePitch, InitialPitchErrorRate, "pitch-rate")
-                + s(_ctrl.ErrRoll, InitialRollError, "roll") + s(_ctrl.ErrRateRoll, InitialRollErrorRate, "roll-rate"))
+                + s(_ctrl.ErrRoll, InitialRollError, "roll") + s(_ctrl.ErrRateRoll, InitialRollErrorRate, "roll-rate")
+                + s(_ctrl.ErrYaw, InitialYawError, "yaw") + s(_ctrl.ErrRateYaw, InitialYawErrorRate, "yaw-rate"))
                 break;
             Console.CursorLeft = w;
             Console.Write(unstable.JoinString(", ").PadRight(Console.WindowWidth - w));

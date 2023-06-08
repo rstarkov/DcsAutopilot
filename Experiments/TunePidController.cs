@@ -7,16 +7,18 @@ class TunePidController : IFlightController
     public BasicPid PidSpeedIndicated, PidSpeedMach;
     public BasicPid PidBank;
     public BasicPid PidPitch, PidVelPitch;
-    public ISmoothMover SmoothThrottle, SmoothRoll, SmoothPitch;
+    public BasicPid PidYawSideslip;
+    public ISmoothMover SmoothThrottle, SmoothRoll, SmoothPitch, SmoothYaw;
     public IFilter FilterDt = Filters.None;
     public IFilter FilterSpeed = Filters.None;
     public IFilter FilterBank = Filters.None;
     public IFilter FilterPitch = Filters.None;
+    public IFilter FilterYaw = Filters.None;
 
     public string Status => "";
     public double TgtSpeed, TgtRoll, TgtPitch;
-    public double ErrSpeed, ErrRoll, ErrPitch;
-    public double ErrRateSpeed, ErrRateRoll, ErrRatePitch;
+    public double ErrSpeed, ErrRoll, ErrPitch, ErrYaw;
+    public double ErrRateSpeed, ErrRateRoll, ErrRatePitch, ErrRateYaw;
     public Action<FrameData> Tick;
     public Action<FrameData, ControlData> PostProcess;
 
@@ -61,12 +63,19 @@ class TunePidController : IFlightController
         else
             throw new InvalidOperationException("No PID for pitch");
 
+        if (PidYawSideslip != null)
+            ctl.YawAxis = update(PidYawSideslip, 0 - frame.AngleOfSideSlip, ref ErrYaw, ref ErrRateYaw, FilterYaw);
+        else
+            throw new InvalidOperationException("No PID for pitch");
+
         if (SmoothThrottle != null)
             ctl.ThrottleAxis = SmoothThrottle.MoveTo(ctl.ThrottleAxis.Value, frame.SimTime);
         if (SmoothRoll != null)
             ctl.RollAxis = SmoothRoll.MoveTo(ctl.RollAxis.Value, frame.SimTime);
         if (SmoothPitch != null)
             ctl.PitchAxis = SmoothPitch.MoveTo(ctl.PitchAxis.Value, frame.SimTime);
+        if (SmoothYaw != null)
+            ctl.YawAxis = SmoothYaw.MoveTo(ctl.YawAxis.Value, frame.SimTime);
 
         PostProcess?.Invoke(frame, ctl);
         return ctl;
