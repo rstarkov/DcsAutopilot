@@ -72,7 +72,7 @@ class AxisResponseMap : MultiTester
         File.WriteAllLines(output, Ut.FormatCsvRow(csv[0]).Concat(result));
     }
 
-    private PlaneControlAxis ResultsToAxis(string filename, int rateCol, decimal deadzoneNeg, decimal deadzonePos, bool symmetric, double simplifyTolerance, decimal min = -1.0m, decimal max = 1.0m)
+    private AxisMap ResultsToAxis(string filename, int rateCol, decimal deadzoneNeg, decimal deadzonePos, bool symmetric, double simplifyTolerance, decimal min = -1.0m, decimal max = 1.0m)
     {
         var pts = Ut.ParseCsvFile(filename).Skip(1).ToDictionary(r => decimal.Parse(r[0]), r => double.Parse(r[rateCol]));
         if (symmetric)
@@ -86,19 +86,19 @@ class AxisResponseMap : MultiTester
             .OrderBy(p => p.NormalisedInput).ThenBy(p => p.RawInput)
             .ToList();
         SimplifyMap(points, simplifyTolerance);
-        return new PlaneControlAxis(points);
+        return new AxisMap(points);
     }
 
     private void SimplifyMap(List<AxisMapPoint> points, double toleranceRaw)
     {
         var originalPoints = points.ToList();
-        var original = new PlaneControlAxis(originalPoints);
+        var original = new AxisMap(originalPoints);
         while (true)
         {
             bool anyRemoved = false;
             for (int i = 1; i < points.Count - 1; i++)
             {
-                var test = new PlaneControlAxis(points.Except(new[] { points[i] }));
+                var test = new AxisMap(points.Except(new[] { points[i] }));
                 foreach (var pt in originalPoints)
                     if (Math.Abs(test.NormToRaw(pt.NormalisedInput) - original.NormToRaw(pt.NormalisedInput)) > toleranceRaw)
                         goto errorTooBig;
