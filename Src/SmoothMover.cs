@@ -10,27 +10,19 @@ public interface ISmoothMover
 
 public class SmoothMoverFilter : ISmoothMover
 {
-    private double xv0, xv1, xv2;
-    private double yv0, yv1, yv2;
     private double _min, _max;
+    private IFilter _filter;
 
-    public SmoothMoverFilter(double min, double max)
+    public SmoothMoverFilter(double min, double max, IFilter filter)
     {
         _min = min;
         _max = max;
+        _filter = filter;
     }
 
     public double MoveTo(double tgtpos, double time)
     {
-        // Order 2 Bessel filter with cutoff frequency 0.04 of sampling rate. Ignores time scale so the cut-off will vary with framerate :/
-        // Source: https://doctorpapadopoulos.com/low-pass-filter-bessel-c-c-implementation/
-        xv0 = xv1;
-        xv1 = xv2;
-        xv2 = tgtpos / 50.50469146;
-        yv0 = yv1;
-        yv1 = yv2;
-        yv2 = xv0 + xv1 * 2 + xv2 - yv0 * 0.5731643146 - yv1 * (-1.4939637515);
-        return yv2.Clip(_min, _max);
+        return _filter.Step(tgtpos).Clip(_min, _max);
     }
 }
 

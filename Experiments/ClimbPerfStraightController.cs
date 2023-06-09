@@ -18,9 +18,9 @@ class ClimbPerfStraightController : IFlightController
     //private BasicPid _g2pitchPID = new BasicPid { MinControl = -0.5, MaxControl = 0.5, IntegrationLimit = 0.1, DerivativeSmoothing = 0.8 }.SetZiNiNone(0.5, 1.55);
     //private BasicPid _g2pitchPID = new BasicPid { MinControl = -0.5, MaxControl = 0.5, IntegrationLimit = 0.1, DerivativeSmoothing = 0.4 }.SetZiNiNone(0.5, 1.36);
     private BasicPid _g2pitchPID = new BasicPid { P = 0.10, I = 0.20, D = 0, MinControl = -0.5, MaxControl = 0.5, IntegrationLimit = 1 };
-    private SmoothMoverFilter _throttle = new(0, 2);
-    private SmoothMoverFilter _roll = new(-1, 1);
-    private SmoothMoverFilter _pitch = new(-1, 1);
+    private SmoothMoverFilter _throttle = new(0, 2, Filters.BesselD5);
+    private SmoothMoverFilter _roll = new(-1, 1, Filters.BesselD5);
+    private SmoothMoverFilter _pitch = new(-1, 1, Filters.BesselD5);
 
     public void NewSession(BulkData bulk)
     {
@@ -178,8 +178,8 @@ class ClimbPerfTuneController : IFlightController
     private BasicPid _bank2axisSmoothPID = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3); // at 280 ias kts 5000ft
     private BasicPid _velpitch2axisHighPID = new BasicPid { MinControl = -0.5, MaxControl = 0.5, IntegrationLimit = 0.1, DerivativeSmoothing = 0.8 }.SetZiNiNone(0.22, 2.857);
     private BasicPid _g2pitchPID = new BasicPid { P = 0.10, I = 0.20, D = 0, MinControl = -0.5, MaxControl = 0.5, IntegrationLimit = 1 };
-    private SmoothMoverFilter _throttle = new(0, 2);
-    private SmoothMoverFilter _roll = new(-1, 1);
+    private SmoothMoverFilter _throttle = new(0, 2, Filters.BesselD5);
+    private SmoothMoverFilter _roll = new(-1, 1, Filters.BesselD5);
 
     public void NewSession(BulkData bulk)
     {
