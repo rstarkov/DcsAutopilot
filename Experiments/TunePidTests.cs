@@ -1,4 +1,4 @@
-﻿using DcsAutopilot;
+using DcsAutopilot;
 using RT.Util.ExtensionMethods;
 
 namespace DcsExperiments;
@@ -112,7 +112,7 @@ class TunePidTests : MultiTester
         var prevGrad = double.NaN;
         var prevE = double.NaN;
         var smoothness = 0.0;
-        _log.Clear();
+        _log?.Clear();
         var filterVelPitch = Filters.BesselD20;
         var filterDT = Filters.BesselD20;
         _ctrl.Tick = (f) =>
@@ -155,9 +155,12 @@ class TunePidTests : MultiTester
             _chart.Invoke(_chart.Repaint);
         }
         Console.WriteLine($"   firstCross={num(firstCross)}, maxError={num(maxErrorAfterCross)}, totalError={num(totalErrorAfterCross)}, smoothness={num(smoothness)}");
-        var logname = $"log-{DateTime.Now:s}.csv".Replace(":", ".");
-        Console.WriteLine($"   saved to {logname}");
-        File.WriteAllLines(logname, _log);
+        if (_log != null)
+        {
+            var logname = $"log-{DateTime.Now:s}.csv".Replace(":", ".");
+            Console.WriteLine($"   saved to {logname}");
+            File.WriteAllLines(logname, _log);
+        }
         return (firstCross, maxErrorAfterCross, totalErrorAfterCross, smoothness);
     }
 
