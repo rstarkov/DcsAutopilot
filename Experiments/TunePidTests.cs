@@ -1,4 +1,4 @@
-using DcsAutopilot;
+﻿using DcsAutopilot;
 using RT.Util.ExtensionMethods;
 
 namespace DcsExperiments;
@@ -6,11 +6,22 @@ namespace DcsExperiments;
 class TunePidTests : MultiTester
 {
     private List<string> _log = new();
+    private Chart _chart;
 
     public void Run(string[] args)
     {
+        _chart = new Chart("Tune PID");
+        _chart.MinX = 0; _chart.MinY = 0;
+        _chart.MaxX = 20; _chart.MaxY = 10;
+        _chart.GridX = 5; _chart.GridY = 5;
+        _chart.Border = 10;
+        _chart.Lines["err"].Pen = Pens.Yellow;
+        _chart.Lines["best"].Pen = Pens.Gray;
+        new Thread(() => { _chart.ShowDialog(); }) { IsBackground = true }.Start();
+
         var bestVector = new[] { 0.1, 0.01, 0.01, 0.01, 0.5 };
         var bestEval = Evaluate(3, bestVector);
+        _chart.Lines["best"].Points = new(_chart.Lines["err"].Points);
 
         int noImprovement = 0;
 
@@ -26,6 +37,7 @@ class TunePidTests : MultiTester
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine(Console.Title);
                 Console.ResetColor();
+                _chart.Lines["best"].Points = new(_chart.Lines["err"].Points);
                 noImprovement = 0;
                 return true;
             }
@@ -90,6 +102,7 @@ class TunePidTests : MultiTester
     {
         InitialConditions();
         Console.WriteLine($"Evaluating... {vector.Select(v => $"{num(v)}").JoinString(", ")}");
+        _chart.Lines["err"].Points.Clear();
         var duration = 15.0;
         var tstart = -9999.0;
         var totalErrorAfterCross = 0.0;
@@ -110,6 +123,7 @@ class TunePidTests : MultiTester
             var velpitchFiltered = filterVelPitch.Step(f.VelPitch);
             var dTfiltered = filterDT.Step(f.dT);
             var e = velpitchFiltered - _ctrl.TgtPitch;
+            _chart.Lines["err"].Add(t, e);
             _log?.Add($"{t},{velpitchFiltered},{e}");
             if (direction == 0)
                 direction = Math.Sign(e);
@@ -135,7 +149,11 @@ class TunePidTests : MultiTester
         _ctrl.TgtPitch = tgt;
         tstart = _dcs.LastFrame.SimTime; // ordering ensures that we don't integrate anything until all variables are initialised
         while (_dcs.LastFrame.SimTime - tstart < duration)
+        {
             Thread.Sleep(100);
+            _chart.AutoscaleY();
+            _chart.Invoke(_chart.Repaint);
+        }
         Console.WriteLine($"   firstCross={num(firstCross)}, maxError={num(maxErrorAfterCross)}, totalError={num(totalErrorAfterCross)}, smoothness={num(smoothness)}");
         var logname = $"log-{DateTime.Now:s}.csv".Replace(":", ".");
         Console.WriteLine($"   saved to {logname}");
