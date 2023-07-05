@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using RT.Util;
+using System;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -14,6 +10,8 @@ class HornetAutoTrim : IFlightController
     public double _timeoutUntil;
     private double _neutralPitch = 0.120;
     private double _neutralRoll = 0;
+
+    public bool Enabled { get; set; } = false;
 
     public void NewSession(BulkData bulk)
     {
@@ -87,6 +85,8 @@ class HornetSlowFlightController : IFlightController
     public double TargetAltitudeFt { get; set; } = 2000;
 
     public string Status => $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
+
+    public bool Enabled { get; set; } = true;
 
     public void NewSession(BulkData bulk)
     {

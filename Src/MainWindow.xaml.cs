@@ -116,6 +116,8 @@ public partial class MainWindow : ManagedWindow
         private MainWindow _wnd;
         private int _skip = 0;
 
+        public bool Enabled { get; set; } = true;
+
         public ChartPopulate(MainWindow wnd)
         {
             _wnd = wnd;
@@ -156,8 +158,7 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
         _dcs.Start();
-        btnStart.IsEnabled = !_dcs.IsRunning;
-        btnStop.IsEnabled = _dcs.IsRunning;
+        UpdateGui();
     }
 
     private void btnStop_Click(object sender, RoutedEventArgs e)
@@ -165,9 +166,29 @@ public partial class MainWindow : ManagedWindow
         _dcs.Stop();
         _refreshTimer.Stop();
         refreshTimer_Tick(sender, null);
-        btnStart.IsEnabled = !_dcs.IsRunning;
-        btnStop.IsEnabled = _dcs.IsRunning;
         lblStats.Content = "";
         _fps.Clear();
+        UpdateGui();
+    }
+
+    private void HornetAutoTrim_Toggle(object sender, RoutedEventArgs e)
+    {
+        if (_updating) return;
+        var c = _dcs.FlightControllers.OfType<HornetAutoTrim>().Single();
+        c.Enabled = !c.Enabled;
+        UpdateGui();
+    }
+
+    private bool _updating = false;
+
+    private void UpdateGui()
+    {
+        _updating = true;
+        btnStart.IsEnabled = !_dcs.IsRunning;
+        btnStop.IsEnabled = _dcs.IsRunning;
+        btnHornetAutoTrim.IsEnabled = _dcs.FlightControllers.OfType<HornetAutoTrim>().Any();
+        btnHornetAutoTrim.IsChecked = btnHornetAutoTrim.IsEnabled ? _dcs.FlightControllers.OfType<HornetAutoTrim>().Single().Enabled : false;
+        btnHornetAutoTrim.Content = $"Hornet auto-trim: {(btnHornetAutoTrim.IsChecked == true ? "ON" : "off")}";
+        _updating = false;
     }
 }

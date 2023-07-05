@@ -1,4 +1,4 @@
-﻿<rtf:ManagedWindow x:Class="DcsAutopilot.MainWindow"
+<rtf:ManagedWindow x:Class="DcsAutopilot.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -29,6 +29,9 @@
                         <ColumnDefinition Width="7*" />
                         <ColumnDefinition Width="3*"/>
                     </Grid.ColumnDefinitions>
+                    <Canvas Grid.Column="0">
+                        <ToggleButton Name="btnHornetAutoTrim" IsChecked="False" Margin="8,8" Padding="8,2" Checked="HornetAutoTrim_Toggle" Unchecked="HornetAutoTrim_Toggle">Hornet auto-trim</ToggleButton>
+                    </Canvas>
                     <DockPanel Grid.Column="1">
                         <StackPanel />
                     </DockPanel>

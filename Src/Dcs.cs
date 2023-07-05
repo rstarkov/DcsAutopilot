@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -11,6 +12,7 @@ namespace DcsAutopilot;
 
 public interface IFlightController
 {
+    bool Enabled { get; set; }
     void NewSession(BulkData bulk);
     ControlData ProcessFrame(FrameData frame); // can return null
     void ProcessBulkUpdate(BulkData bulk);
@@ -182,7 +184,7 @@ public class DcsController
                     {
                         parsedFrame.dT = parsedFrame.SimTime - LastFrame.SimTime;
                         ControlData control = null;
-                        foreach (var ctl in FlightControllers)
+                        foreach (var ctl in FlightControllers.Where(c => c.Enabled))
                         {
                             var cd = ctl.ProcessFrame(parsedFrame);
                             if (cd != null)
@@ -208,14 +210,14 @@ public class DcsController
             {
                 if (_session == parsedBulk.Session)
                 {
-                    foreach (var ctrl in FlightControllers)
+                    foreach (var ctrl in FlightControllers) // including disabled
                         ctrl.ProcessBulkUpdate(parsedBulk);
                 }
                 else
                 {
                     _session = parsedBulk.Session;
                     LastBulk = parsedBulk;
-                    foreach (var ctrl in FlightControllers)
+                    foreach (var ctrl in FlightControllers) // including disabled
                         ctrl.NewSession(parsedBulk);
                     Status = "Session started; waiting for data";
                 }

@@ -4,6 +4,7 @@ namespace DcsExperiments;
 
 class TunePidController : IFlightController
 {
+    public bool Enabled { get; set; } = true;
     public BasicPid PidSpeedIndicated, PidSpeedMach;
     public BasicPid PidBank;
     public BasicPid PidPitch, PidVelPitch;

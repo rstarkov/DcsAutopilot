@@ -7,6 +7,7 @@ namespace DcsExperiments;
 class ClimbPerfStraightController : IFlightController
 {
     public string Status => "";
+    public bool Enabled { get; set; } = true;
     private BasicPid _speed2axisPID = new BasicPid { MinControl = 0, MaxControl = 2, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1); // at 10k ft
     private BasicPid _hdg2bankPID = new BasicPid { P = 20, I = 0.01, MinControl = -10, MaxControl = 10, IntegrationLimit = 0.1 /*deg/sec*/ }; // at 300 ias 5000ft
     private BasicPid _bank2axisSmoothPID = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3); // at 280 ias kts 5000ft
@@ -173,6 +174,7 @@ class ClimbPerfTuneController : IFlightController
 {
     private string _status = "";
     public string Status => _status;
+    public bool Enabled { get; set; } = true;
     private BasicPid _speed2axisPID = new BasicPid { MinControl = 0, MaxControl = 2, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1); // at 10k ft
     private BasicPid _hdg2bankPID = new BasicPid { P = 20, I = 0.01, MinControl = -10, MaxControl = 10, IntegrationLimit = 0.1 /*deg/sec*/ }; // at 300 ias 5000ft
     private BasicPid _bank2axisSmoothPID = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3); // at 280 ias kts 5000ft
