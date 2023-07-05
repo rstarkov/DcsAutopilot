@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <None Remove="Chart.xaml" />
+    <None Remove="WindComp.xaml" />
+    <None Remove="WindDir.xaml" />
   </ItemGroup>
 
   <ItemGroup>

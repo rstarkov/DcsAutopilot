@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using RT.Util;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
+using RT.Util.Geometry;
 
 namespace DcsAutopilot;
 
@@ -109,6 +110,14 @@ public partial class MainWindow : ManagedWindow
             return periods.Count < 3 ? "n/a" : periods[periods.Count / 2].Rounded();
         }
         lblChartInfo.Text = $"Oscillation:  R={oscPeriod(LineR)}  G={oscPeriod(LineG)}  Y={oscPeriod(LineY)}";
+
+        if (_dcs.LastFrame != null)
+        {
+            var windabs = new PointD(_dcs.LastFrame.WindX.MsToKts(), _dcs.LastFrame.WindZ.MsToKts());
+            var dir = new PointD(_dcs.LastFrame.Heading.ToRad());
+            ctWindComp.SetWind(-windabs.Dot(dir), -windabs.Dot(dir.Rotated(Math.PI / 2)));
+            ctWindDir.SetWind(windabs.Theta().ToDeg(), windabs.Abs(), _dcs.LastFrame.Heading);
+        }
     }
 
     private class ChartPopulate : IFlightController
