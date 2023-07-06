@@ -76,6 +76,7 @@ public partial class MainWindow : ManagedWindow
         if (hct != null)
         {
             hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
+            hct.AllowAfterburner = btnSmartThrottleAfterburner.IsChecked == true;
             lblSmartThrottle.Content = (!hct.Enabled ? "off" : hct.TargetSpeedIasKts == null ? hct.Status : $"{hct.TargetSpeedIasKts:0} kt");
         }
 
