@@ -140,6 +140,8 @@ public class DcsController
                             case "joyp": fd.JoyPitch = double.Parse(data[i++]); break;
                             case "joyr": fd.JoyRoll = double.Parse(data[i++]); break;
                             case "joyy": fd.JoyYaw = double.Parse(data[i++]); break;
+                            case "joyt1": fd.JoyThrottle1 = double.Parse(data[i++]); break;
+                            case "joyt2": fd.JoyThrottle2 = double.Parse(data[i++]); break;
                             default:
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
                                 Warnings.Add($"Unrecognized frame data entry: \"{data[i - 1]}\"");
@@ -337,7 +339,7 @@ public class FrameData
     public double Flaps, Airbrakes;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double WindX, WindY, WindZ;
-    public double JoyPitch, JoyRoll, JoyYaw;
+    public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
 }
 
 public class ControlData

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -62,6 +62,46 @@ class HornetAutoTrim : IFlightController
             }
         }
         return ctrl;
+    }
+}
+
+class HornetSmartThrottle : IFlightController
+{
+    public bool Enabled { get; set; } = false;
+    public string Status { get; private set; } = "";
+    public bool AllowAfterburner { get; set; } = false;
+    public double ThrottleInput { get; set; }
+    public double? TargetSpeedIasKts { get; set; }
+
+    private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
+    private IFilter _throttleFilter = Filters.BesselD10;
+
+    public void NewSession(BulkData bulk)
+    {
+    }
+
+    public void ProcessBulkUpdate(BulkData bulk)
+    {
+    }
+
+    public ControlData ProcessFrame(FrameData frame)
+    {
+        var t = _throttleFilter.Step(ThrottleInput);
+        if (t > 0.5)
+        {
+            TargetSpeedIasKts = null;
+            Status = "THR";
+            return null;
+        }
+        else
+        {
+            var ctrl = new ControlData();
+            TargetSpeedIasKts = Util.Linterp(0, 0.5, 180, 500, t);
+            _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
+            ctrl.ThrottleAxis = _pid.Update(TargetSpeedIasKts.Value.KtsToMs() - frame.SpeedIndicated, frame.dT);
+            Status = "act";
+            return ctrl;
+        }
     }
 }
 

@@ -12,6 +12,7 @@ using RT.Util;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
 using RT.Util.Geometry;
+using Windows.Gaming.Input;
 
 namespace DcsAutopilot;
 
@@ -23,6 +24,10 @@ public partial class MainWindow : ManagedWindow
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private IFlightController _ctrl;
     public static ChartLine LineR = new(), LineG = new(), LineY = new();
+    private RawGameController _joystick;
+    private double[] _joyAxes;
+    private bool[] _joyButtons;
+    private GameControllerSwitchPosition[] _joySwitches;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -41,6 +46,13 @@ public partial class MainWindow : ManagedWindow
         LineY.Pen = new Pen(Brushes.Yellow, 1);
         foreach (var line in ctChart.Lines)
             line.Pen.Freeze();
+
+        RawGameController.RawGameControllers.ToList(); // oddly enough the first call to this returns nothing; second call succeeds
+        _joystick = RawGameController.RawGameControllers.FirstOrDefault();
+        _joyAxes = new double[_joystick?.AxisCount ?? 0];
+        _joySwitches = new GameControllerSwitchPosition[_joystick?.SwitchCount ?? 0];
+        _joyButtons = new bool[_joystick?.ButtonCount ?? 0];
+
         btnStop_Click(null, null);
     }
 
@@ -59,6 +71,14 @@ public partial class MainWindow : ManagedWindow
 
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
+        _joystick?.GetCurrentReading(_joyButtons, _joySwitches, _joyAxes);
+        var hct = _dcs.FlightControllers.OfType<HornetSmartThrottle>().FirstOrDefault();
+        if (hct != null)
+        {
+            hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
+            lblSmartThrottle.Content = (!hct.Enabled ? "off" : hct.TargetSpeedIasKts == null ? hct.Status : $"{hct.TargetSpeedIasKts:0} kt");
+        }
+
         var status = _dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - _dcs.LastFrameUtc).TotalMilliseconds > 250)
             status = $"Stalled; waiting for DCS";
@@ -84,7 +104,7 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"Mach: {_dcs.LastFrame?.SpeedMach:0.00000}    IAS: {_dcs.LastFrame?.SpeedIndicated.MsToKts():0.0} kts");
         sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch:0.00}°   Bank: {_dcs.LastFrame?.Bank:0.00}°   Hdg: {_dcs.LastFrame?.Heading:0.00}°");
         sb.AppendLine($"Gyros: pitch={_dcs.LastFrame?.GyroPitch:0.00}   roll={_dcs.LastFrame?.GyroRoll:0.00}   yaw={_dcs.LastFrame?.GyroYaw:0.00}");
-        sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}");
+        sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}   T:{_dcs.LastFrame?.JoyThrottle1:0.000}");
         sb.AppendLine("Controller: " + _ctrl?.Status);
         sb.AppendLine();
         lblInfo.Text = sb.ToString();
@@ -166,6 +186,7 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
+        _dcs.FlightControllers.Add(new HornetSmartThrottle() { Enabled = true });
         _dcs.Start();
         UpdateGui();
     }

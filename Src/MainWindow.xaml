@@ -31,6 +31,12 @@
                     </Grid.ColumnDefinitions>
                     <Canvas Grid.Column="0">
                         <ToggleButton Name="btnHornetAutoTrim" IsChecked="False" Margin="8,8" Padding="8,2" Checked="HornetAutoTrim_Toggle" Unchecked="HornetAutoTrim_Toggle">Hornet auto-trim</ToggleButton>
+                        <Border Name="pnlSmartThrottle" Margin="8,40" BorderThickness="0.5" BorderBrush="Gray">
+                            <StackPanel>
+                                <Label>SmartThrottle</Label>
+                                <Label Name="lblSmartThrottle" HorizontalContentAlignment="Center" Padding="0,0,0,4" FontWeight="Bold">off</Label>
+                            </StackPanel>
+                        </Border>
                     </Canvas>
                     <DockPanel Grid.Column="1">
                         <StackPanel>
