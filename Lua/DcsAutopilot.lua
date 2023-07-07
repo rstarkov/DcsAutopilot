@@ -133,6 +133,8 @@ function LuaExportAfterNextFrame()
             dt[#dt+1] = GetDevice(0):get_argument_value(104)
             dt[#dt+1] = "joyt2"
             dt[#dt+1] = GetDevice(0):get_argument_value(105)
+            dt[#dt+1] = "lg"
+            dt[#dt+1] = (LoGetAircraftDrawArgumentValue(115) + LoGetAircraftDrawArgumentValue(0)) / 2
         end
     end
 

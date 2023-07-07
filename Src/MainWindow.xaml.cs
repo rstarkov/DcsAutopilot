@@ -123,6 +123,7 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"Pitch: {_dcs.LastFrame?.Pitch:0.00}°   Bank: {_dcs.LastFrame?.Bank:0.00}°   Hdg: {_dcs.LastFrame?.Heading:0.00}°");
         sb.AppendLine($"Gyros: pitch={_dcs.LastFrame?.GyroPitch:0.00}   roll={_dcs.LastFrame?.GyroRoll:0.00}   yaw={_dcs.LastFrame?.GyroYaw:0.00}");
         sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}   T:{_dcs.LastFrame?.JoyThrottle1:0.000}");
+        sb.AppendLine($"Flaps: {_dcs.LastFrame?.Flaps:0.000}   Speedbrakes: {_dcs.LastFrame?.Airbrakes:0.000}   Gear: {_dcs.LastFrame?.LandingGear:0.000}");
         sb.AppendLine("Controller: " + _ctrl?.Status);
         sb.AppendLine();
         lblInfo.Text = sb.ToString();

@@ -136,6 +136,7 @@ public class DcsController
                                 break;
                             case "flap": fd.Flaps = double.Parse(data[i++]); break;
                             case "airbrk": fd.Airbrakes = double.Parse(data[i++]); break;
+                            case "lg": fd.LandingGear = double.Parse(data[i++]); break;
                             case "wind": fd.WindX = double.Parse(data[i++]); fd.WindY = double.Parse(data[i++]); fd.WindZ = double.Parse(data[i++]); break;
                             case "joyp": fd.JoyPitch = double.Parse(data[i++]); break;
                             case "joyr": fd.JoyRoll = double.Parse(data[i++]); break;
@@ -338,7 +339,7 @@ public class FrameData
     /// <summary>Angular yaw rate in degrees/second. Positive is yaw to the right. Relative to the vertical airplane axis: this is not the same as the rate of change of <see cref="Heading"/> over time; it's what a gyro would read.</summary>
     public double GyroYaw;
     public double FuelInternal, FuelExternal;
-    public double Flaps, Airbrakes;
+    public double Flaps, Airbrakes, LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double WindX, WindY, WindZ;
     public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;

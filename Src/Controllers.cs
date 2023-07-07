@@ -91,9 +91,9 @@ class HornetSmartThrottle : IFlightController
 
     public ControlData ProcessFrame(FrameData frame)
     {
-        if (!Enabled)
+        if (!Enabled || frame.LandingGear > 0)
         {
-            Status = "off";
+            Status = !Enabled ? "off" : "GEAR";
             TargetSpeedIasKts = null;
             AfterburnerActive = SpeedbrakeActive = false;
             if (frame.SimTime - _lastSpeedBrake < 2)
@@ -102,16 +102,17 @@ class HornetSmartThrottle : IFlightController
         }
 
         var t = _throttleFilter.Step(ThrottleInput);
-        if (t > 0.5)
+        if (t > 0.7)
         {
             TargetSpeedIasKts = null;
+            AfterburnerActive = SpeedbrakeActive = false;
             Status = "THR";
             return null;
         }
         else
         {
             var ctrl = new ControlData();
-            TargetSpeedIasKts = Util.Linterp(0, 0.5, 180, 500, t);
+            TargetSpeedIasKts = Util.Linterp(0, 0.65, 180, 500, t.Clip(0, 0.65));
             _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
             var speedError = TargetSpeedIasKts.Value - frame.SpeedIndicated.MsToKts();
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
