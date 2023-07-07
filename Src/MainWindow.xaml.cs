@@ -28,6 +28,12 @@ public partial class MainWindow : ManagedWindow
     private double[] _joyAxes;
     private bool[] _joyButtons;
     private GameControllerSwitchPosition[] _joySwitches;
+    private Brush _brushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
+    private Brush _brushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
+    private Brush _brushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
+    private Brush _brushToggleBackNormal = new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
+    private Brush _brushToggleBackActive = new SolidColorBrush(Color.FromRgb(0xB5, 0xFF, 0xA3)); // BFFAFF
+    private Brush _brushToggleBackHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0xDE, 0xDB));
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -72,14 +78,15 @@ public partial class MainWindow : ManagedWindow
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
         _joystick?.GetCurrentReading(_joyButtons, _joySwitches, _joyAxes);
-        var hct = _dcs.FlightControllers.OfType<HornetSmartThrottle>().FirstOrDefault();
-        if (hct != null)
+        WithController<HornetSmartThrottle>(hct =>
         {
             hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
-            hct.AllowAfterburner = btnSmartThrottleAfterburner.IsChecked == true;
-            hct.AllowSpeedbrake = btnSmartThrottleSpeedbrake.IsChecked == true;
+            btnSmartThrottleAfterburner.BorderBrush = hct.AfterburnerActive ? _brushToggleBorderHigh : hct.AllowAfterburner ? _brushToggleBorderActive : _brushToggleBorderNormal;
+            btnSmartThrottleSpeedbrake.BorderBrush = hct.SpeedbrakeActive ? _brushToggleBorderHigh : hct.AllowSpeedbrake ? _brushToggleBorderActive : _brushToggleBorderNormal;
+            btnSmartThrottleAfterburner.Background = hct.AfterburnerActive ? _brushToggleBackHigh : hct.AllowAfterburner ? _brushToggleBackActive : _brushToggleBackNormal;
+            btnSmartThrottleSpeedbrake.Background = hct.SpeedbrakeActive ? _brushToggleBackHigh : hct.AllowSpeedbrake ? _brushToggleBackActive : _brushToggleBackNormal;
             lblSmartThrottle.Content = !hct.Enabled ? "off" : hct.TargetSpeedIasKts == null ? hct.Status : $"{hct.TargetSpeedIasKts:0} kt";
-        }
+        });
 
         var status = _dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - _dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -209,6 +216,23 @@ public partial class MainWindow : ManagedWindow
         var c = _dcs.FlightControllers.OfType<HornetAutoTrim>().Single();
         c.Enabled = !c.Enabled;
         UpdateGui();
+    }
+
+    private void btnSmartThrottleAfterburner_Click(object sender, RoutedEventArgs e)
+    {
+        WithController<HornetSmartThrottle>(c => c.AllowAfterburner = !c.AllowAfterburner);
+    }
+
+    private void btnSmartThrottleSpeedbrake_Click(object sender, RoutedEventArgs e)
+    {
+        WithController<HornetSmartThrottle>(c => c.AllowSpeedbrake = !c.AllowSpeedbrake);
+    }
+
+    private void WithController<T>(Action<T> action)
+    {
+        var c = _dcs.FlightControllers.OfType<T>().FirstOrDefault();
+        if (c != null)
+            action(c);
     }
 
     private bool _updating = false;
