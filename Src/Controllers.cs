@@ -70,7 +70,7 @@ class HornetSmartThrottle : IFlightController
     public bool Enabled { get; set; } = false;
     public string Status { get; private set; } = "";
     public bool AllowAfterburner { get; set; } = false;
-    public bool AllowSpeedbrake { get; set; } = false;
+    public bool AllowSpeedbrake { get; set; } = true;
     public double ThrottleInput { get; set; }
     public double? TargetSpeedIasKts { get; set; }
     public bool AfterburnerActive { get; private set; }
@@ -91,6 +91,16 @@ class HornetSmartThrottle : IFlightController
 
     public ControlData ProcessFrame(FrameData frame)
     {
+        if (!Enabled)
+        {
+            Status = "off";
+            TargetSpeedIasKts = null;
+            AfterburnerActive = SpeedbrakeActive = false;
+            if (frame.SimTime - _lastSpeedBrake < 2)
+                return new ControlData { SpeedBrakeRate = -1 };
+            return null;
+        }
+
         var t = _throttleFilter.Step(ThrottleInput);
         if (t > 0.5)
         {

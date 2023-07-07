@@ -33,7 +33,7 @@
                         <ToggleButton Name="btnHornetAutoTrim" IsChecked="False" Margin="8,8" Padding="8,2" Checked="HornetAutoTrim_Toggle" Unchecked="HornetAutoTrim_Toggle">Hornet auto-trim</ToggleButton>
                         <Border Name="pnlSmartThrottle" Margin="8,40" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
                             <StackPanel>
-                                <Label HorizontalContentAlignment="Center" Padding="0">SmartThrottle</Label>
+                                <Label HorizontalContentAlignment="Center" Padding="0" MouseDown="lblSmartThrottle_MouseDown">SmartThrottle</Label>
                                 <Label Name="lblSmartThrottle" HorizontalContentAlignment="Center" Padding="0,4,0,8" FontWeight="Bold">off</Label>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Name="btnSmartThrottleAfterburner" ToolTip="Allow using afterburner to maintain target speed (also while accelerating to it)" Padding="4,0" Click="btnSmartThrottleAfterburner_Click">AftB</Button>

@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Threading;
 using RT.Util;
@@ -28,6 +30,7 @@ public partial class MainWindow : ManagedWindow
     private double[] _joyAxes;
     private bool[] _joyButtons;
     private GameControllerSwitchPosition[] _joySwitches;
+    private GlobalKeyboardListener _keyboardListener = new();
     private Brush _brushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
     private Brush _brushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
     private Brush _brushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
@@ -58,6 +61,8 @@ public partial class MainWindow : ManagedWindow
         _joyAxes = new double[_joystick?.AxisCount ?? 0];
         _joySwitches = new GameControllerSwitchPosition[_joystick?.SwitchCount ?? 0];
         _joyButtons = new bool[_joystick?.ButtonCount ?? 0];
+        _keyboardListener.HookAllKeys = true;
+        _keyboardListener.KeyDown += _keyboardListener_KeyDown;
 
         btnStop_Click(null, null);
     }
@@ -86,6 +91,10 @@ public partial class MainWindow : ManagedWindow
             btnSmartThrottleAfterburner.Background = hct.AfterburnerActive ? _brushToggleBackHigh : hct.AllowAfterburner ? _brushToggleBackActive : _brushToggleBackNormal;
             btnSmartThrottleSpeedbrake.Background = hct.SpeedbrakeActive ? _brushToggleBackHigh : hct.AllowSpeedbrake ? _brushToggleBackActive : _brushToggleBackNormal;
             lblSmartThrottle.Content = !hct.Enabled ? "off" : hct.TargetSpeedIasKts == null ? hct.Status : $"{hct.TargetSpeedIasKts:0} kt";
+            if (!hct.Enabled || hct.TargetSpeedIasKts == null)
+                lblSmartThrottle.Foreground = Brushes.Black;
+            else
+                lblSmartThrottle.Foreground = Math.Abs(hct.TargetSpeedIasKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Green : Brushes.DarkRed;
         });
 
         var status = _dcs.Status;
@@ -228,6 +237,11 @@ public partial class MainWindow : ManagedWindow
         WithController<HornetSmartThrottle>(c => c.AllowSpeedbrake = !c.AllowSpeedbrake);
     }
 
+    private void lblSmartThrottle_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        WithController<HornetSmartThrottle>(c => c.Enabled = !c.Enabled);
+    }
+
     private void WithController<T>(Action<T> action)
     {
         var c = _dcs.FlightControllers.OfType<T>().FirstOrDefault();
@@ -246,5 +260,22 @@ public partial class MainWindow : ManagedWindow
         btnHornetAutoTrim.IsChecked = btnHornetAutoTrim.IsEnabled ? _dcs.FlightControllers.OfType<HornetAutoTrim>().Single().Enabled : false;
         btnHornetAutoTrim.Content = $"Hornet auto-trim: {(btnHornetAutoTrim.IsChecked == true ? "ON" : "off")}";
         _updating = false;
+    }
+
+    private void _keyboardListener_KeyDown(object sender, GlobalKeyEventArgs e)
+    {
+        if (!_dcs.IsRunning)
+            return;
+        WithController<HornetSmartThrottle>(c =>
+        {
+            if (e.VirtualKeyCode == Keys.T && e.ModifierKeys == default)
+            {
+                if (DcsWindow.DcsHasFocus())
+                {
+                    e.Handled = true;
+                    c.Enabled = !c.Enabled;
+                }
+            }
+        });
     }
 }

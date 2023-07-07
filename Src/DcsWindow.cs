@@ -51,6 +51,12 @@ public static class DcsWindow
         catch { return false; }
     }
 
+    public static bool DcsHasFocus()
+    {
+        try { return findDcsWindow() == PInvoke.GetForegroundWindow(); }
+        catch { return false; /* no DCS window */ }
+    }
+
     private static void focusDcs()
     {
         var wnd = findDcsWindow();
