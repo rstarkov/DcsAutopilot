@@ -37,6 +37,7 @@
                                 <Label Name="lblSmartThrottle" HorizontalContentAlignment="Center" Padding="0,4,0,8" FontWeight="Bold">off</Label>
                                 <StackPanel Orientation="Horizontal">
                                     <ToggleButton Name="btnSmartThrottleAfterburner" ToolTip="Allow using afterburner to maintain target speed (also while accelerating to it)" Padding="4,0">AftB</ToggleButton>
+                                    <ToggleButton Name="btnSmartThrottleSpeedbrake" ToolTip="Use speedbrake if significantly above target speed" Margin="8,0,0,0" Padding="4,0">SpdB</ToggleButton>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

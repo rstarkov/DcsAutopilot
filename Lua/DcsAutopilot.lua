@@ -121,12 +121,19 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = wind.x
         dt[#dt+1] = wind.y
         dt[#dt+1] = wind.z
-        dt[#dt+1] = "joyp"
-        dt[#dt+1] = GetDevice(0):get_argument_value(71)
-        dt[#dt+1] = "joyr"
-        dt[#dt+1] = GetDevice(0):get_argument_value(74)
-        dt[#dt+1] = "joyy"
-        dt[#dt+1] = GetDevice(0):get_argument_value(500)
+        if sdata.Name == 'FA-18C_hornet' then
+            -- really these should be sent by the host so that only the host needs to understand different airplanes
+            dt[#dt+1] = "joyp"
+            dt[#dt+1] = GetDevice(0):get_argument_value(71)
+            dt[#dt+1] = "joyr"
+            dt[#dt+1] = GetDevice(0):get_argument_value(74)
+            dt[#dt+1] = "joyy"
+            dt[#dt+1] = GetDevice(0):get_argument_value(500)
+            dt[#dt+1] = "joyt1"
+            dt[#dt+1] = GetDevice(0):get_argument_value(104)
+            dt[#dt+1] = "joyt2"
+            dt[#dt+1] = GetDevice(0):get_argument_value(105)
+        end
     end
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))

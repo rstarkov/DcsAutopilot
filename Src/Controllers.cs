@@ -70,8 +70,11 @@ class HornetSmartThrottle : IFlightController
     public bool Enabled { get; set; } = false;
     public string Status { get; private set; } = "";
     public bool AllowAfterburner { get; set; } = false;
+    public bool AllowSpeedbrake { get; set; } = false;
     public double ThrottleInput { get; set; }
     public double? TargetSpeedIasKts { get; set; }
+    public bool AfterburnerActive { get; private set; }
+    public bool SpeedbrakeActive { get; private set; }
 
     private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
     private IFilter _throttleFilter = Filters.BesselD10;
@@ -83,6 +86,8 @@ class HornetSmartThrottle : IFlightController
     public void ProcessBulkUpdate(BulkData bulk)
     {
     }
+
+    private double _lastSpeedBrake;
 
     public ControlData ProcessFrame(FrameData frame)
     {
@@ -98,8 +103,19 @@ class HornetSmartThrottle : IFlightController
             var ctrl = new ControlData();
             TargetSpeedIasKts = Util.Linterp(0, 0.5, 180, 500, t);
             _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
-            ctrl.ThrottleAxis = _pid.Update(TargetSpeedIasKts.Value.KtsToMs() - frame.SpeedIndicated, frame.dT);
+            var speedError = TargetSpeedIasKts.Value - frame.SpeedIndicated.MsToKts();
+            ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
             Status = "act";
+            AfterburnerActive = ctrl.ThrottleAxis > 1.5;
+            SpeedbrakeActive = false;
+            if (AllowSpeedbrake && speedError < -20)
+            {
+                ctrl.SpeedBrakeRate = 1;
+                SpeedbrakeActive = true;
+                _lastSpeedBrake = frame.SimTime;
+            }
+            else if (frame.SimTime - _lastSpeedBrake < 2)
+                ctrl.SpeedBrakeRate = -1;
             return ctrl;
         }
     }

@@ -283,6 +283,8 @@ public class DcsController
             else
                 cmd.Append($"4;pca3w;13;3016;3017;0;");
         }
+        if (data.SpeedBrakeRate != null)
+            cmd.Append($"3;pca;13;3035;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
@@ -355,6 +357,5 @@ public class ControlData
     public double? PitchTrimRate;
     public double? RollTrimRate;
     public double? YawTrimRate;
-
-    // trim axes? airbrakes? flaps? landing gear?
+    public double? SpeedBrakeRate; // 1=more brake, -1=less brake
 }
