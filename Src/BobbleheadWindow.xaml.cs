@@ -47,8 +47,9 @@ public partial class BobbleheadWindow : ManagedWindow
         _sim.Paint();
     }
 
-    public void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD)
+    public void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
     {
+        _sim.MoveCockpit(accFB, accLR, accUD, pitch, bank);
     }
 }
 
@@ -62,7 +63,7 @@ class BobbleheadController : IFlightController
 
     public ControlData ProcessFrame(FrameData frame)
     {
-        Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
+        Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad());
         return null;
     }
 }
@@ -70,7 +71,7 @@ class BobbleheadController : IFlightController
 abstract class BobbleSim
 {
     protected World _world;
-    public abstract void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD);
+    public abstract void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank);
     public abstract void Paint();
     public virtual void Step(double dt)
     {
@@ -164,12 +165,12 @@ abstract class BobbleSim
     }
 }
 
-class BobbleheadSideSim : BobbleSim
+class BobbleheadForwardSim : BobbleSim
 {
-    private Body _cockpit;
-    private Body _attachment;
+    protected Body _cockpit;
+    protected Body _attachment;
 
-    public BobbleheadSideSim()
+    public BobbleheadForwardSim()
     {
         _world = new World(new Vector2(0, -9.8f * 10));
         _cockpit = addBox();
@@ -193,12 +194,12 @@ class BobbleheadSideSim : BobbleSim
         _world.CreateJoint(new DistanceJointDef { bodyA = links[^1], bodyB = ball, length = linklen, localAnchorB = ballshape.GetVertices()[0] });
     }
 
-    public override void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD)
+    public override void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
     {
-        var accVector = new PointD(-10 * (float)accLR, -10 * (float)accUD).Rotated(rotLR);
+        var accVector = new PointD(-10 * (float)accLR, -10 * (float)accUD).Rotated(bank);
         _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
-        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)rotLR);
-        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(rotLR), cm(50) * (float)Math.Cos(rotLR)), 0);
+        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)bank);
+        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(bank), cm(50) * (float)Math.Cos(bank)), 0);
     }
 
     protected override (float xL, float yB, float xR, float yT) GetWorldViewport() => (-cm(50), -cm(50), cm(50), cm(50));
@@ -247,5 +248,16 @@ class BobbleheadSideSim : BobbleSim
             GL.DrawArrays(PrimitiveType.Lines, 0, 2);
         }
         GL.PopMatrix();
+    }
+}
+
+class BobbleheadSideSim : BobbleheadForwardSim
+{
+    public override void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
+    {
+        var accVector = new PointD(-10 * (float)accFB, -10 * (float)accUD).Rotated(pitch);
+        _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
+        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)pitch);
+        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(pitch), cm(50) * (float)Math.Cos(pitch)), 0);
     }
 }
