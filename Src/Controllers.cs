@@ -23,6 +23,8 @@ class HornetAutoTrim : IFlightController
 
     public ControlData ProcessFrame(FrameData frame)
     {
+        if (!Enabled)
+            return null;
         var ctrl = new ControlData();
         _status = "";
         if (Math.Abs(frame.Bank) > 15)
