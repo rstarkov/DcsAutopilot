@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -18,43 +17,69 @@ namespace DcsAutopilot;
 
 public partial class BobbleheadWindow : ManagedWindow
 {
-    private World _world;
-    private Body _cockpit;
-    private Body _attachment;
+    private BobbleSim _sim;
 
     public BobbleheadWindow() : base(App.Settings.BobbleheadWindow)
     {
         InitializeComponent();
         canvas.RegisterToEventsDirectly = false; // workaround for StackOverflow in https://github.com/opentk/GLWpfControl/issues/82
         canvas.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 1 });
-        createWorld();
+        _sim = new BobbleheadSideSim();
     }
 
-    private void createWorld()
+    private Queue<double> _simTimes = new();
+
+    private void canvas_Render(TimeSpan dt)
     {
-        _world = new World(new Vector2(0, -9.8f * 10));
-        _cockpit = addBox(_world);
-        for (int i = 0; i < 3; i++)
-            addPiece(_world, new Vector2(rnd(cm(-40f), cm(40f)), rnd(cm(-40f), cm(40f))), createPolyShape(Random.Shared.Next(4, 7), rnd(cm(5f), cm(20f)), 0.6f, 1f));
-        _attachment = _world.CreateBody(new BodyDef { type = BodyType.Static, position = new Vector2(0, cm(50)), angle = 0, bullet = false });
-        var links = new Body[8];
-        var linklen = cm(40) / (links.Length + 1);
-        for (int i = 0; i < links.Length; i++)
-        {
-            links[i] = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(0, cm(50) - linklen * (i + 1)), angle = 0, bullet = false, linearDamping = 0.2f });
-            links[i].CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 0 } });
-        }
-        var ballshape = createPolyShape(5, cm(10), 0.6f, 1f);
-        var ball = addPiece(_world, new Vector2(0, cm(1)), ballshape);
-        ball.SetLinearDampling(0.2f);
-        ball.SetAngularDamping(0.2f);
-        _world.CreateJoint(new DistanceJointDef { bodyA = _attachment, bodyB = links[0], length = linklen });
-        for (int i = 1; i < links.Length; i++)
-            _world.CreateJoint(new DistanceJointDef { bodyA = links[i - 1], bodyB = links[i], length = linklen });
-        _world.CreateJoint(new DistanceJointDef { bodyA = links[^1], bodyB = ball, length = linklen, localAnchorB = ballshape.GetVertices()[0] });
+        if (dt.TotalSeconds > 0.1)
+            return;
+        const double dt_tgt = 0.001; // maximum sim dt
+        int steps = (int)Math.Ceiling(dt.TotalSeconds / dt_tgt);
+        var dtStep = (float)(dt.TotalSeconds / steps);
+        var start = DateTime.UtcNow;
+        for (int i = 0; i < steps; i++)
+            _sim.Step(dtStep);
+        _simTimes.Enqueue((DateTime.UtcNow - start).TotalMilliseconds);
+        while (_simTimes.Count > 100) _simTimes.Dequeue();
+        Title = $"DCS bobblehead: {_simTimes.Average():0.000} ms/frame";
+
+        _sim.Viewport(canvas.ActualWidth, canvas.ActualHeight, 15, 15, canvas.ActualHeight - 30, canvas.ActualHeight - 30);
+        _sim.Paint();
     }
 
-    private static float cm(float cm)
+    public void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD)
+    {
+    }
+}
+
+class BobbleheadController : IFlightController
+{
+    public bool Enabled { get; set; }
+    public string Status => "";
+    public void NewSession(BulkData bulk) { }
+    public void ProcessBulkUpdate(BulkData bulk) { }
+    public BobbleheadWindow Window;
+
+    public ControlData ProcessFrame(FrameData frame)
+    {
+        Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
+        return null;
+    }
+}
+
+abstract class BobbleSim
+{
+    protected World _world;
+    public abstract void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD);
+    public abstract void Paint();
+    public virtual void Step(double dt)
+    {
+        _world.Step((float)dt, 8, 8);
+    }
+    protected byte[] _colorBorder = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }; // 9 elements
+    protected byte[] _colorRainbow = new byte[] { 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255 }; // 9 elements
+
+    protected static float cm(float cm)
     {
         // fixed Box2D constants: gap = 0.005 (x4) units; max speed = 200 units / time unit
         // with m/s units max speed is fine but gap is 2cm, very visible
@@ -62,12 +87,12 @@ public partial class BobbleheadWindow : ManagedWindow
         return cm / 10f;
     }
 
-    private static Body addBox(World world)
+    protected Body addBox()
     {
-        var body = world.CreateBody(new BodyDef { type = BodyType.Static, position = new Vector2(0, 0), angle = 0, bullet = false });
+        var body = _world.CreateBody(new BodyDef { type = BodyType.Static, position = new Vector2(0, 0), angle = 0, bullet = false });
         var shape = new ChainShape();
         shape.CreateLoop(new[] { new Vector2(cm(-50), cm(-50)), new Vector2(cm(-50), cm(50)), new Vector2(cm(50), cm(50)), new Vector2(cm(50), cm(-50)) });
-        body.CreateFixture(new FixtureDef { friction = 0.1f, restitution = 0.5f, density = 0, shape = shape });
+        body.CreateFixture(new FixtureDef { friction = 0.1f, restitution = 0.5f, density = 0, shape = shape, filter = new Filter { categoryBits = 2 } });
         body.SetUserData(new UserData
         {
             Vertices = new float[] { cm(-50), cm(-50), cm(-50), cm(50), cm(50), cm(50), cm(50), cm(-50) },
@@ -76,9 +101,9 @@ public partial class BobbleheadWindow : ManagedWindow
         return body;
     }
 
-    private static Body addPiece(World world, Vector2 pos, PolygonShape shape)
+    protected Body addPiece(Vector2 pos, PolygonShape shape)
     {
-        var body = world.CreateBody(new BodyDef
+        var body = _world.CreateBody(new BodyDef
         {
             type = BodyType.Dynamic,
             position = pos,
@@ -109,13 +134,13 @@ public partial class BobbleheadWindow : ManagedWindow
         return body;
     }
 
-    class UserData
+    protected class UserData
     {
         public float[] Vertices;
         public bool Filled;
     }
 
-    private static PolygonShape createPolyShape(int vertices, float radius, float maxRndShortening, float maxRndAngle)
+    protected static PolygonShape createPolyShape(int vertices, float radius, float maxRndShortening, float maxRndAngle)
     {
         var angles = new float[vertices];
         for (int i = 0; i < vertices; i++)
@@ -124,34 +149,62 @@ public partial class BobbleheadWindow : ManagedWindow
         return new PolygonShape((from a in angles let rad = radius * rnd(maxRndShortening, 1f) select new Vector2(rad * MathF.Cos(a), rad * MathF.Sin(a))).ToArray());
     }
 
-    private static float rnd(float min, float max) => (float)Random.Shared.NextDouble(min, max);
+    protected static float rnd(float min, float max) => (float)Random.Shared.NextDouble(min, max);
 
-    private byte[] _colorBorder = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }; // 9 elements
-    private byte[] _colorRainbow = new byte[] { 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255 }; // 9 elements
+    protected abstract (float xL, float yB, float xR, float yT) GetWorldViewport();
 
-    private Queue<double> _simTimes = new();
-
-    private void canvas_Render(TimeSpan dt)
+    public void Viewport(double width, double height, double xL, double yT, double xR, double yB)
     {
-        if (dt.TotalSeconds > 0.1)
-            return;
-        const double dt_tgt = 0.001; // maximum sim dt
-        int steps = (int)Math.Ceiling(dt.TotalSeconds / dt_tgt);
-        var dtStep = (float)(dt.TotalSeconds / steps);
-        var start = DateTime.UtcNow;
-        for (int i = 0; i < steps; i++)
-            _world.Step(dtStep, 8, 8);
-        _simTimes.Enqueue((DateTime.UtcNow - start).TotalMilliseconds);
-        while (_simTimes.Count > 100) _simTimes.Dequeue();
-        Title = $"DCS bobblehead: {_simTimes.Average():0.000} ms/frame";
-
         GL.MatrixMode(MatrixMode.Projection);
         GL.LoadIdentity();
         GL.MatrixMode(MatrixMode.Modelview);
         GL.LoadIdentity();
+        var w = GetWorldViewport();
+        GL.Ortho(Util.Linterp(xL, xR, w.xL, w.xR, 0), Util.Linterp(xL, xR, w.xL, w.xR, width), Util.Linterp(yT, yB, w.yT, w.yB, height), Util.Linterp(yT, yB, w.yT, w.yB, 0), -1.0, 1.0);
+    }
+}
 
-        GL.Ortho(cm(-55), cm(110) * canvas.ActualWidth / canvas.ActualHeight + cm(-50), cm(-55), cm(55), -1.0, 1.0);
+class BobbleheadSideSim : BobbleSim
+{
+    private Body _cockpit;
+    private Body _attachment;
 
+    public BobbleheadSideSim()
+    {
+        _world = new World(new Vector2(0, -9.8f * 10));
+        _cockpit = addBox();
+        for (int i = 0; i < 3; i++)
+            addPiece(new Vector2(rnd(cm(-40f), cm(40f)), rnd(cm(-40f), cm(40f))), createPolyShape(Random.Shared.Next(4, 7), rnd(cm(5f), cm(20f)), 0.6f, 1f));
+        _attachment = _world.CreateBody(new BodyDef { type = BodyType.Static, position = new Vector2(0, cm(50)), angle = 0, bullet = false });
+        var links = new Body[8];
+        var linklen = cm(40) / (links.Length + 1);
+        for (int i = 0; i < links.Length; i++)
+        {
+            links[i] = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(0, cm(50) - linklen * (i + 1)), angle = 0, bullet = false, linearDamping = 0.2f });
+            links[i].CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 4, maskBits = 1 + 2 } });
+        }
+        var ballshape = createPolyShape(5, cm(10), 0.6f, 1f);
+        var ball = addPiece(new Vector2(0, cm(1)), ballshape);
+        ball.SetLinearDampling(0.2f);
+        ball.SetAngularDamping(0.2f);
+        _world.CreateJoint(new DistanceJointDef { bodyA = _attachment, bodyB = links[0], length = linklen });
+        for (int i = 1; i < links.Length; i++)
+            _world.CreateJoint(new DistanceJointDef { bodyA = links[i - 1], bodyB = links[i], length = linklen });
+        _world.CreateJoint(new DistanceJointDef { bodyA = links[^1], bodyB = ball, length = linklen, localAnchorB = ballshape.GetVertices()[0] });
+    }
+
+    public override void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD)
+    {
+        var accVector = new PointD(-10 * (float)accLR, -10 * (float)accUD).Rotated(rotLR);
+        _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
+        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)rotLR);
+        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(rotLR), cm(50) * (float)Math.Cos(rotLR)), 0);
+    }
+
+    protected override (float xL, float yB, float xR, float yT) GetWorldViewport() => (-cm(50), -cm(50), cm(50), cm(50));
+
+    public override void Paint()
+    {
         GL.ClearColor(0, 0, 0, 1.0f);
         GL.ClearStencil(0);
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.StencilBufferBit);
@@ -194,28 +247,5 @@ public partial class BobbleheadWindow : ManagedWindow
             GL.DrawArrays(PrimitiveType.Lines, 0, 2);
         }
         GL.PopMatrix();
-    }
-
-    public void MoveCockpit(double accFB, double accLR, double accUD, double rotFB, double rotLR, double rotUD)
-    {
-        var accVector = new PointD(-10 * (float)accLR, -10 * (float)accUD).Rotated(rotLR);
-        _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
-        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)rotLR);
-        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(rotLR), cm(50) * (float)Math.Cos(rotLR)), 0);
-    }
-}
-
-class BobbleheadController : IFlightController
-{
-    public bool Enabled { get; set; }
-    public string Status => "";
-    public void NewSession(BulkData bulk) { }
-    public void ProcessBulkUpdate(BulkData bulk) { }
-    public BobbleheadWindow Window;
-
-    public ControlData ProcessFrame(FrameData frame)
-    {
-        Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
-        return null;
     }
 }
