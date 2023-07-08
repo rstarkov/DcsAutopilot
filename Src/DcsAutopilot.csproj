@@ -10,15 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="BobbleheadWindow.xaml" />
     <None Remove="Chart.xaml" />
     <None Remove="WindComp.xaml" />
     <None Remove="WindDir.xaml" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Box2D.NetStandard" Version="2.4.7-alpha" />
     <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.2.229-beta">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="OpenTK" Version="4.7.7" />
+    <PackageReference Include="OpenTK.GLWpfControl" Version="4.2.3" />
     <PackageReference Include="RT.Serialization.Xml" Version="2.0.1744" />
     <PackageReference Include="RT.Util" Version="2.0.1744" />
     <PackageReference Include="RT.Util.Core" Version="2.0.1744" />

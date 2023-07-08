@@ -37,6 +37,7 @@ public partial class MainWindow : ManagedWindow
     private Brush _brushToggleBackNormal = new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
     private Brush _brushToggleBackActive = new SolidColorBrush(Color.FromRgb(0xB5, 0xFF, 0xA3)); // BFFAFF
     private Brush _brushToggleBackHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0xDE, 0xDB));
+    private BobbleheadWindow _bobblehead;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
@@ -124,6 +125,7 @@ public partial class MainWindow : ManagedWindow
         sb.AppendLine($"Gyros: pitch={_dcs.LastFrame?.GyroPitch:0.00}   roll={_dcs.LastFrame?.GyroRoll:0.00}   yaw={_dcs.LastFrame?.GyroYaw:0.00}");
         sb.AppendLine($"Joystick: {_dcs.LastFrame?.JoyPitch:0.000}   {_dcs.LastFrame?.JoyRoll:0.000}   {_dcs.LastFrame?.JoyYaw:0.000}   T:{_dcs.LastFrame?.JoyThrottle1:0.000}");
         sb.AppendLine($"Flaps: {_dcs.LastFrame?.Flaps:0.000}   Speedbrakes: {_dcs.LastFrame?.Airbrakes:0.000}   Gear: {_dcs.LastFrame?.LandingGear:0.000}");
+        sb.AppendLine($"Acc: {_dcs.LastFrame?.AccX:0.000} / {_dcs.LastFrame?.AccY:0.000} / {_dcs.LastFrame?.AccZ:0.000}");
         sb.AppendLine("Controller: " + _ctrl?.Status);
         sb.AppendLine();
         lblInfo.Text = sb.ToString();
@@ -183,6 +185,7 @@ public partial class MainWindow : ManagedWindow
 
         public ControlData ProcessFrame(FrameData frame)
         {
+            _wnd._bobblehead.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
             if (_skip % 3 == 0)
             {
                 _wnd.ctChart.Times.Enqueue(frame.SimTime);
@@ -208,6 +211,10 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(new HornetSmartThrottle() { Enabled = true });
         _dcs.Start();
         UpdateGui();
+        //_bobblehead = new DelBobblehead();
+        //new Thread(() => { _bobblehead.Run(); }).Start();
+        _bobblehead = new BobbleheadWindow();
+        _bobblehead.Show();
     }
 
     private void btnStop_Click(object sender, RoutedEventArgs e)
@@ -218,6 +225,7 @@ public partial class MainWindow : ManagedWindow
         lblStats.Content = "";
         _fps.Clear();
         UpdateGui();
+        _bobblehead?.Close();
     }
 
     private void HornetAutoTrim_Toggle(object sender, RoutedEventArgs e)
