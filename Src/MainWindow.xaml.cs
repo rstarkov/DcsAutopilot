@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -185,7 +182,6 @@ public partial class MainWindow : ManagedWindow
 
         public ControlData ProcessFrame(FrameData frame)
         {
-            _wnd._bobblehead.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
             if (_skip % 3 == 0)
             {
                 _wnd.ctChart.Times.Enqueue(frame.SimTime);
@@ -211,10 +207,6 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(new HornetSmartThrottle() { Enabled = true });
         _dcs.Start();
         UpdateGui();
-        //_bobblehead = new DelBobblehead();
-        //new Thread(() => { _bobblehead.Run(); }).Start();
-        _bobblehead = new BobbleheadWindow();
-        _bobblehead.Show();
     }
 
     private void btnStop_Click(object sender, RoutedEventArgs e)
@@ -225,7 +217,19 @@ public partial class MainWindow : ManagedWindow
         lblStats.Content = "";
         _fps.Clear();
         UpdateGui();
-        _bobblehead?.Close();
+    }
+
+    private void btnBob_Click(object sender, RoutedEventArgs e)
+    {
+        if (_bobblehead != null)
+            return;
+        _bobblehead = new BobbleheadWindow();
+        if (!_dcs.FlightControllers.OfType<BobbleheadController>().Any())
+            _dcs.FlightControllers.Add(new BobbleheadController());
+        var ctrl = _dcs.FlightControllers.OfType<BobbleheadController>().Single();
+        _bobblehead.Closing += delegate { _bobblehead = null; ctrl.Window = null; };
+        _bobblehead.Show();
+        ctrl.Window = _bobblehead;
     }
 
     private void HornetAutoTrim_Toggle(object sender, RoutedEventArgs e)

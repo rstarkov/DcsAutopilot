@@ -198,3 +198,18 @@ public partial class BobbleheadWindow : Window
         _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(rotLR), cm(50) * (float)Math.Cos(rotLR)), 0);
     }
 }
+
+class BobbleheadController : IFlightController
+{
+    public bool Enabled { get; set; }
+    public string Status => "";
+    public void NewSession(BulkData bulk) { }
+    public void ProcessBulkUpdate(BulkData bulk) { }
+    public BobbleheadWindow Window;
+
+    public ControlData ProcessFrame(FrameData frame)
+    {
+        Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad(), 0);
+        return null;
+    }
+}

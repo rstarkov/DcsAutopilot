@@ -82,6 +82,7 @@
         <DockPanel Grid.Row="1" Margin="0,8,0,8">
             <Button Name="btnStart" Content="Start" VerticalAlignment="Stretch" Click="btnStart_Click" Width="40" Margin="10,0,0,0" />
             <Button Name="btnStop" Content="Stop" VerticalAlignment="Stretch" Click="btnStop_Click" Width="40" Margin="10,0,0,0" />
+            <Button Name="btnBob" Content="Bob" VerticalAlignment="Stretch" Click="btnBob_Click" Width="40" Margin="10,0,0,0" />
             <Label Name="lblStatus" Content="Stopped" VerticalAlignment="Center" Margin="10,0,0,0" Padding="0" />
             <Label Name="lblStats" Content="Stats" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0" Padding="0" />
         </DockPanel>
