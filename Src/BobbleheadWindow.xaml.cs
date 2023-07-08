@@ -17,14 +17,15 @@ namespace DcsAutopilot;
 
 public partial class BobbleheadWindow : ManagedWindow
 {
-    private BobbleSim _sim;
+    private BobbleSim _sim1, _sim2;
 
     public BobbleheadWindow() : base(App.Settings.BobbleheadWindow)
     {
         InitializeComponent();
         canvas.RegisterToEventsDirectly = false; // workaround for StackOverflow in https://github.com/opentk/GLWpfControl/issues/82
         canvas.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 1 });
-        _sim = new BobbleheadSideSim();
+        _sim1 = new BobbleheadForwardSim();
+        _sim2 = new BobbleheadSideSim();
     }
 
     private Queue<double> _simTimes = new();
@@ -38,18 +39,27 @@ public partial class BobbleheadWindow : ManagedWindow
         var dtStep = (float)(dt.TotalSeconds / steps);
         var start = DateTime.UtcNow;
         for (int i = 0; i < steps; i++)
-            _sim.Step(dtStep);
+        {
+            _sim1.Step(dtStep);
+            _sim2.Step(dtStep);
+        }
         _simTimes.Enqueue((DateTime.UtcNow - start).TotalMilliseconds);
         while (_simTimes.Count > 100) _simTimes.Dequeue();
         Title = $"DCS bobblehead: {_simTimes.Average():0.000} ms/frame";
 
-        _sim.Viewport(canvas.ActualWidth, canvas.ActualHeight, 15, 15, canvas.ActualHeight - 30, canvas.ActualHeight - 30);
-        _sim.Paint();
+        GL.ClearColor(0, 0, 0, 1.0f);
+        GL.ClearStencil(0);
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.StencilBufferBit);
+        _sim1.Viewport(canvas.ActualWidth, canvas.ActualHeight, 15, 15, canvas.ActualWidth - 15, canvas.ActualWidth - 15);
+        _sim1.Paint();
+        _sim2.Viewport(canvas.ActualWidth, canvas.ActualHeight, 15, canvas.ActualWidth, canvas.ActualWidth - 15, 2 * canvas.ActualWidth - 15);
+        _sim2.Paint();
     }
 
     public void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
     {
-        _sim.MoveCockpit(accFB, accLR, accUD, pitch, bank);
+        _sim1.MoveCockpit(accFB, accLR, accUD, pitch, bank);
+        _sim2.MoveCockpit(accFB, accLR, accUD, pitch, bank);
     }
 }
 
@@ -206,9 +216,6 @@ class BobbleheadForwardSim : BobbleSim
 
     public override void Paint()
     {
-        GL.ClearColor(0, 0, 0, 1.0f);
-        GL.ClearStencil(0);
-        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.StencilBufferBit);
         GL.Disable(EnableCap.DepthTest);
         GL.DepthMask(false);
 
