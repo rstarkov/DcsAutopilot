@@ -29,5 +29,6 @@ public partial class App : Application
 
 class Settings
 {
-    public ManagedWindow.Settings MainWindow = new ManagedWindow.Settings();
+    public ManagedWindow.Settings MainWindow = new();
+    public ManagedWindow.Settings BobbleheadWindow = new();
 }

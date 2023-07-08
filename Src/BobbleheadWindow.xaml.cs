@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Windows;
 using Box2D.NetStandard.Collision.Shapes;
 using Box2D.NetStandard.Dynamics.Bodies;
 using Box2D.NetStandard.Dynamics.Fixtures;
@@ -10,17 +11,18 @@ using Box2D.NetStandard.Dynamics.World;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Wpf;
 using RT.Util.ExtensionMethods;
+using RT.Util.Forms;
 using RT.Util.Geometry;
 
 namespace DcsAutopilot;
 
-public partial class BobbleheadWindow : Window
+public partial class BobbleheadWindow : ManagedWindow
 {
     private World _world;
     private Body _cockpit;
     private Body _attachment;
 
-    public BobbleheadWindow()
+    public BobbleheadWindow() : base(App.Settings.BobbleheadWindow)
     {
         InitializeComponent();
         canvas.RegisterToEventsDirectly = false; // workaround for StackOverflow in https://github.com/opentk/GLWpfControl/issues/82
@@ -127,17 +129,21 @@ public partial class BobbleheadWindow : Window
     private byte[] _colorBorder = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }; // 9 elements
     private byte[] _colorRainbow = new byte[] { 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255 }; // 9 elements
 
-    double _dtgt = 0.001;
+    private Queue<double> _simTimes = new();
+
     private void canvas_Render(TimeSpan dt)
     {
         if (dt.TotalSeconds > 0.1)
             return;
-        int steps = (int)Math.Ceiling(dt.TotalSeconds / _dtgt);
+        const double dt_tgt = 0.001; // maximum sim dt
+        int steps = (int)Math.Ceiling(dt.TotalSeconds / dt_tgt);
         var dtStep = (float)(dt.TotalSeconds / steps);
         var start = DateTime.UtcNow;
         for (int i = 0; i < steps; i++)
             _world.Step(dtStep, 8, 8);
-        Title = $"{(DateTime.UtcNow - start).TotalMilliseconds:0.000} ms";
+        _simTimes.Enqueue((DateTime.UtcNow - start).TotalMilliseconds);
+        while (_simTimes.Count > 100) _simTimes.Dequeue();
+        Title = $"DCS bobblehead: {_simTimes.Average():0.000} ms/frame";
 
         GL.MatrixMode(MatrixMode.Projection);
         GL.LoadIdentity();

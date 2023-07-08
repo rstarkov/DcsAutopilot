@@ -1,9 +1,10 @@
-﻿<Window x:Class="DcsAutopilot.BobbleheadWindow"
+﻿<rtf:ManagedWindow x:Class="DcsAutopilot.BobbleheadWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DcsAutopilot"
+        xmlns:rtf="clr-namespace:RT.Util.Forms;assembly=RT.Util"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
         Background="Black"
@@ -13,4 +14,4 @@
             x:Name="canvas"
             Render="canvas_Render"/>
     </Grid>
-</Window>
+</rtf:ManagedWindow>
