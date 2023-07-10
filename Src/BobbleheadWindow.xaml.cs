@@ -87,7 +87,7 @@ abstract class BobbleSim
     {
         _world.Step((float)dt, 8, 8);
     }
-    protected byte[] _colorBorder = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }; // 9 elements
+    protected byte[] _colorBorder = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }; // 11 elements
     protected byte[] _colorRainbow = new byte[] { 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255 }; // 9 elements
 
     protected static float cm(float cm)
@@ -136,6 +136,7 @@ abstract class BobbleSim
             density = 1,
             isSensor = false,
             shape = shape,
+            filter = new Filter { categoryBits = 1 },
         });
         body.SetUserData(new UserData
         {
@@ -149,6 +150,7 @@ abstract class BobbleSim
     {
         public float[] Vertices;
         public bool Filled;
+        public byte[] Colors;
     }
 
     protected static PolygonShape createPolyShape(int vertices, float radius, float maxRndShortening, float maxRndAngle)
@@ -173,43 +175,56 @@ abstract class BobbleSim
         var w = GetWorldViewport();
         GL.Ortho(Util.Linterp(xL, xR, w.xL, w.xR, 0), Util.Linterp(xL, xR, w.xL, w.xR, width), Util.Linterp(yT, yB, w.yT, w.yB, height), Util.Linterp(yT, yB, w.yT, w.yB, 0), -1.0, 1.0);
     }
+
+    protected Body addSwing(Vector2 pos, int linkCount, float ropeLength, float ballRadius)
+    {
+        var attachment = _world.CreateBody(new BodyDef { type = BodyType.Static, position = pos, angle = 0, bullet = false });
+        var links = new Body[linkCount];
+        var linklen = ropeLength / (links.Length + 1);
+        for (int i = 0; i < links.Length; i++)
+        {
+            links[i] = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(pos.X, cm(50) - linklen * (i + 1)), angle = 0, bullet = false, linearDamping = 0.2f });
+            links[i].CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 4, maskBits = 1 + 2 } });
+        }
+        var ballshape = createPolyShape(5, ballRadius, 0.6f, 1f);
+        var ball = addPiece(new Vector2(pos.X, cm(50) - linklen * (linkCount + 1) + 0.0154f/*avoid 0,0*/), ballshape);
+        ball.SetLinearDampling(0.2f);
+        ball.SetAngularDamping(0.2f);
+        _world.CreateJoint(new DistanceJointDef { bodyA = attachment, bodyB = links[0], length = linklen });
+        for (int i = 1; i < links.Length; i++)
+            _world.CreateJoint(new DistanceJointDef { bodyA = links[i - 1], bodyB = links[i], length = linklen });
+        _world.CreateJoint(new DistanceJointDef { bodyA = links[^1], bodyB = ball, length = linklen, localAnchorB = ballshape.GetVertices()[0] });
+        return attachment;
+    }
 }
 
 class BobbleheadForwardSim : BobbleSim
 {
     protected Body _cockpit;
     protected Body _attachment;
+    protected PointD _attachmentPos;
 
     public BobbleheadForwardSim()
+    {
+        CreateWorld();
+    }
+
+    protected virtual void CreateWorld()
     {
         _world = new World(new Vector2(0, -9.8f * 10));
         _cockpit = addBox();
         for (int i = 0; i < 3; i++)
             addPiece(new Vector2(rnd(cm(-40f), cm(40f)), rnd(cm(-40f), cm(40f))), createPolyShape(Random.Shared.Next(4, 7), rnd(cm(5f), cm(20f)), 0.6f, 1f));
-        _attachment = _world.CreateBody(new BodyDef { type = BodyType.Static, position = new Vector2(0, cm(50)), angle = 0, bullet = false });
-        var links = new Body[8];
-        var linklen = cm(40) / (links.Length + 1);
-        for (int i = 0; i < links.Length; i++)
-        {
-            links[i] = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(0, cm(50) - linklen * (i + 1)), angle = 0, bullet = false, linearDamping = 0.2f });
-            links[i].CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 4, maskBits = 1 + 2 } });
-        }
-        var ballshape = createPolyShape(5, cm(10), 0.6f, 1f);
-        var ball = addPiece(new Vector2(0, cm(1)), ballshape);
-        ball.SetLinearDampling(0.2f);
-        ball.SetAngularDamping(0.2f);
-        _world.CreateJoint(new DistanceJointDef { bodyA = _attachment, bodyB = links[0], length = linklen });
-        for (int i = 1; i < links.Length; i++)
-            _world.CreateJoint(new DistanceJointDef { bodyA = links[i - 1], bodyB = links[i], length = linklen });
-        _world.CreateJoint(new DistanceJointDef { bodyA = links[^1], bodyB = ball, length = linklen, localAnchorB = ballshape.GetVertices()[0] });
+        _attachmentPos = new PointD(cm(0), cm(50));
+        _attachment = addSwing(_attachmentPos.ToVector2(), linkCount: 8, ropeLength: cm(40), ballRadius: cm(10));
     }
 
     public override void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
     {
-        var accVector = new PointD(-10 * (float)accLR, -10 * (float)accUD).Rotated(bank);
-        _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
+        _world.SetGravity((-10 * new PointD(accLR, accUD)).Rotated(bank).ToVector2());
         _cockpit.SetTransform(_cockpit.GetPosition(), -(float)bank);
-        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(bank), cm(50) * (float)Math.Cos(bank)), 0);
+        _attachment.SetTransform(_attachmentPos.Rotated(bank).ToVector2(), 0);
+        // TODO: a large rotation gets applied in one single timestep - spread it over the next frame
     }
 
     protected override (float xL, float yB, float xR, float yT) GetWorldViewport() => (-cm(50), -cm(50), cm(50), cm(50));
@@ -238,19 +253,29 @@ class BobbleheadForwardSim : BobbleSim
                 GL.VertexPointer(2, VertexPointerType.Float, 0, ud.Vertices);
                 if (ud.Filled)
                 {
-                    GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorRainbow);
+                    if (ud.Colors != null)
+                        GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, ud.Colors);
+                    else
+                        GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorRainbow);
                     GL.DrawArrays(PrimitiveType.TriangleFan, 0, ud.Vertices.Length / 2);
                 }
-                GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorBorder);
+                if (ud.Colors != null)
+                    GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, ud.Colors);
+                else
+                    GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorBorder);
                 GL.DrawArrays(PrimitiveType.LineLoop, 0, ud.Vertices.Length / 2);
                 GL.PopMatrix();
             }
         }
-        GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorBorder);
         for (var joint = _world.GetJointList(); joint != null; joint = joint.GetNext())
         {
             var pA = joint.GetAnchorA;
             var pB = joint.GetAnchorB;
+            var ud = (UserData)joint.UserData;
+            if (ud?.Colors != null)
+                GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, ud?.Colors);
+            else
+                GL.ColorPointer(3, ColorPointerType.UnsignedByte, 0, _colorBorder);
             GL.VertexPointer(2, VertexPointerType.Float, 0, new float[] { pA.X, pA.Y, pB.X, pB.Y });
             GL.DrawArrays(PrimitiveType.Lines, 0, 2);
         }
@@ -260,11 +285,96 @@ class BobbleheadForwardSim : BobbleSim
 
 class BobbleheadSideSim : BobbleheadForwardSim
 {
+    private Body _headAtt1, _headAtt2;
+    private PointD _headAtt1Pos, _headAtt2Pos;
+
+    protected override void CreateWorld()
+    {
+        _world = new World(new Vector2(0, -9.8f * 10));
+        _cockpit = addBox();
+        for (int i = 0; i < 1; i++)
+            addPiece(new Vector2(rnd(cm(-40f), cm(40f)), rnd(cm(-40f), cm(40f))), createPolyShape(Random.Shared.Next(4, 7), rnd(cm(8f), cm(14f)), 0.6f, 1f));
+        _attachmentPos = new PointD(cm(15), cm(50));
+        _attachment = addSwing(_attachmentPos.ToVector2(), linkCount: 7, ropeLength: cm(30), ballRadius: cm(5));
+        addHead(true, cm(-10));
+    }
+
+    private void addHead(bool middleLink, float att1x)
+    {
+        var att2x = att1x + cm(15);
+        _headAtt1Pos = new PointD(att1x, cm(-50));
+        _headAtt2Pos = new PointD(att2x, cm(-50));
+        _headAtt1 = _world.CreateBody(new BodyDef { type = BodyType.Static, position = _headAtt1Pos.ToVector2(), angle = 0, bullet = false });
+        _headAtt2 = _world.CreateBody(new BodyDef { type = BodyType.Static, position = _headAtt2Pos.ToVector2(), angle = 0, bullet = false });
+        var head = _world.CreateBody(new BodyDef
+        {
+            type = BodyType.Dynamic,
+            position = new Vector2(att1x, cm(-50 + (middleLink ? 30 : 15))),
+            allowSleep = false,
+            awake = true,
+            bullet = true,
+            linearDamping = 0.5f,
+            angularDamping = 0.2f,
+            gravityScale = 1,
+        });
+        head.CreateFixture(new FixtureDef
+        {
+            friction = 0.1f,
+            restitution = 0.5f,
+            density = 1,
+            isSensor = false,
+            shape = new PolygonShape(new Vector2(0, 0), new Vector2(cm(15), 0), new Vector2(cm(20), cm(12.5f)), new Vector2(cm(15), cm(25)), new Vector2(cm(0), cm(25)), new Vector2(cm(-5), cm(12.5f))),
+        });
+        head.SetUserData(new UserData
+        {
+            Vertices = new[] { new Vector2(0, 0), new Vector2(cm(15), 0),
+                /*mouth*/new Vector2(cm(18), cm(7)), new Vector2(cm(15), cm(7)), new Vector2(cm(18.5f), cm(8.5f)),
+                /*nose*/new Vector2(cm(18), cm(12.5f)), new Vector2(cm(23), cm(12.5f)), new Vector2(cm(17), cm(18f)),
+                new Vector2(cm(15), cm(25)), new Vector2(cm(0), cm(25)), new Vector2(cm(-5), cm(12.5f)) }.SelectMany(v => new[] { v.X, v.Y }).ToArray(),
+            Colors = new byte[] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, }, // 11 elements
+            Filled = false,
+        });
+        DistanceJointDef neckJ(Body a, Body b, float length, DistanceJointDef jd)
+        {
+            jd.bodyA = a;
+            jd.bodyB = b;
+            jd.length = length;
+            jd.stiffness = 5000f; // 5k: buckle at 2g but nice lean; 15k: buckle at 6g but almost no lean
+            jd.damping = 100f;
+            jd.UserData = new UserData { Colors = new byte[] { 90, 90, 90, 90, 90, 90 } };
+            return jd;
+        }
+        if (middleLink)
+        {
+            var hlink1 = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(att1x, cm(-35)), angle = 0, bullet = false, linearDamping = 0.2f });
+            hlink1.CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 4, maskBits = 2 } });
+            var hlink2 = _world.CreateBody(new BodyDef { type = BodyType.Dynamic, position = new Vector2(att2x, cm(-35)), angle = 0, bullet = false, linearDamping = 0.2f });
+            hlink2.CreateFixture(new FixtureDef { density = 1, friction = 0, restitution = 0.5f, shape = new CircleShape { Radius = cm(0.5f) }, filter = new Filter { categoryBits = 4, maskBits = 2 } });
+            _world.CreateJoint(neckJ(_headAtt1, hlink1, cm(15), new DistanceJointDef { }));
+            _world.CreateJoint(neckJ(_headAtt1, hlink2, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { }));
+            _world.CreateJoint(neckJ(_headAtt2, hlink1, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { }));
+            _world.CreateJoint(neckJ(_headAtt2, hlink2, cm(15), new DistanceJointDef { }));
+            _world.CreateJoint(neckJ(hlink1, hlink2, cm(15), new DistanceJointDef { }));
+            _world.CreateJoint(neckJ(hlink1, head, cm(15), new DistanceJointDef { localAnchorB = new Vector2(0, 0) }));
+            _world.CreateJoint(neckJ(hlink1, head, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { localAnchorB = new Vector2(cm(15), 0) }));
+            _world.CreateJoint(neckJ(hlink2, head, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { localAnchorB = new Vector2(0, 0) }));
+            _world.CreateJoint(neckJ(hlink2, head, cm(15), new DistanceJointDef { localAnchorB = new Vector2(cm(15), 0) }));
+        }
+        else
+        {
+            _world.CreateJoint(neckJ(_headAtt1, head, cm(15), new DistanceJointDef { localAnchorB = new Vector2(0, 0) }));
+            _world.CreateJoint(neckJ(_headAtt1, head, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { localAnchorB = new Vector2(cm(15), 0) }));
+            _world.CreateJoint(neckJ(_headAtt2, head, cm(MathF.Sqrt(2 * 15 * 15)), new DistanceJointDef { localAnchorB = new Vector2(0, 0) }));
+            _world.CreateJoint(neckJ(_headAtt2, head, cm(15), new DistanceJointDef { localAnchorB = new Vector2(cm(15), 0) }));
+        }
+    }
+
     public override void MoveCockpit(double accFB, double accLR, double accUD, double pitch, double bank)
     {
-        var accVector = new PointD(-10 * (float)accFB, -10 * (float)accUD).Rotated(pitch);
-        _world.SetGravity(new Vector2((float)accVector.X, (float)accVector.Y));
-        _cockpit.SetTransform(_cockpit.GetPosition(), -(float)pitch);
-        _attachment.SetTransform(new Vector2(cm(50) * (float)Math.Sin(pitch), cm(50) * (float)Math.Cos(pitch)), 0);
+        _world.SetGravity((-10 * new PointD(accFB, accUD)).Rotated(-pitch).ToVector2());
+        _cockpit.SetTransform(_cockpit.GetPosition(), (float)pitch);
+        _attachment.SetTransform(_attachmentPos.Rotated(-pitch).ToVector2(), 0);
+        _headAtt1.SetTransform(_headAtt1Pos.Rotated(-pitch).ToVector2(), 0);
+        _headAtt2.SetTransform(_headAtt2Pos.Rotated(-pitch).ToVector2(), 0);
     }
 }

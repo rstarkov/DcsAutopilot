@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using RT.Util.Geometry;
 
 namespace DcsAutopilot;
 
@@ -54,4 +56,6 @@ public static class Util
         else
             return (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2;
     }
+
+    public static Vector2 ToVector2(this PointD pt) => new Vector2((float)pt.X, (float)pt.Y);
 }
