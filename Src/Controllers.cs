@@ -183,7 +183,7 @@ class HornetSlowFlightController : IFlightController
             wantedSpeed -= frame.dT / 20;
         else
             wantedSpeed = 101;
-        var wantedHeading = frame.SimTime < 435 ? 233.01 : 227.0;
+        var wantedHeading = frame.SimTime < 435 ? 233.01 : 227.0;   
         var wantedBank = (wantedHeading.ToRad() - frame.Heading).Clip(-1.ToRad(), 1.ToRad());
         var wantedAltitude = frame.SimTime < 100 ? 300 : frame.SimTime < 300 ? Util.Linterp(100, 300, 300, 150, frame.SimTime) : frame.SimTime < 380 ? Util.Linterp(300, 380, 150, 90, frame.SimTime) : 90;
         var wantedVS = (0.05 * (wantedAltitude.FeetToMeters() - frame.AltitudeAsl)).Clip(-100.FeetToMeters(), 100.FeetToMeters());
@@ -218,15 +218,19 @@ public class BasicPid
     public double Derivative { get; set; }
     public double DerivativeSmoothing { get; set; } = 0.8;
     public double IntegrationLimit { get; set; } // derivative must be less than this to start integrating error
-    private double _prevError;
+    private double _prevError = double.NaN;
     public bool Integrating { get; private set; }
+    public double Bias { get; set; }
 
     public double Update(double error, double dt)
     {
-        Derivative = DerivativeSmoothing * Derivative + (1 - DerivativeSmoothing) * (error - _prevError) / dt;
+        if (double.IsNaN(_prevError))
+            Derivative = 0;
+        else
+            Derivative = DerivativeSmoothing * Derivative + (1 - DerivativeSmoothing) * (error - _prevError) / dt;
         _prevError = error;
 
-        double output = P * error + I * ErrorIntegral + D * Derivative;
+        double output = P * error + I * ErrorIntegral + D * Derivative + Bias;
 
         output = output.Clip(MinControl, MaxControl);
         Integrating = Math.Abs(Derivative) < IntegrationLimit && output > MinControl && output < MaxControl;
