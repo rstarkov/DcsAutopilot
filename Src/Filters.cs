@@ -32,6 +32,8 @@ public class IirOrder2Filter : IFilter
 
     public double Step(double x)
     {
+        if (double.IsNaN(x)) throw new ArgumentException();
+        if (double.IsInfinity(x)) throw new ArgumentException();
         if (_first)
         {
             _x1 = _x2 = x;
@@ -40,6 +42,8 @@ public class IirOrder2Filter : IFilter
         }
         // based on https://www.micromodeler.com/dsp/
         var result = _x2 * B2 + _x1 * B1 + x * B0 + _y2 * A2 + _y1 * A1;
+        if (double.IsNaN(result)) throw new Exception();
+        if (double.IsInfinity(result)) throw new Exception();
         _x2 = _x1;
         _x1 = x;
         _y2 = _y1;

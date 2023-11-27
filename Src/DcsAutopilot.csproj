@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows10.0.17763.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <UseWPF>true</UseWPF>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
@@ -23,9 +24,9 @@
     </PackageReference>
     <PackageReference Include="OpenTK" Version="4.7.7" />
     <PackageReference Include="OpenTK.GLWpfControl" Version="4.2.3" />
-    <PackageReference Include="RT.Serialization.Xml" Version="2.0.1744" />
-    <PackageReference Include="RT.Util" Version="2.0.1744" />
-    <PackageReference Include="RT.Util.Core" Version="2.0.1744" />
+    <PackageReference Include="RT.Serialization.Xml" Version="2.0.1752" />
+    <PackageReference Include="RT.Util" Version="2.0.1752" />
+    <PackageReference Include="RT.Util.Core" Version="2.0.1752" />
   </ItemGroup>
 
 </Project>
