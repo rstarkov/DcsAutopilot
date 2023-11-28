@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -132,6 +132,7 @@ public class DcsController
                             case "aoss": fd.AngleOfSideSlip = -double.Parse(data[i++]); break;
                             case "fuint": fd.FuelInternal = double.Parse(data[i++]); break;
                             case "fuext": fd.FuelExternal = double.Parse(data[i++]); break;
+                            case "fufl": fd.FuelFlow = double.Parse(data[i++]); break;
                             case "surf":
                                 fd.AileronL = double.Parse(data[i++]); fd.AileronR = double.Parse(data[i++]);
                                 fd.ElevatorL = double.Parse(data[i++]); fd.ElevatorR = double.Parse(data[i++]);
@@ -146,6 +147,10 @@ public class DcsController
                             case "joyy": fd.JoyYaw = double.Parse(data[i++]); break;
                             case "joyt1": fd.JoyThrottle1 = double.Parse(data[i++]); break;
                             case "joyt2": fd.JoyThrottle2 = double.Parse(data[i++]); break;
+                            case "test1": fd.Test1 = double.Parse(data[i++]); break;
+                            case "test2": fd.Test2 = double.Parse(data[i++]); break;
+                            case "test3": fd.Test3 = double.Parse(data[i++]); break;
+                            case "test4": fd.Test4 = double.Parse(data[i++]); break;
                             default:
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
                                 Warnings.Add($"Unrecognized frame data entry: \"{data[i - 1]}\"");
@@ -214,6 +219,7 @@ public class DcsController
             }
             if (parsedBulk != null)
             {
+                LastBulk = parsedBulk;
                 if (_session == parsedBulk.Session)
                 {
                     foreach (var ctrl in FlightControllers)
@@ -222,7 +228,6 @@ public class DcsController
                 else
                 {
                     _session = parsedBulk.Session;
-                    LastBulk = parsedBulk;
                     foreach (var ctrl in FlightControllers)
                         ctrl.NewSession(parsedBulk);
                     Status = "Session started; waiting for data";
@@ -288,7 +293,12 @@ public class DcsController
                 cmd.Append($"4;pca3w;13;3016;3017;0;");
         }
         if (data.SpeedBrakeRate != null)
-            cmd.Append($"3;pca;13;3035;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend
+            if (LastBulk?.Aircraft == "FA-18C_hornet")
+                cmd.Append($"3;pca;13;3035;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend // 13 from devices.lua, 3035 from command_defs.lua
+            else if (LastBulk?.Aircraft == "F-16C_50")
+                cmd.Append($"3;pca;16;3031;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend // 16 from devices.lua, 3031 from command_defs.lua
+            else
+                throw new NotSupportedException($"Don't know how to apply speedbrake on {LastBulk?.Aircraft}");
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
@@ -342,10 +352,13 @@ public class FrameData
     /// <summary>Angular yaw rate in degrees/second. Positive is yaw to the right. Relative to the vertical airplane axis: this is not the same as the rate of change of <see cref="Heading"/> over time; it's what a gyro would read.</summary>
     public double GyroYaw;
     public double FuelInternal, FuelExternal;
+    /// <summary>Total fuel flow in pounds/hour. May be read off gauges which cause glitches in the reading as it goes through changing decimal places.</summary>
+    public double FuelFlow;
     public double Flaps, Airbrakes, LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double WindX, WindY, WindZ;
     public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
+    public double Test1, Test2, Test3, Test4;
 }
 
 public class ControlData
