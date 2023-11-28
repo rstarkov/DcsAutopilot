@@ -12,7 +12,7 @@ public abstract class FlightControllerBase
     public virtual string Status => _status;
     protected string _status = "";
     /// <summary>Disabled controllers still receive all callbacks; they must implement the "disabled" state directly.</summary>
-    public bool Enabled { get; set; }
+    public bool Enabled { get; set; } = true;
     public DcsController Dcs { get; set; }
     public virtual void NewSession(BulkData bulk) { }
     public virtual ControlData ProcessFrame(FrameData frame) { return null; }
