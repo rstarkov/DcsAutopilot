@@ -4,10 +4,9 @@ using RT.Util.ExtensionMethods;
 
 namespace DcsExperiments;
 
-class ClimbPerfStraightController : IFlightController
+class ClimbPerfStraightController : FlightControllerBase
 {
-    public string Status => "";
-    public bool Enabled { get; set; } = true;
+    public override string Name { get; set; } = "ClimbPerfStraight";
     private BasicPid _speed2axisPID = new BasicPid { MinControl = 0, MaxControl = 2, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1); // at 10k ft
     private BasicPid _hdg2bankPID = new BasicPid { P = 20, I = 0.01, MinControl = -10, MaxControl = 10, IntegrationLimit = 0.1 /*deg/sec*/ }; // at 300 ias 5000ft
     private BasicPid _bank2axisSmoothPID = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3); // at 280 ias kts 5000ft
@@ -23,11 +22,7 @@ class ClimbPerfStraightController : IFlightController
     private SmoothMoverFilter _roll = new(-1, 1, Filters.BesselD5);
     private SmoothMoverFilter _pitch = new(-1, 1, Filters.BesselD5);
 
-    public void NewSession(BulkData bulk)
-    {
-    }
-
-    public void ProcessBulkUpdate(BulkData bulk)
+    public override void ProcessBulkUpdate(BulkData bulk)
     {
         Test.DcsVersion = bulk.DcsVersion;
     }
@@ -38,7 +33,7 @@ class ClimbPerfStraightController : IFlightController
     private double _startX, _startZ, _minVelPitch;
     private Queue<(double time, double mach)> _speedHist = new();
 
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         var ctl = new ControlData();
         var wantedHeading = 0;
@@ -170,11 +165,9 @@ class ClimbPerfStraightController : IFlightController
 
 
 
-class ClimbPerfTuneController : IFlightController
+class ClimbPerfTuneController : FlightControllerBase
 {
-    private string _status = "";
-    public string Status => _status;
-    public bool Enabled { get; set; } = true;
+    public override string Name { get; set; } = "ClimbPerfTune";
     private BasicPid _speed2axisPID = new BasicPid { MinControl = 0, MaxControl = 2, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiNone(2.0, 2.1); // at 10k ft
     private BasicPid _hdg2bankPID = new BasicPid { P = 20, I = 0.01, MinControl = -10, MaxControl = 10, IntegrationLimit = 0.1 /*deg/sec*/ }; // at 300 ias 5000ft
     private BasicPid _bank2axisSmoothPID = new BasicPid { MinControl = -1, MaxControl = 1, IntegrationLimit = 5 /*deg/sec*/, DerivativeSmoothing = 0 }.SetZiNiNone(0.05, 3); // at 280 ias kts 5000ft
@@ -183,21 +176,13 @@ class ClimbPerfTuneController : IFlightController
     private SmoothMoverFilter _throttle = new(0, 2, Filters.BesselD5);
     private SmoothMoverFilter _roll = new(-1, 1, Filters.BesselD5);
 
-    public void NewSession(BulkData bulk)
-    {
-    }
-
-    public void ProcessBulkUpdate(BulkData bulk)
-    {
-    }
-
     private string _stage = "prep";
     private double _tgtPitch;
     private int _curTestAngle = 30;
     private Dictionary<int, double> _lvloffAltByPitch = new();
     private double _actualVelPitch, _actualIAS, _actualTAS, _actualFuel;
 
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         var ctl = new ControlData();
         var wantedHeading = 0;

@@ -1,27 +1,15 @@
-﻿using System;
-using RT.Util.ExtensionMethods;
+﻿using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-class HornetAutoTrim : IFlightController
+class HornetAutoTrim : FlightControllerBase
 {
-    private string _status = "";
-    public string Status => _status;
+    public override string Name { get; set; } = "Hornet Auto-Trim";
     public double _timeoutUntil;
     private double _neutralPitch = 0.120;
     private double _neutralRoll = 0;
 
-    public bool Enabled { get; set; } = false;
-
-    public void NewSession(BulkData bulk)
-    {
-    }
-
-    public void ProcessBulkUpdate(BulkData bulk)
-    {
-    }
-
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         if (!Enabled)
             return null;
@@ -67,10 +55,9 @@ class HornetAutoTrim : IFlightController
     }
 }
 
-class HornetSmartThrottle : IFlightController
+class HornetSmartThrottle : FlightControllerBase
 {
-    public bool Enabled { get; set; } = false;
-    public string Status { get; private set; } = "";
+    public override string Name { get; set; } = "Hornet Smart Throttle";
     public bool AllowAfterburner { get; set; } = false;
     public bool AllowSpeedbrake { get; set; } = true;
     public double ThrottleInput { get; set; }
@@ -81,21 +68,13 @@ class HornetSmartThrottle : IFlightController
     private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
     private IFilter _throttleFilter = Filters.BesselD10;
 
-    public void NewSession(BulkData bulk)
-    {
-    }
-
-    public void ProcessBulkUpdate(BulkData bulk)
-    {
-    }
-
     private double _lastSpeedBrake;
 
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         if (!Enabled || frame.LandingGear > 0)
         {
-            Status = !Enabled ? "off" : "GEAR";
+            _status = !Enabled ? "off" : "GEAR";
             TargetSpeedIasKts = null;
             AfterburnerActive = SpeedbrakeActive = false;
             if (frame.SimTime - _lastSpeedBrake < 2)
@@ -108,7 +87,7 @@ class HornetSmartThrottle : IFlightController
         {
             TargetSpeedIasKts = null;
             AfterburnerActive = SpeedbrakeActive = false;
-            Status = "THR";
+            _status = "THR";
             return null;
         }
         else
@@ -118,7 +97,7 @@ class HornetSmartThrottle : IFlightController
             _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
             var speedError = TargetSpeedIasKts.Value - frame.SpeedIndicated.MsToKts();
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
-            Status = "act";
+            _status = "act";
             AfterburnerActive = ctrl.ThrottleAxis > 1.5;
             SpeedbrakeActive = false;
             if (AllowSpeedbrake && speedError < -20)
@@ -134,8 +113,9 @@ class HornetSmartThrottle : IFlightController
     }
 }
 
-class HornetSlowFlightController : IFlightController
+class HornetSlowFlightController : FlightControllerBase
 {
+    public override string Name { get; set; } = "Hornet Slow Flight";
     private BasicPid _vspeed2pitchPID = new() { P = 0.004, I = 0.003, D = 0.00127 * 0.05, MinControl = -90.ToRad(), MaxControl = 90.ToRad(), IntegrationLimit = 1 /*m/s / sec*/ }; // oscillates at P=0.005 T=3.4s
     private BasicPid _pitch2axisPID = new() { P = 2, I = 1, D = 0.3, MinControl = -1, MaxControl = 1, IntegrationLimit = 1.ToRad() /*rad/sec*/ }; // oscillates at P=7 T=2.74s
     private BasicPid _speed2axisPID = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 1.5, IntegrationLimit = 1 /*m/s / sec*/ };
@@ -153,21 +133,15 @@ class HornetSlowFlightController : IFlightController
 
     public double TargetAltitudeFt { get; set; } = 2000;
 
-    public string Status => $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
+    public override string Status => $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
 
-    public bool Enabled { get; set; } = true;
-
-    public void NewSession(BulkData bulk)
+    public override void NewSession(BulkData bulk)
     {
         _pitch.Reset(0);
         _throttle.Reset(1);
     }
 
-    public void ProcessBulkUpdate(BulkData bulk)
-    {
-    }
-
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         var ctl = new ControlData();
 

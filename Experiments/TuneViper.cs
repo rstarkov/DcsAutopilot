@@ -1,4 +1,4 @@
-﻿using DcsAutopilot;
+using DcsAutopilot;
 using RT.Util;
 using RT.Util.ExtensionMethods;
 
@@ -181,21 +181,20 @@ public static class TuneViper
 
     class RestartException : Exception { }
 
-    class ThrottleController : IFlightController
+    class ThrottleController : FlightControllerBase
     {
-        public bool Enabled { get; set; } = true;
-        public string Status => "";
-        public void NewSession(BulkData bulk) { }
-        public void ProcessBulkUpdate(BulkData bulk) { }
+        public override string Name { get; set; } = "Viper Throttle";
 
         public double Throttle, SpeedBrake;
+        public double? Pitch;
 
-        public ControlData ProcessFrame(FrameData frame)
+        public override ControlData ProcessFrame(FrameData frame)
         {
             if (!Enabled) return null;
             var ctrl = new ControlData();
             ctrl.ThrottleAxis = Throttle;
             ctrl.SpeedBrakeRate = SpeedBrake;
+            ctrl.PitchAxis = Pitch;
             return ctrl;
         }
     }

@@ -1,22 +1,23 @@
-﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-public interface IFlightController
+public abstract class FlightControllerBase
 {
+    public abstract string Name { get; set; }
+    public virtual string Status => _status;
+    protected string _status = "";
     /// <summary>Disabled controllers still receive all callbacks; they must implement the "disabled" state directly.</summary>
-    bool Enabled { get; set; }
-    void NewSession(BulkData bulk);
-    ControlData ProcessFrame(FrameData frame); // can return null
-    void ProcessBulkUpdate(BulkData bulk);
-    string Status { get; }
+    public bool Enabled { get; set; }
+    public DcsController Dcs { get; set; }
+    public virtual void NewSession(BulkData bulk) { }
+    public virtual ControlData ProcessFrame(FrameData frame) { return null; }
+    public virtual void ProcessBulkUpdate(BulkData bulk) { }
+    public virtual void Signal(string signal) { }
 }
 
 public class DcsController
@@ -28,7 +29,7 @@ public class DcsController
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
-    public List<IFlightController> FlightControllers { get; private set; } = new();
+    public List<FlightControllerBase> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
     public ConcurrentBag<string> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
     public byte[] LastReceiveWithWarnings { get; private set; }
@@ -86,6 +87,8 @@ public class DcsController
     {
         while (!token.IsCancellationRequested)
         {
+            foreach (var ctl in FlightControllers)
+                ctl.Dcs = this; // kind of dirty but the easiest way to set this property
             var task = _udp.ReceiveAsync(token).AsTask();
             task.ContinueWith(t => { }).Wait(); // the only way to wait that doesn't throw on cancellation?
             if (task.IsCanceled || token.IsCancellationRequested)

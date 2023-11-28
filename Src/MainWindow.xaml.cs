@@ -1,6 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,7 +18,7 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _refreshTimer = new();
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
-    private IFlightController _ctrl;
+    private FlightControllerBase _ctrl;
     public static ChartLine LineR = new(), LineG = new(), LineY = new();
     private RawGameController _joystick;
     private double[] _joyAxes;
@@ -158,29 +155,19 @@ public partial class MainWindow : ManagedWindow
         }
     }
 
-    private class ChartPopulate : IFlightController
+    private class ChartPopulate : FlightControllerBase
     {
         private MainWindow _wnd;
         private int _skip = 0;
 
-        public bool Enabled { get; set; } = true;
+        public override string Name { get; set; } = "Chart Populate";
 
         public ChartPopulate(MainWindow wnd)
         {
             _wnd = wnd;
         }
 
-        public string Status => "";
-
-        public void NewSession(BulkData bulk)
-        {
-        }
-
-        public void ProcessBulkUpdate(BulkData bulk)
-        {
-        }
-
-        public ControlData ProcessFrame(FrameData frame)
+        public override ControlData ProcessFrame(FrameData frame)
         {
             if (_skip % 3 == 0)
             {

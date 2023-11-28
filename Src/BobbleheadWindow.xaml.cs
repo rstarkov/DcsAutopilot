@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 using Box2D.NetStandard.Collision.Shapes;
 using Box2D.NetStandard.Dynamics.Bodies;
 using Box2D.NetStandard.Dynamics.Fixtures;
@@ -63,15 +60,12 @@ public partial class BobbleheadWindow : ManagedWindow
     }
 }
 
-class BobbleheadController : IFlightController
+class BobbleheadController : FlightControllerBase
 {
-    public bool Enabled { get; set; }
-    public string Status => "";
-    public void NewSession(BulkData bulk) { }
-    public void ProcessBulkUpdate(BulkData bulk) { }
+    public override string Name { get; set; } = "Bobblehead";
     public BobbleheadWindow Window;
 
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         Window?.MoveCockpit(frame.AccX * 9.81, frame.AccZ * 9.81, frame.AccY * 9.81, frame.Pitch.ToRad(), frame.Bank.ToRad());
         return null;

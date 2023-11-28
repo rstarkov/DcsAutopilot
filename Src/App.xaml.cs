@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using RT.Serialization.Settings;
 using RT.Util.Forms;
 using Windows.Win32;

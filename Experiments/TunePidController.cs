@@ -2,9 +2,9 @@
 
 namespace DcsExperiments;
 
-class TunePidController : IFlightController
+class TunePidController : FlightControllerBase
 {
-    public bool Enabled { get; set; } = true;
+    public override string Name { get; set; } = "TunePid";
     public BasicPid PidSpeedIndicated, PidSpeedMach;
     public BasicPid PidBank;
     public BasicPid PidPitch, PidVelPitch;
@@ -16,22 +16,13 @@ class TunePidController : IFlightController
     public IFilter FilterPitch = Filters.None;
     public IFilter FilterYaw = Filters.None;
 
-    public string Status => "";
     public double TgtSpeed, TgtRoll, TgtPitch;
     public double ErrSpeed, ErrRoll, ErrPitch, ErrYaw;
     public double ErrRateSpeed, ErrRateRoll, ErrRatePitch, ErrRateYaw;
     public Action<FrameData> Tick;
     public Action<FrameData, ControlData> PostProcess;
 
-    public void NewSession(BulkData bulk)
-    {
-    }
-
-    public void ProcessBulkUpdate(BulkData bulk)
-    {
-    }
-
-    public ControlData ProcessFrame(FrameData frame)
+    public override ControlData ProcessFrame(FrameData frame)
     {
         Tick?.Invoke(frame);
         var ctl = new ControlData();
