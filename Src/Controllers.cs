@@ -1,4 +1,4 @@
-﻿using RT.Util.ExtensionMethods;
+using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
@@ -10,6 +10,8 @@ public class BasicPid
 
     public double MinControl { get; set; }
     public double MaxControl { get; set; }
+    public double MinTermP { get; set; } = -999;
+    public double MaxTermP { get; set; } = 999;
     public double ErrorIntegral { get; set; }
     public double Derivative { get; set; }
     public double DerivativeSmoothing { get; set; } = 0.8;
@@ -17,8 +19,6 @@ public class BasicPid
     private double _prevError = double.NaN;
     public bool Integrating { get; private set; }
     public double Bias { get; set; }
-
-    // TODO: separate Min/Max limits for the P term of the output
 
     public double Update(double error, double dt)
     {
@@ -28,10 +28,11 @@ public class BasicPid
             Derivative = DerivativeSmoothing * Derivative + (1 - DerivativeSmoothing) * (error - _prevError) / dt;
         _prevError = error;
 
-        double output = P * error + I * ErrorIntegral + D * Derivative + Bias;
+        double p = (P * error).Clip(MinTermP, MaxTermP);
+        double output = p + I * ErrorIntegral + D * Derivative + Bias;
 
         output = output.Clip(MinControl, MaxControl);
-        Integrating = Math.Abs(Derivative) < IntegrationLimit && output > MinControl && output < MaxControl;
+        Integrating = Math.Abs(Derivative) < IntegrationLimit && output > MinControl && output < MaxControl && p > MinTermP && p < MaxTermP;
         if (Integrating)
             ErrorIntegral += error * dt;
         return output;
