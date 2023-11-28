@@ -192,6 +192,7 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
         _dcs.FlightControllers.Add(new HornetSmartThrottle() { Enabled = true });
+        ctControllers.ItemsSource = _dcs.FlightControllers;
         _dcs.Start();
         UpdateGui();
     }
@@ -240,6 +241,13 @@ public partial class MainWindow : ManagedWindow
     private void lblSmartThrottle_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         WithController<HornetSmartThrottle>(c => c.Enabled = !c.Enabled);
+    }
+
+    private void ControllerButton_Click(object sender, RoutedEventArgs e)
+    {
+        var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
+        var signal = ((ButtonBase)sender).Text;
+        ctrl.Signal(signal);
     }
 
     private void WithController<T>(Action<T> action)
