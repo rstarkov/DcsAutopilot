@@ -1,7 +1,6 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Threading;
 using RT.Util;
@@ -247,7 +246,7 @@ public partial class MainWindow : ManagedWindow
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
     {
         var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
-        var signal = ((ButtonBase)sender).Text;
+        var signal = ((Button)sender).Content.ToString();
         ctrl.Signal(signal);
     }
 
@@ -277,7 +276,7 @@ public partial class MainWindow : ManagedWindow
             return;
         WithController<HornetSmartThrottle>(c =>
         {
-            if (e.VirtualKeyCode == Keys.T && e.ModifierKeys == default)
+            if (e.VirtualKeyCode == System.Windows.Forms.Keys.T && e.ModifierKeys == default)
             {
                 if (DcsWindow.DcsHasFocus())
                 {
