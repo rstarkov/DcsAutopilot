@@ -1,3 +1,4 @@
+﻿using System.Collections.Concurrent;
 using DcsAutopilot;
 using RT.Util;
 using RT.Util.ExtensionMethods;
@@ -6,13 +7,31 @@ namespace DcsExperiments;
 
 public static class TuneViper
 {
+    static string loadout = "medium"; // meaning: 6x AIM120C + 2x HARM, 100% fuel internal. No pods for absolute symmetry.
+    static string mass = "32487";
+
+    class TuneController : FlightControllerBase
+    {
+        public override string Name { get; set; } = "Viper Tune";
+
+        public double? Throttle, SpeedBrake, Pitch;
+
+        public override ControlData ProcessFrame(FrameData frame)
+        {
+            if (!Enabled) return null;
+            var ctrl = new ControlData();
+            ctrl.ThrottleAxis = Throttle;
+            ctrl.SpeedBrakeRate = SpeedBrake;
+            ctrl.PitchAxis = Pitch;
+            return ctrl;
+        }
+    }
+
     public static void CharacteriseStraightAndLevel()
     {
         DcsController dcs = null;
-        ThrottleController ctrl = null;
+        TuneController ctrl = null;
 
-        string loadout = "medium"; // meaning: 6x AIM120C + 2x HARM, 100% fuel internal. No pods for absolute symmetry.
-        string mass = "32487";
         var filename = $"viper-tune-straight-level.csv";
 
         tuneAlt(300, new[] { 2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.00, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.29, 0.28, 0.27 });
@@ -106,7 +125,7 @@ public static class TuneViper
                     if (dcs != null)
                         dcs.Stop();
                     //DcsWindow.RestartMission();
-                    ctrl = new ThrottleController();
+                    ctrl = new TuneController();
                     ctrl.Enabled = false;
                     dcs = new DcsController();
                     dcs.FlightControllers.Add(ctrl);
@@ -180,24 +199,6 @@ public static class TuneViper
     }
 
     class RestartException : Exception { }
-
-    class ThrottleController : FlightControllerBase
-    {
-        public override string Name { get; set; } = "Viper Throttle";
-
-        public double Throttle, SpeedBrake;
-        public double? Pitch;
-
-        public override ControlData ProcessFrame(FrameData frame)
-        {
-            if (!Enabled) return null;
-            var ctrl = new ControlData();
-            ctrl.ThrottleAxis = Throttle;
-            ctrl.SpeedBrakeRate = SpeedBrake;
-            ctrl.PitchAxis = Pitch;
-            return ctrl;
-        }
-    }
 
     public static (double asymptote, double fit, bool upward) FitDecay((double x, double y)[] data)
     {
@@ -298,6 +299,99 @@ public static class TuneViper
             var mean = data.Average(pt => pt.y);
             var tss = data.Sum(pt => { var v = mean - pt.y; return v * v; });
             return Math.Log10(tss) - Math.Log10(rss); // r_squared = 1 - rss / tss; but it goes 0.9999912341 so use a log10 instead
+        }
+    }
+
+    class CharacterisePitchAxisGyroController : FlightControllerBase
+    {
+        public override string Name { get; set; } = "CharacterisePitchAxisGyro";
+        private ViperControl _control = new();
+        public bool Logging;
+        public ConcurrentQueue<string> Log = new();
+        public double SpeedIas;
+        public double PitchAxis;
+
+        public override ControlData ProcessFrame(FrameData frame)
+        {
+            if (Logging)
+                Log.Enqueue(Ut.FormatCsvRow(loadout, mass, PitchAxis, frame.GyroPitch, frame.SpeedIndicated.MsToKts(), frame.AltitudeAsl, frame.AngleOfAttack, frame.Pitch, frame.Bank));
+            var ctrl = new ControlData();
+            _control.ControlSpeedIAS(frame, ctrl, SpeedIas);
+            ctrl.PitchAxis = PitchAxis;
+            return ctrl;
+        }
+    }
+
+    public static void CharacterisePitchAxisGyro()
+    {
+        // TODO: log IAS and ALT from cockpit instruments
+        // TODO: write code to extract datapoints
+        // TODO: write interpolator which can apply this pitch axis in the ViperControl
+        RunOne(500, 1.75, 0.06, 6, 2);
+        RunOne(500, 1.75, 0.10, 6, 3);
+        RunOne(500, 1.75, 0.15, 7, 5);
+        RunOne(500, 1.75, 0.20, 8, 6);
+        RunOne(500, 1.75, 0.25, 10, 8);
+        RunOne(500, 1.75, 0.30, 12, 10);
+    }
+
+    public static void RunOne(double speed, double vpitchNeutral, double pitchAxis, double pitchLimit, int iterations)
+    {
+        DcsWindow.RestartMission();
+        DcsWindow.SpeedUp();
+        var ctrl = new CharacterisePitchAxisGyroController();
+        ctrl.Enabled = true;
+        ctrl.SpeedIas = speed;
+        var dcs = new DcsController();
+        dcs.FlightControllers.Add(ctrl);
+        dcs.Start();
+        while (dcs.LastFrame == null)
+            Thread.Sleep(100);
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            // set a fixed pitch axis input
+            ctrl.PitchAxis = pitchAxis;
+            wait(2000);
+            ctrl.Logging = true;
+            while (dcs.LastFrame.Pitch < pitchLimit + vpitchNeutral && dcs.LastFrame.SpeedIndicated.MsToKts() > 250)
+            {
+                wait(50);
+                dumpLog();
+            }
+            ctrl.Logging = false;
+            // set a reverse input and do it again
+            ctrl.PitchAxis = -pitchAxis;
+            wait(2000);
+            ctrl.Logging = true;
+            while (dcs.LastFrame.Pitch > -pitchLimit + vpitchNeutral)
+            {
+                wait(50);
+                dumpLog();
+            }
+            ctrl.Logging = false;
+        }
+        dumpLog();
+        dcs.Stop();
+
+        void wait(int ms, bool noconsole = false)
+        {
+            var start = dcs.LastFrame.SimTime;
+            while (dcs.LastFrame.SimTime < start + ms / 1000.0)
+            {
+                Thread.Sleep(5);
+                if (!noconsole)
+                    Console.Title = $"spd = {dcs.LastFrame.SpeedIndicated.MsToKts():0.00}, alt = {dcs.LastFrame.AltitudeAsl.MetersToFeet():#,0.000}";
+            }
+        }
+
+        void dumpLog()
+        {
+            if (ctrl.Log.Count == 0)
+                return;
+            var lines = new List<string>();
+            while (ctrl.Log.TryDequeue(out var line))
+                lines.Add(line);
+            File.AppendAllLines("viper-tune-pitchgyro.csv", lines);
         }
     }
 }
