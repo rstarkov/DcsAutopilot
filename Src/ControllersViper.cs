@@ -1,4 +1,4 @@
-﻿namespace DcsAutopilot;
+namespace DcsAutopilot;
 
 // Viper throttle: smooth control in 0.0..1.0 range. 1.5 is 0% afterburner which is marginally stronger than 1.0. There are 6 distinct afterburner settings, from 1.5 to 2.0 in 0.1 increments.
 // Viper pitch: deadzone from -0.04375 to 0.04375; pitch rate commanded is linear in the low region and intersects zero at +/-0.04375.
@@ -77,7 +77,7 @@ class ViperTune : FlightControllerBase
             return 0;
     }
 
-    public override void Signal(string signal)
+    public override void HandleSignal(string signal)
     {
         if (signal == "A")
         {

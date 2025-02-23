@@ -1,7 +1,8 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -17,7 +18,16 @@ public abstract class FlightControllerBase
     public virtual void NewSession(BulkData bulk) { }
     public virtual ControlData ProcessFrame(FrameData frame) { return null; }
     public virtual void ProcessBulkUpdate(BulkData bulk) { }
-    public virtual void Signal(string signal) { }
+    public virtual void HandleSignal(string signal) { }
+    public virtual bool HandleKey(KeyEventArgs e) { return false; }
+}
+
+public class KeyEventArgs
+{
+    public bool DcsFocused;
+    public bool Down;
+    public Key Key;
+    public ModifierKeys Modifiers;
 }
 
 public class DcsController

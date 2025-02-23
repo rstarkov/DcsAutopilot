@@ -1,4 +1,5 @@
-﻿using RT.Util.ExtensionMethods;
+﻿using System.Windows.Input;
+using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
@@ -110,6 +111,16 @@ class HornetSmartThrottle : FlightControllerBase
                 ctrl.SpeedBrakeRate = -1;
             return ctrl;
         }
+    }
+
+    public override bool HandleKey(KeyEventArgs e)
+    {
+        if (e.DcsFocused && e.Key == Key.T && e.Modifiers == default)
+        {
+            Enabled = !Enabled;
+            return true;
+        }
+        return false;
     }
 }
 

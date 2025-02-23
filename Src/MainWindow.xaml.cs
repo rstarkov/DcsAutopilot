@@ -1,6 +1,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using RT.Util;
@@ -57,6 +58,7 @@ public partial class MainWindow : ManagedWindow
         _joyButtons = new bool[_joystick?.ButtonCount ?? 0];
         _keyboardListener.HookAllKeys = true;
         _keyboardListener.KeyDown += _keyboardListener_KeyDown;
+        _keyboardListener.KeyUp += _keyboardListener_KeyUp;
 
         btnStop_Click(null, null);
     }
@@ -247,7 +249,7 @@ public partial class MainWindow : ManagedWindow
     {
         var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
         var signal = ((Button)sender).Content.ToString();
-        ctrl.Signal(signal);
+        ctrl.HandleSignal(signal);
     }
 
     private void WithController<T>(Action<T> action)
@@ -270,20 +272,40 @@ public partial class MainWindow : ManagedWindow
         _updating = false;
     }
 
+    private KeyEventArgs convertGlobalKeyEvent(GlobalKeyEventArgs e, bool down)
+    {
+        return new KeyEventArgs
+        {
+            DcsFocused = DcsWindow.DcsHasFocus(),
+            Down = down,
+            Key = KeyInterop.KeyFromVirtualKey((int)e.VirtualKeyCode),
+            Modifiers = (e.ModifierKeys.Win ? ModifierKeys.Windows : 0) | (e.ModifierKeys.Ctrl ? ModifierKeys.Control : 0) | (e.ModifierKeys.Alt ? ModifierKeys.Alt : 0) | (e.ModifierKeys.Shift ? ModifierKeys.Shift : 0),
+        };
+    }
+
     private void _keyboardListener_KeyDown(object sender, GlobalKeyEventArgs e)
     {
         if (!_dcs.IsRunning)
             return;
-        WithController<HornetSmartThrottle>(c =>
-        {
-            if (e.VirtualKeyCode == System.Windows.Forms.Keys.T && e.ModifierKeys == default)
+        var ee = convertGlobalKeyEvent(e, down: true);
+        foreach (var c in _dcs.FlightControllers)
+            if (c.HandleKey(ee))
             {
-                if (DcsWindow.DcsHasFocus())
-                {
-                    e.Handled = true;
-                    c.Enabled = !c.Enabled;
-                }
+                e.Handled = true;
+                return;
             }
-        });
+    }
+
+    private void _keyboardListener_KeyUp(object sender, GlobalKeyEventArgs e)
+    {
+        if (!_dcs.IsRunning)
+            return;
+        var ee = convertGlobalKeyEvent(e, down: false);
+        foreach (var c in _dcs.FlightControllers)
+            if (c.HandleKey(ee))
+            {
+                e.Handled = true;
+                return;
+            }
     }
 }
