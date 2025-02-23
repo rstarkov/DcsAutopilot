@@ -1,7 +1,50 @@
+﻿using System.Windows.Input;
+using RT.Util.ExtensionMethods;
+
 namespace DcsAutopilot;
 
 // Viper throttle: smooth control in 0.0..1.0 range. 1.5 is 0% afterburner which is marginally stronger than 1.0. There are 6 distinct afterburner settings, from 1.5 to 2.0 in 0.1 increments.
 // Viper pitch: deadzone from -0.04375 to 0.04375; pitch rate commanded is linear in the low region and intersects zero at +/-0.04375.
+
+class ViperAutoTrim : FlightControllerBase
+{
+    public override string Name { get; set; } = "Viper Auto-Trim";
+    private double _rollTrim = 0;
+
+    public override void NewSession(BulkData bulk)
+    {
+        _rollTrim = 0;
+    }
+
+    public override ControlData ProcessFrame(FrameData frame)
+    {
+        var trimRate = Enabled ? (-0.1 * frame.GyroRoll).Clip(-0.2, 0.2) : 0; // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
+        _rollTrim = (_rollTrim + trimRate * frame.dT).Clip(-1, 1);
+        _status = $"{frame.GyroRoll:0.00}°/s – {(_rollTrim < 0 ? "L:" : "R:")}{Math.Abs(_rollTrim * 100):0.0}% – ";
+        if (Enabled)
+        {
+            _status += $"{(trimRate < 0 ? "L:" : "R:")}{Math.Abs(trimRate * 100):0.0}%/s";
+            var ctrl = new ControlData();
+            ctrl.RollTrim = _rollTrim;
+            return Enabled ? ctrl : null;
+        }
+        else
+        {
+            _status += $"[press T]";
+            return null;
+        }
+    }
+
+    public override bool HandleKey(KeyEventArgs e)
+    {
+        if (e.DcsFocused && e.Key == Key.T && e.Modifiers == default)
+        {
+            Enabled = e.Down;
+            return true;
+        }
+        return false;
+    }
+}
 
 public class ViperControl
 {
