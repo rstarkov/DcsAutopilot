@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -253,44 +253,64 @@ public class DcsController
             cmd.Append($"2;sc;2003;{data.YawAxis.Value};");
         if (data.ThrottleAxis != null)
             cmd.Append($"2;sc;2004;{1 - data.ThrottleAxis.Value};");
-        //if (data.PitchTrim != null) // not supported on Hornet - need to refactor with airplane-specific controllers
-        //    cmd.Append($"2;sc;2022;{data.PitchTrim.Value};");
-        //if (data.RollTrim != null)
-        //    cmd.Append($"2;sc;2023;{data.RollTrim.Value};");
+        if (data.PitchTrim != null)
+        {
+            if (LastBulk?.Aircraft == "F-16C_50")
+                cmd.Append($"3;pca;2;3008;{data.PitchTrim.Value};");
+            else
+                throw new NotSupportedException($"Don't know how to apply pitch trim on {LastBulk?.Aircraft}");
+        }
+        if (data.RollTrim != null)
+        {
+            if (LastBulk?.Aircraft == "F-16C_50")
+                cmd.Append($"3;pca;2;3007;{-data.RollTrim.Value};");
+            else
+                throw new NotSupportedException($"Don't know how to apply roll trim on {LastBulk?.Aircraft}");
+        }
         if (data.YawTrim != null)
-            cmd.Append($"2;sc;3001;{data.YawTrim.Value};");
-        // the following commands are Hornet specific; need to refactor with airplane-specific controllers
+        {
+            if (LastBulk?.Aircraft == "F-16C_50")
+                cmd.Append($"3;pca;2;3009;{data.YawTrim.Value};");
+            else
+                throw new NotSupportedException($"Don't know how to apply yaw trim on {LastBulk?.Aircraft}");
+        }
         if (data.PitchTrimRate != null)
         {
+            var btn = LastBulk?.Aircraft switch { "FA-18C_hornet" => "13;3015;3014", "F-16C_50" => "16;3002;3003", _ => throw new NotSupportedException($"Don't know how to apply pitch trim rate on {LastBulk?.Aircraft}") };
             _pitchTrimRateCounter += data.PitchTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
             if (_pitchTrimRateCounter >= 0.5)
             {
-                cmd.Append($"4;pca3w;13;3015;3014;1;");
+                cmd.Append($"4;pca3w;{btn};1;");
                 _pitchTrimRateCounter -= 1.0;
             }
             else if (_pitchTrimRateCounter < -0.5)
             {
-                cmd.Append($"4;pca3w;13;3015;3014;-1;");
+                cmd.Append($"4;pca3w;{btn};-1;");
                 _pitchTrimRateCounter += 1.0;
             }
             else
-                cmd.Append($"4;pca3w;13;3015;3014;0;");
+                cmd.Append($"4;pca3w;{btn};0;");
         }
         if (data.RollTrimRate != null)
         {
+            var btn = LastBulk?.Aircraft switch { "FA-18C_hornet" => "13;3016;3017", "F-16C_50" => "16;3004;3005", _ => throw new NotSupportedException($"Don't know how to apply roll trim rate on {LastBulk?.Aircraft}") };
             _rollTrimRateCounter += data.RollTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
             if (_rollTrimRateCounter >= 0.5)
             {
-                cmd.Append($"4;pca3w;13;3016;3017;1;");
+                cmd.Append($"4;pca3w;{btn};1;");
                 _rollTrimRateCounter -= 1.0;
             }
             else if (_rollTrimRateCounter < -0.5)
             {
-                cmd.Append($"4;pca3w;13;3016;3017;-1;");
+                cmd.Append($"4;pca3w;{btn};-1;");
                 _rollTrimRateCounter += 1.0;
             }
             else
-                cmd.Append($"4;pca3w;13;3016;3017;0;");
+                cmd.Append($"4;pca3w;{btn};0;");
+        }
+        if (data.YawTrimRate != null)
+        {
+            throw new NotSupportedException($"Don't know how to apply yaw trim rate on {LastBulk?.Aircraft}");
         }
         if (data.SpeedBrakeRate != null)
             if (LastBulk?.Aircraft == "FA-18C_hornet")
@@ -321,15 +341,21 @@ public class FrameData
     public double FrameTimestamp, Latency;
 
     public double SimTime, dT;
-    /// <summary>Angle of attack in degrees; -90 (nose down relative to airflow) .. 0 (boresight aligned with airflow) .. 90 (nose up relative to airflow)</summary>
+    /// <summary>
+    ///     Angle of attack in degrees; -90 (nose down relative to airflow) .. 0 (boresight aligned with airflow) .. 90 (nose
+    ///     up relative to airflow)</summary>
     public double AngleOfAttack;
-    /// <summary>Angle of sideslip in degrees; -90 (nose to the left of the airflow) .. 0 (aligned) .. 90 (nose to the right of the airflow)</summary>
+    /// <summary>
+    ///     Angle of sideslip in degrees; -90 (nose to the left of the airflow) .. 0 (aligned) .. 90 (nose to the right of the
+    ///     airflow)</summary>
     public double AngleOfSideSlip;
     public double PosX, PosY, PosZ;
     public double AccX, AccY, AccZ;
     /// <summary>True ASL altitude in meters. Not affected by the pressure setting.</summary>
     public double AltitudeAsl;
-    /// <summary>True AGL altitude in meters. Not affected by the pressure setting. Not affected by buildings. High altitude lakes are "ground" for the purpose of this reading.</summary>
+    /// <summary>
+    ///     True AGL altitude in meters. Not affected by the pressure setting. Not affected by buildings. High altitude lakes
+    ///     are "ground" for the purpose of this reading.</summary>
     public double AltitudeAgl;
     /// <summary>Barometric altitude in meters. Possibly affected by the pressure setting, but always reads 0 on Hornet.</summary>
     public double AltitudeBaro;
@@ -339,20 +365,35 @@ public class FrameData
     public double VelX, VelY, VelZ; // meters/second; details untested
     /// <summary>Pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up).</summary>
     public double Pitch;
-    /// <summary>Bank angle in degrees relative to the horizon; -180 (upside down) .. -90 (left wing straight down) .. 0 (level) .. 90 (right wing straight down) .. 180 (upside down)</summary>
+    /// <summary>
+    ///     Bank angle in degrees relative to the horizon; -180 (upside down) .. -90 (left wing straight down) .. 0 (level) ..
+    ///     90 (right wing straight down) .. 180 (upside down)</summary>
     public double Bank;
-    /// <summary>Compass heading in degrees. This is the true heading (not magnetic) and is not affected by the FCS setting. 0..360.</summary>
+    /// <summary>
+    ///     Compass heading in degrees. This is the true heading (not magnetic) and is not affected by the FCS setting.
+    ///     0..360.</summary>
     public double Heading;
-    /// <summary>Velocity pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up). This is where the velocity vector points.</summary>
+    /// <summary>
+    ///     Velocity pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up). This is where the
+    ///     velocity vector points.</summary>
     public double VelPitch => Math.Atan2(VelY, Math.Sqrt(VelX * VelX + VelZ * VelZ)).ToDeg();
-    /// <summary>Angular pitch rate in degrees/second. Positive is pitching up. Relative to the wing axis: this is not the same as the rate of change of <see cref="Pitch"/> over time; it's what a gyro would read. A 90 deg bank turn would have a large pitch rate even as the horizon-relative <see cref="Pitch"/> stays constant.</summary>
+    /// <summary>
+    ///     Angular pitch rate in degrees/second. Positive is pitching up. Relative to the wing axis: this is not the same as
+    ///     the rate of change of <see cref="Pitch"/> over time; it's what a gyro would read. A 90 deg bank turn would have a
+    ///     large pitch rate even as the horizon-relative <see cref="Pitch"/> stays constant.</summary>
     public double GyroPitch;
-    /// <summary>Angular roll rate in degrees/second. Positive is roll to the right. Relative to the boresight axis: this is not the same as the rate of change of <see cref="Bank"/> over time; it's what a gyro would read.</summary>
+    /// <summary>
+    ///     Angular roll rate in degrees/second. Positive is roll to the right. Relative to the boresight axis: this is not
+    ///     the same as the rate of change of <see cref="Bank"/> over time; it's what a gyro would read.</summary>
     public double GyroRoll;
-    /// <summary>Angular yaw rate in degrees/second. Positive is yaw to the right. Relative to the vertical airplane axis: this is not the same as the rate of change of <see cref="Heading"/> over time; it's what a gyro would read.</summary>
+    /// <summary>
+    ///     Angular yaw rate in degrees/second. Positive is yaw to the right. Relative to the vertical airplane axis: this is
+    ///     not the same as the rate of change of <see cref="Heading"/> over time; it's what a gyro would read.</summary>
     public double GyroYaw;
     public double FuelInternal, FuelExternal;
-    /// <summary>Total fuel flow in pounds/hour. May be read off gauges which cause glitches in the reading as it goes through changing decimal places.</summary>
+    /// <summary>
+    ///     Total fuel flow in pounds/hour. May be read off gauges which cause glitches in the reading as it goes through
+    ///     changing decimal places.</summary>
     public double FuelFlow;
     public double Flaps, Airbrakes, LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
@@ -364,15 +405,42 @@ public class FrameData
 public class ControlData
 {
     public double? FrameTimestamp; // for latency reports
+    /// <summary>
+    ///     Pitch input: -1.0 (max pitch down), 0 (neutral), 1.0 (max pitch up). Controls the stick position. The motion range
+    ///     varies by plane. F-18: -0.5 to 1.0.</summary>
     public double? PitchAxis;
+    /// <summary>Roll input: -1.0 (max roll left), 0 (neutral), 1.0 (max roll right).</summary>
     public double? RollAxis;
+    /// <summary>Yaw input: -1.0 (max yaw left), 0 (neutral), 1.0 (max yaw right).</summary>
     public double? YawAxis;
+    /// <summary>
+    ///     Overall throttle setting; implementation varies by plane. F-16: 0.0-1.5 normal power range; 1.50-1.58 no change;
+    ///     1.59-2.00 afterburner. F-18: same but no-change range is 1.50-1.57. Normal power range seems fully proportional
+    ///     while afterburner range appears to be stepped.</summary>
     public double? ThrottleAxis;
+    /// <summary>
+    ///     Absolute pitch trim setting: -1.0 (max trim down), 0 (neutral), 1.0 (max trim up). Note that it can take a while
+    ///     for the plane to achieve the specified setting after a large change. Supported: F-16. Not supported: F-18.</summary>
     public double? PitchTrim;
+    /// <summary>
+    ///     Absolute roll trim setting: -1.0 (max trim left), 0 (neutral), 1.0 (max trim right). Note that it can take a while
+    ///     for the plane to achieve the specified setting after a large change. Supported: F-16. Not supported: F-18.</summary>
     public double? RollTrim;
+    /// <summary>
+    ///     Absolute yaw trim setting: -1.0 (max trim left), 0 (neutral), 1.0 (max trim right). Note that it can take a while
+    ///     for the plane to achieve the specified setting after a large change. Supported: F-16. Not supported: F-18.</summary>
     public double? YawTrim;
+    /// <summary>
+    ///     Rate of change for pitch trim: -1.0 (max rate trim down), 0 (no change), 1.0 (max rate trim up). This typically
+    ///     controls the HOTAS trim switch, with -1/1 being full down, and smaller values implemented as PWM (pressing and
+    ///     releasing the switch).</summary>
     public double? PitchTrimRate;
+    /// <summary>
+    ///     Rate of change for roll trim: -1.0 (max rate trim left), 0 (no change), 1.0 (max rate trim right). This typically
+    ///     controls the HOTAS trim switch, with -1/1 being full down, and smaller values implemented as PWM (pressing and
+    ///     releasing the switch).</summary>
     public double? RollTrimRate;
+    /// <summary>Rate of change for yaw trim: -1.0 (max rate trim left), 0 (no change), 1.0 (max rate trim right).</summary>
     public double? YawTrimRate;
     public double? SpeedBrakeRate; // 1=more brake, -1=less brake
 }
