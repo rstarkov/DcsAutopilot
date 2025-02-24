@@ -12,10 +12,11 @@ class ViperAutoTrim : FlightControllerBase
     private bool _active = false;
     private double _rollTrim = 0;
 
-    public override void NewSession(BulkData bulk)
+    public override void Reset()
     {
         _active = false;
         _rollTrim = 0;
+        _status = "(no data)";
     }
 
     public override ControlData ProcessFrame(FrameData frame)

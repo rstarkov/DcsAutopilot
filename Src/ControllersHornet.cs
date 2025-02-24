@@ -146,7 +146,7 @@ class HornetSlowFlightController : FlightControllerBase
 
     public override string Status => $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
 
-    public override void NewSession(BulkData bulk)
+    public override void Reset()
     {
         _pitch.Reset(0);
         _throttle.Reset(1);

@@ -15,6 +15,8 @@ public abstract class FlightControllerBase
     /// <summary>Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
     public bool Enabled { get; set; } = false;
     public DcsController Dcs { get; set; }
+    /// <summary>Called on start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
+    public virtual void Reset() { }
     public virtual void NewSession(BulkData bulk) { }
     public virtual ControlData ProcessFrame(FrameData frame) { return null; }
     public virtual void ProcessBulkUpdate(BulkData bulk) { }
@@ -244,7 +246,10 @@ public class DcsController
                     _session = parsedBulk.Session;
                     foreach (var ctrl in FlightControllers)
                         if (ctrl.Enabled)
+                        {
+                            ctrl.Reset();
                             ctrl.NewSession(parsedBulk);
+                        }
                     Status = "Session started; waiting for data";
                 }
             }

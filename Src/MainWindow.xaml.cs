@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -50,6 +50,10 @@ public partial class MainWindow : ManagedWindow
         LineY.Pen = new Pen(Brushes.Yellow, 1);
         foreach (var line in ctChart.Lines)
             line.Pen.Freeze();
+        _dcs.FlightControllers.Clear();
+        _dcs.FlightControllers.Add(new ChartPopulate(this));
+        _dcs.FlightControllers.Add(_ctrl = new ViperAutoTrim());
+        ctControllers.ItemsSource = _dcs.FlightControllers;
 
         RawGameController.RawGameControllers.ToList(); // oddly enough the first call to this returns nothing; second call succeeds
         _joystick = RawGameController.RawGameControllers.FirstOrDefault();
@@ -198,10 +202,9 @@ public partial class MainWindow : ManagedWindow
         refreshTimer_Tick(sender, null);
         foreach (var line in ctChart.Lines)
             line.Data.Clear();
-        _dcs.FlightControllers.Clear();
-        _dcs.FlightControllers.Add(new ChartPopulate(this));
-        _dcs.FlightControllers.Add(_ctrl = new ViperAutoTrim());
-        ctControllers.ItemsSource = _dcs.FlightControllers;
+        foreach (var c in _dcs.FlightControllers)
+            if (c.Enabled)
+                c.Reset();
         _dcs.Start();
         UpdateGui();
     }
@@ -236,14 +239,8 @@ public partial class MainWindow : ManagedWindow
             _dcs.FlightControllers.Add(new ViperAutoTrim());
         var c = _dcs.FlightControllers.OfType<ViperAutoTrim>().Single();
         c.Enabled = !c.Enabled;
-        UpdateGui();
-    }
-
-    private void HornetAutoTrim_Toggle(object sender, RoutedEventArgs e)
-    {
-        if (_updating) return;
-        var c = _dcs.FlightControllers.OfType<HornetAutoTrim>().Single();
-        c.Enabled = !c.Enabled;
+        if (c.Enabled)
+            c.Reset();
         UpdateGui();
     }
 
