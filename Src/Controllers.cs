@@ -45,6 +45,7 @@ class RollAutoTrim : FlightControllerBase
         else
             ctrl.RollTrimRate = trimRate;
         return ctrl;
+        // pitch trim for Hornet: one tick changes pitch rate by about 0.02 deg/sec
     }
 
     public override bool HandleKey(KeyEventArgs e)
