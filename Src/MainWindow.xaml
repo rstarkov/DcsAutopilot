@@ -30,8 +30,27 @@
                         <ColumnDefinition Width="3*"/>
                     </Grid.ColumnDefinitions>
                     <Canvas Grid.Column="0">
-                        <ToggleButton Name="btnHornetAutoTrim" IsChecked="False" Margin="8,8" Padding="8,2" Checked="HornetAutoTrim_Toggle" Unchecked="HornetAutoTrim_Toggle">Hornet auto-trim</ToggleButton>
-                        <Border Name="pnlSmartThrottle" Margin="8,40" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
+                        <Border Name="pnlAutoTrim" Margin="8,8" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
+                            <StackPanel>
+                                <DockPanel MinWidth="100">
+                                    <Button Name="btnAutoTrimOnOff" Padding="4,0" Click="btnAutoTrimOnOff_Click" Width="30">ON</Button>
+                                    <Label HorizontalContentAlignment="Center" Padding="5,0,0,0">Roll trim</Label>
+                                </DockPanel>
+                                <DockPanel>
+                                    <StackPanel>
+                                        <Label Padding="0,5,5,0">Roll:</Label>
+                                        <Label Padding="0,5,5,0">Trim:</Label>
+                                        <Label Padding="0,5,5,0">State:</Label>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <Label Name="lblAutoTrimRoll" Padding="0,5,5,0">?</Label>
+                                        <Label Name="lblAutoTrimTrim" Padding="0,5,5,0">?</Label>
+                                        <Label Name="lblAutoTrimState" Padding="0,5,5,0">off</Label>
+                                    </StackPanel>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Name="pnlSmartThrottle" Margin="8,150" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
                             <StackPanel>
                                 <Label HorizontalContentAlignment="Center" Padding="0" MouseDown="lblSmartThrottle_MouseDown">SmartThrottle</Label>
                                 <Label Name="lblSmartThrottle" HorizontalContentAlignment="Center" Padding="0,4,0,8" FontWeight="Bold">off</Label>

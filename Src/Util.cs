@@ -58,4 +58,15 @@ public static class Util
     }
 
     public static Vector2 ToVector2(this PointD pt) => new Vector2((float)pt.X, (float)pt.Y);
+
+    public static string SignStr(double value, string fmt, string neg, string pos, string zero)
+    {
+        var str = Math.Abs(value).ToString(fmt);
+        if (str == 0.ToString(fmt))
+            return zero + str;
+        else if (value < 0)
+            return neg + str;
+        else
+            return pos + str;
+    }
 }

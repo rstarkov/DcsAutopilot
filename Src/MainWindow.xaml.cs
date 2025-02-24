@@ -79,6 +79,13 @@ public partial class MainWindow : ManagedWindow
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
         _joystick?.GetCurrentReading(_joyButtons, _joySwitches, _joyAxes);
+        WithController<ViperAutoTrim>(vat =>
+        {
+            if (!vat.Enabled) return;
+            lblAutoTrimRoll.Content = _dcs.LastFrame == null ? "?" : Util.SignStr(_dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s";
+            lblAutoTrimTrim.Content = _dcs.LastFrame?.TrimRoll == null ? "?" : Util.SignStr(_dcs.LastFrame.TrimRoll.Value * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
+            lblAutoTrimState.Content = vat.Status;
+        });
         WithController<HornetSmartThrottle>(hct =>
         {
             hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
@@ -188,12 +195,12 @@ public partial class MainWindow : ManagedWindow
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
+        refreshTimer_Tick(sender, null);
         foreach (var line in ctChart.Lines)
             line.Data.Clear();
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
-        _dcs.FlightControllers.Add(_ctrl = new HornetAutoTrim());
-        _dcs.FlightControllers.Add(new HornetSmartThrottle() { Enabled = true });
+        _dcs.FlightControllers.Add(_ctrl = new ViperAutoTrim());
         ctControllers.ItemsSource = _dcs.FlightControllers;
         _dcs.Start();
         UpdateGui();
@@ -220,6 +227,16 @@ public partial class MainWindow : ManagedWindow
         _bobblehead.Closing += delegate { _bobblehead = null; ctrl.Window = null; };
         _bobblehead.Show();
         ctrl.Window = _bobblehead;
+    }
+
+    private void btnAutoTrimOnOff_Click(object sender, RoutedEventArgs e)
+    {
+        if (_updating) return;
+        if (!_dcs.FlightControllers.OfType<ViperAutoTrim>().Any())
+            _dcs.FlightControllers.Add(new ViperAutoTrim());
+        var c = _dcs.FlightControllers.OfType<ViperAutoTrim>().Single();
+        c.Enabled = !c.Enabled;
+        UpdateGui();
     }
 
     private void HornetAutoTrim_Toggle(object sender, RoutedEventArgs e)
@@ -266,10 +283,52 @@ public partial class MainWindow : ManagedWindow
         _updating = true;
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
-        btnHornetAutoTrim.IsEnabled = _dcs.FlightControllers.OfType<HornetAutoTrim>().Any();
-        btnHornetAutoTrim.IsChecked = btnHornetAutoTrim.IsEnabled ? _dcs.FlightControllers.OfType<HornetAutoTrim>().Single().Enabled : false;
-        btnHornetAutoTrim.Content = $"Hornet auto-trim: {(btnHornetAutoTrim.IsChecked == true ? "ON" : "off")}";
+        updateAutoTrim();
         _updating = false;
+        refreshTimer_Tick(null, null);
+
+        void updateAutoTrim()
+        {
+            var on = updateCtrlPanel<ViperAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
+            if (!on)
+            {
+                lblAutoTrimRoll.Content = "?";
+                lblAutoTrimTrim.Content = "?";
+                lblAutoTrimState.Content = "disabled";
+            }
+        }
+
+        bool updateCtrlPanel<TCtrl>(DependencyObject panel, Button btnOnOff) where TCtrl : FlightControllerBase
+        {
+            var c = _dcs.FlightControllers.OfType<TCtrl>().SingleOrDefault();
+            if (c?.Enabled == true)
+            {
+                btnOnOff.Content = "ON";
+                enableTree(panel, true);
+            }
+            else
+            {
+                btnOnOff.Content = "off";
+                enableTree(panel, false);
+                enableParents(btnOnOff, panel);
+            }
+            return c?.Enabled == true;
+        }
+        void enableTree(DependencyObject obj, bool enable)
+        {
+            if (obj is Control ctrl)
+                ctrl.IsEnabled = enable;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+                enableTree(VisualTreeHelper.GetChild(obj, i), enable);
+        }
+        void enableParents(DependencyObject obj, DependencyObject stop)
+        {
+            if (obj == null || obj == stop)
+                return;
+            if (obj is Control ctrl)
+                ctrl.IsEnabled = true;
+            enableParents(VisualTreeHelper.GetParent(obj), stop);
+        }
     }
 
     private KeyEventArgs convertGlobalKeyEvent(GlobalKeyEventArgs e, bool down)

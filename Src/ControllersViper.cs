@@ -9,37 +9,37 @@ namespace DcsAutopilot;
 class ViperAutoTrim : FlightControllerBase
 {
     public override string Name { get; set; } = "Viper Auto-Trim";
+    private bool _active = false;
     private double _rollTrim = 0;
 
     public override void NewSession(BulkData bulk)
     {
+        _active = false;
         _rollTrim = 0;
     }
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        var trimRate = Enabled ? (-0.1 * frame.GyroRoll).Clip(-0.2, 0.2) : 0; // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
-        _rollTrim = (_rollTrim + trimRate * frame.dT).Clip(-1, 1);
-        _status = $"{frame.GyroRoll:0.00}°/s – {(_rollTrim < 0 ? "L:" : "R:")}{Math.Abs(_rollTrim * 100):0.0}% – ";
-        if (Enabled)
+        if (!_active)
         {
-            _status += $"{(trimRate < 0 ? "L:" : "R:")}{Math.Abs(trimRate * 100):0.0}%/s";
-            var ctrl = new ControlData();
-            ctrl.RollTrim = _rollTrim;
-            return Enabled ? ctrl : null;
-        }
-        else
-        {
-            _status += $"[press T]";
+            _status = "(press T)";
             return null;
         }
+        var trimRate = (-0.1 * frame.GyroRoll).Clip(-0.2, 0.2); // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
+        if (frame.TrimRoll != null)
+            _rollTrim = frame.TrimRoll.Value;
+        _rollTrim = (_rollTrim + trimRate * frame.dT).Clip(-1, 1);
+        _status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%/s";
+        var ctrl = new ControlData();
+        ctrl.RollTrim = _rollTrim;
+        return Enabled ? ctrl : null;
     }
 
     public override bool HandleKey(KeyEventArgs e)
     {
         if (e.DcsFocused && e.Key == Key.T && e.Modifiers == default)
         {
-            Enabled = e.Down;
+            _active = e.Down;
             return true;
         }
         return false;
