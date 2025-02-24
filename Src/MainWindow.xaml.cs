@@ -91,7 +91,7 @@ public partial class MainWindow : ManagedWindow
             lblAutoTrimTrim.Content = _dcs.LastFrame?.TrimRoll == null ? "?" : Util.SignStr(_dcs.LastFrame.TrimRoll.Value * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
             lblAutoTrimState.Content = vat.Status;
         });
-        WithController<HornetSmartThrottle>(hct =>
+        WithController<SmartThrottle>(hct =>
         {
             hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
             btnSmartThrottleAfterburner.BorderBrush = hct.AfterburnerActive ? _brushToggleBorderHigh : hct.AllowAfterburner ? _brushToggleBorderActive : _brushToggleBorderNormal;
@@ -247,17 +247,17 @@ public partial class MainWindow : ManagedWindow
 
     private void btnSmartThrottleAfterburner_Click(object sender, RoutedEventArgs e)
     {
-        WithController<HornetSmartThrottle>(c => c.AllowAfterburner = !c.AllowAfterburner);
+        WithController<SmartThrottle>(c => c.AllowAfterburner = !c.AllowAfterburner);
     }
 
     private void btnSmartThrottleSpeedbrake_Click(object sender, RoutedEventArgs e)
     {
-        WithController<HornetSmartThrottle>(c => c.AllowSpeedbrake = !c.AllowSpeedbrake);
+        WithController<SmartThrottle>(c => c.AllowSpeedbrake = !c.AllowSpeedbrake);
     }
 
     private void lblSmartThrottle_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        WithController<HornetSmartThrottle>(c => c.Enabled = !c.Enabled);
+        WithController<SmartThrottle>(c => c.Enabled = !c.Enabled);
     }
 
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
