@@ -18,7 +18,6 @@ public static class TuneViper
 
         public override ControlData ProcessFrame(FrameData frame)
         {
-            if (!Enabled) return null;
             var ctrl = new ControlData();
             ctrl.ThrottleAxis = Throttle;
             ctrl.SpeedBrakeRate = SpeedBrake;

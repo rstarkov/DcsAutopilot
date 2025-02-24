@@ -12,7 +12,7 @@ public abstract class FlightControllerBase
     public abstract string Name { get; set; }
     public virtual string Status => _status;
     protected string _status = "";
-    /// <summary>Disabled controllers still receive all callbacks; they must implement the "disabled" state directly.</summary>
+    /// <summary>Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
     public bool Enabled { get; set; } = false;
     public DcsController Dcs { get; set; }
     public virtual void NewSession(BulkData bulk) { }
@@ -24,7 +24,6 @@ public abstract class FlightControllerBase
 
 public class KeyEventArgs
 {
-    public bool DcsFocused;
     public bool Down;
     public Key Key;
     public ModifierKeys Modifiers;
@@ -209,11 +208,12 @@ public class DcsController
                         parsedFrame.dT = parsedFrame.SimTime - LastFrame.SimTime;
                         ControlData control = null;
                         foreach (var ctl in FlightControllers)
-                        {
-                            var cd = ctl.ProcessFrame(parsedFrame);
-                            if (cd != null)
-                                control = cd; // todo: merge axes
-                        }
+                            if (ctl.Enabled)
+                            {
+                                var cd = ctl.ProcessFrame(parsedFrame);
+                                if (cd != null)
+                                    control = cd; // todo: merge axes
+                            }
                         LastControl = control;
                         if (control != null)
                             Send(control);
@@ -236,13 +236,15 @@ public class DcsController
                 if (_session == parsedBulk.Session)
                 {
                     foreach (var ctrl in FlightControllers)
-                        ctrl.ProcessBulkUpdate(parsedBulk);
+                        if (ctrl.Enabled)
+                            ctrl.ProcessBulkUpdate(parsedBulk);
                 }
                 else
                 {
                     _session = parsedBulk.Session;
                     foreach (var ctrl in FlightControllers)
-                        ctrl.NewSession(parsedBulk);
+                        if (ctrl.Enabled)
+                            ctrl.NewSession(parsedBulk);
                     Status = "Session started; waiting for data";
                 }
             }

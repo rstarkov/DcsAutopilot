@@ -32,12 +32,12 @@ class ViperAutoTrim : FlightControllerBase
         _status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%/s";
         var ctrl = new ControlData();
         ctrl.RollTrim = _rollTrim;
-        return Enabled ? ctrl : null;
+        return ctrl;
     }
 
     public override bool HandleKey(KeyEventArgs e)
     {
-        if (e.DcsFocused && e.Key == Key.T && e.Modifiers == default)
+        if (e.Key == Key.T && e.Modifiers == default)
         {
             _active = e.Down;
             return true;
@@ -96,8 +96,6 @@ class ViperTune : FlightControllerBase
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        if (!Enabled)
-            return null;
         _Dmin = Math.Min(_Dmin, _control.PidSpeed2Throttle.PID.Derivative);
         _Dmax = Math.Max(_Dmax, _control.PidSpeed2Throttle.PID.Derivative);
         _Vmin = Math.Min(_Vmin, frame.SpeedIndicated);
@@ -160,6 +158,7 @@ class ViperTestPitch : FlightControllerBase
 
         var ctrl = new ControlData();
         ctrl.PitchAxis = Enabled ? 0.043751 : 0; // 0.043751 yes  0.043750 no
+        // todo: this method won't be called if !Enabled anymore
         return ctrl;
     }
 }

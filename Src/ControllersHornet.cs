@@ -12,8 +12,6 @@ class HornetAutoTrim : FlightControllerBase
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        if (!Enabled)
-            return null;
         var ctrl = new ControlData();
         _status = "";
         if (Math.Abs(frame.Bank) > 15)
@@ -73,6 +71,7 @@ class HornetSmartThrottle : FlightControllerBase
 
     public override ControlData ProcessFrame(FrameData frame)
     {
+        // todo: use separate bool for active
         if (!Enabled || frame.LandingGear > 0)
         {
             _status = !Enabled ? "off" : "GEAR";
@@ -115,8 +114,9 @@ class HornetSmartThrottle : FlightControllerBase
 
     public override bool HandleKey(KeyEventArgs e)
     {
-        if (e.DcsFocused && e.Key == Key.T && e.Modifiers == default)
+        if (e.Key == Key.T && e.Modifiers == default)
         {
+            // todo: use separate bool for active
             Enabled = !Enabled;
             return true;
         }

@@ -266,7 +266,8 @@ public partial class MainWindow : ManagedWindow
     {
         var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
         var signal = ((Button)sender).Content.ToString();
-        ctrl.HandleSignal(signal);
+        if (ctrl.Enabled)
+            ctrl.HandleSignal(signal);
     }
 
     private void WithController<T>(Action<T> action)
@@ -335,7 +336,6 @@ public partial class MainWindow : ManagedWindow
     {
         return new KeyEventArgs
         {
-            DcsFocused = DcsWindow.DcsHasFocus(),
             Down = down,
             Key = KeyInterop.KeyFromVirtualKey((int)e.VirtualKeyCode),
             Modifiers = (e.ModifierKeys.Win ? ModifierKeys.Windows : 0) | (e.ModifierKeys.Ctrl ? ModifierKeys.Control : 0) | (e.ModifierKeys.Alt ? ModifierKeys.Alt : 0) | (e.ModifierKeys.Shift ? ModifierKeys.Shift : 0),
@@ -344,11 +344,11 @@ public partial class MainWindow : ManagedWindow
 
     private void _keyboardListener_KeyDown(object sender, GlobalKeyEventArgs e)
     {
-        if (!_dcs.IsRunning)
+        if (!_dcs.IsRunning || !DcsWindow.DcsHasFocus())
             return;
         var ee = convertGlobalKeyEvent(e, down: true);
         foreach (var c in _dcs.FlightControllers)
-            if (c.HandleKey(ee))
+            if (c.Enabled && c.HandleKey(ee))
             {
                 e.Handled = true;
                 return;
@@ -357,11 +357,11 @@ public partial class MainWindow : ManagedWindow
 
     private void _keyboardListener_KeyUp(object sender, GlobalKeyEventArgs e)
     {
-        if (!_dcs.IsRunning)
+        if (!_dcs.IsRunning || !DcsWindow.DcsHasFocus())
             return;
         var ee = convertGlobalKeyEvent(e, down: false);
         foreach (var c in _dcs.FlightControllers)
-            if (c.HandleKey(ee))
+            if (c.Enabled && c.HandleKey(ee))
             {
                 e.Handled = true;
                 return;
