@@ -86,7 +86,8 @@ public partial class MainWindow : ManagedWindow
         WithController<RollAutoTrim>(vat =>
         {
             if (!vat.Enabled) return;
-            lblAutoTrimRoll.Content = _dcs.LastFrame == null ? "?" : Util.SignStr(_dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s";
+            lblAutoTrimRollLabel.Content = vat.UsingBankRate ? "Bank:" : "Roll:";
+            lblAutoTrimRoll.Content = _dcs.LastFrame == null ? "?" : vat.UsingBankRate ? (Util.SignStr(_dcs.LastFrame.Bank, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°") : (Util.SignStr(_dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s");
             lblAutoTrimTrim.Content = _dcs.LastFrame?.TrimRoll == null ? "?" : Util.SignStr(_dcs.LastFrame.TrimRoll.Value * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
             lblAutoTrimState.Content = vat.Status;
         });

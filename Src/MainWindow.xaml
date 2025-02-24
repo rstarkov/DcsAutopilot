@@ -38,7 +38,7 @@
                                 </DockPanel>
                                 <DockPanel>
                                     <StackPanel>
-                                        <Label Padding="0,5,5,0">Roll:</Label>
+                                        <Label Name="lblAutoTrimRollLabel" Padding="0,5,5,0">Roll:</Label>
                                         <Label Padding="0,5,5,0">Trim:</Label>
                                         <Label Padding="0,5,5,0">State:</Label>
                                     </StackPanel>
