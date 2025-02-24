@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -6,13 +6,11 @@ namespace DcsAutopilot;
 class RollAutoTrim : FlightControllerBase
 {
     public override string Name { get; set; } = "Roll Auto-Trim";
-    private bool _active = false;
-    private double _rollTrim = 0;
+    private bool _active;
 
     public override void Reset()
     {
         _active = false;
-        _rollTrim = 0;
         _status = "(no data)";
     }
 
@@ -23,13 +21,19 @@ class RollAutoTrim : FlightControllerBase
             _status = "(press T)";
             return null;
         }
-        var trimRate = (-0.1 * frame.GyroRoll).Clip(-0.2, 0.2); // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
-        if (frame.TrimRoll != null)
-            _rollTrim = frame.TrimRoll.Value;
-        _rollTrim = (_rollTrim + trimRate * frame.dT).Clip(-1, 1);
-        _status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%/s";
         var ctrl = new ControlData();
-        ctrl.RollTrim = _rollTrim;
+        bool supportsAbsoluteTrim = Dcs.LastBulk?.Aircraft == "F-16C_50"; // can not only set absolute trim, but also read it back (critical to interop with manual trim nicely)
+        var P = supportsAbsoluteTrim ? 0.1 : 0.5;
+        var trimRateLimit = !supportsAbsoluteTrim ? 1.0 : 0.2; // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
+        var rollRate = frame.GyroRoll;
+        var trimRate = -(P * rollRate).Clip(-trimRateLimit, trimRateLimit);
+        if (!supportsAbsoluteTrim && Math.Abs(rollRate) < 0.10) // one tick of relative roll trim changes roll rate by about 0.1 deg/sec so don't try to make this trim any better
+            trimRate = 0;
+        _status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + (supportsAbsoluteTrim ? "%/s" : "%");
+        if (supportsAbsoluteTrim)
+            ctrl.RollTrim = (frame.TrimRoll.Value + trimRate * frame.dT).Clip(-1, 1);
+        else
+            ctrl.RollTrimRate = trimRate;
         return ctrl;
     }
 
