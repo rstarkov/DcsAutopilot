@@ -52,7 +52,7 @@ public partial class MainWindow : ManagedWindow
             line.Pen.Freeze();
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
-        _dcs.FlightControllers.Add(_ctrl = new ViperAutoTrim());
+        _dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
         ctControllers.ItemsSource = _dcs.FlightControllers;
 
         RawGameController.RawGameControllers.ToList(); // oddly enough the first call to this returns nothing; second call succeeds
@@ -83,7 +83,7 @@ public partial class MainWindow : ManagedWindow
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
         _joystick?.GetCurrentReading(_joyButtons, _joySwitches, _joyAxes);
-        WithController<ViperAutoTrim>(vat =>
+        WithController<RollAutoTrim>(vat =>
         {
             if (!vat.Enabled) return;
             lblAutoTrimRoll.Content = _dcs.LastFrame == null ? "?" : Util.SignStr(_dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s";
@@ -235,9 +235,9 @@ public partial class MainWindow : ManagedWindow
     private void btnAutoTrimOnOff_Click(object sender, RoutedEventArgs e)
     {
         if (_updating) return;
-        if (!_dcs.FlightControllers.OfType<ViperAutoTrim>().Any())
-            _dcs.FlightControllers.Add(new ViperAutoTrim());
-        var c = _dcs.FlightControllers.OfType<ViperAutoTrim>().Single();
+        if (!_dcs.FlightControllers.OfType<RollAutoTrim>().Any())
+            _dcs.FlightControllers.Add(new RollAutoTrim());
+        var c = _dcs.FlightControllers.OfType<RollAutoTrim>().Single();
         c.Enabled = !c.Enabled;
         if (c.Enabled)
             c.Reset();
@@ -287,7 +287,7 @@ public partial class MainWindow : ManagedWindow
 
         void updateAutoTrim()
         {
-            var on = updateCtrlPanel<ViperAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
+            var on = updateCtrlPanel<RollAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
             if (!on)
             {
                 lblAutoTrimRoll.Content = "?";
