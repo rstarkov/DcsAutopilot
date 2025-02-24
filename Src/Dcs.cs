@@ -13,7 +13,7 @@ public abstract class FlightControllerBase
     public virtual string Status => _status;
     protected string _status = "";
     /// <summary>Disabled controllers still receive all callbacks; they must implement the "disabled" state directly.</summary>
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
     public DcsController Dcs { get; set; }
     public virtual void NewSession(BulkData bulk) { }
     public virtual ControlData ProcessFrame(FrameData frame) { return null; }
@@ -157,6 +157,9 @@ public class DcsController
                             case "joyy": fd.JoyYaw = double.Parse(data[i++]); break;
                             case "joyt1": fd.JoyThrottle1 = double.Parse(data[i++]); break;
                             case "joyt2": fd.JoyThrottle2 = double.Parse(data[i++]); break;
+                            case "ptrm": fd.TrimPitch = double.Parse(data[i++]); break;
+                            case "rtrm": fd.TrimRoll = double.Parse(data[i++]); break;
+                            case "ytrm": fd.TrimYaw = double.Parse(data[i++]); break;
                             case "test1": fd.Test1 = double.Parse(data[i++]); break;
                             case "test2": fd.Test2 = double.Parse(data[i++]); break;
                             case "test3": fd.Test3 = double.Parse(data[i++]); break;
@@ -407,6 +410,7 @@ public class FrameData
     public double FuelFlow;
     public double Flaps, Airbrakes, LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
+    public double? TrimRoll, TrimPitch, TrimYaw;
     public double WindX, WindY, WindZ;
     public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
     public double Test1, Test2, Test3, Test4;

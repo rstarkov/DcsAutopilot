@@ -138,6 +138,12 @@ function LuaExportAfterNextFrame()
         elseif sdata.Name == 'F-16C_50' then
             dt[#dt+1] = "fufl"
             dt[#dt+1] = 10000*math.floor(10*GetDevice(0):get_argument_value(88) + 0.5) + 1000*math.floor(10*GetDevice(0):get_argument_value(89) + 0.5) + 100*10*GetDevice(0):get_argument_value(90)
+            dt[#dt+1] = "ptrm" -- pitch trim
+            dt[#dt+1] = GetDevice(0):get_argument_value(562)
+            dt[#dt+1] = "rtrm"
+            dt[#dt+1] = -GetDevice(0):get_argument_value(560)
+            dt[#dt+1] = "ytrm"
+            dt[#dt+1] = GetDevice(0):get_argument_value(565)
         end
     end
 
