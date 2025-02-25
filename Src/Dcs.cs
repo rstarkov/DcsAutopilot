@@ -268,7 +268,7 @@ public class DcsController
                 {
                     _session = parsedBulk.Session;
                     PrevFrame = LastFrame = null;
-                    bankRateFilter = bankRateFilter.New();
+                    bankRateFilter.Reset();
                     foreach (var ctrl in FlightControllers)
                         if (ctrl.Enabled)
                         {

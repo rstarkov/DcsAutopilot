@@ -10,14 +10,21 @@ public static class Filters
 
 public interface IFilter
 {
+    /// <summary>Creates a copy of this filter with the same parameters.</summary>
     IFilter New();
+    /// <summary>Pushes a sample through the filter and returns the next filtered output sample.</summary>
     double Step(double v);
+    /// <summary>
+    ///     Reset the filter to its initial state. In this state, the first value passed to Step also becomes the output that
+    ///     the filter has settled on.</summary>
+    void Reset();
 }
 
 public class NullFilter : IFilter
 {
     public IFilter New() => new NullFilter();
     public double Step(double v) => v;
+    public void Reset() { }
 }
 
 public class IirOrder2Filter : IFilter
@@ -29,6 +36,12 @@ public class IirOrder2Filter : IFilter
     public double A1, A2, B0, B1, B2;
 
     public IFilter New() => new IirOrder2Filter { A1 = A1, A2 = A2, B0 = B0, B1 = B1, B2 = B2 };
+
+    public void Reset()
+    {
+        _first = true;
+        _x1 = _x2 = _y1 = _y2 = 0; // not necessary but cleaner
+    }
 
     public double Step(double x)
     {
