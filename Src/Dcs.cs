@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -111,6 +111,7 @@ public class DcsController
 
     private void thread(CancellationToken token)
     {
+        var bankRateFilter = Filters.BesselD5;
         while (!token.IsCancellationRequested)
         {
             foreach (var ctl in FlightControllers)
@@ -238,6 +239,7 @@ public class DcsController
                         if (PrevFrame != null) // don't do control on the very first frame
                         {
                             LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
+                            LastFrame.BankRate = bankRateFilter.Step((LastFrame.Bank - PrevFrame.Bank) / LastFrame.dT);
                             ControlData control = null;
                             foreach (var ctl in FlightControllers)
                                 if (ctl.Enabled)
@@ -266,6 +268,7 @@ public class DcsController
                 {
                     _session = parsedBulk.Session;
                     PrevFrame = LastFrame = null;
+                    bankRateFilter = bankRateFilter.New();
                     foreach (var ctrl in FlightControllers)
                         if (ctrl.Enabled)
                         {
@@ -443,6 +446,12 @@ public class FrameData
     public double WindX, WindY, WindZ;
     public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
     public double Test1, Test2, Test3, Test4;
+
+    /// <summary>
+    ///     Rate of change of <see cref="Bank"/> in degrees/second. Computed directly from <see cref="Bank"/> with a short
+    ///     filter. This can be a better metric than gyro roll rate for controllers attempting to control the bank angle,
+    ///     especially when trying to keep it steady.</summary>
+    public double BankRate;
 }
 
 public class ControlData
