@@ -12,12 +12,20 @@ public abstract class FlightControllerBase
     public abstract string Name { get; set; }
     public virtual string Status => _status;
     protected string _status = "";
-    /// <summary>Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
+    /// <summary>
+    ///     Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
     public bool Enabled { get; set; } = false;
     public DcsController Dcs { get; set; }
     /// <summary>Called on start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
     public virtual void Reset() { }
     public virtual void NewSession(BulkData bulk) { }
+    /// <summary>
+    ///     Called only for enabled controllers every time a new data frame is received from DCS.</summary>
+    /// <param name="frame">
+    ///     Latest data frame. Equal to <see cref="DcsController.LastFrame"/>.</param>
+    /// <returns>
+    ///     Desired inputs. Null values for things that don't need to be controlled, or null if nothing needs to be
+    ///     controlled.</returns>
     public virtual ControlData ProcessFrame(FrameData frame) { return null; }
     public virtual void ProcessBulkUpdate(BulkData bulk) { }
     public virtual void HandleSignal(string signal) { }
@@ -52,6 +60,12 @@ public class DcsController
     public int LastFrameBytes { get; private set; }
     public DateTime LastFrameUtc { get; private set; }
     public IEnumerable<double> Latencies => _latencies;
+    /// <summary>
+    ///     The frame that preceded <see cref="LastFrame"/>. Not null during all <see cref="FlightControllerBase"/> callbacks.</summary>
+    public FrameData PrevFrame { get; private set; }
+    /// <summary>
+    ///     The last frame received from DCS. Cleared to null on stop/session change. Not null during all <see
+    ///     cref="FlightControllerBase"/> callbacks.</summary>
     public FrameData LastFrame { get; private set; }
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
@@ -87,6 +101,7 @@ public class DcsController
         Status = "Stopped";
         Frames = 0;
         Skips = 0;
+        PrevFrame = null;
         LastFrameUtc = DateTime.MinValue;
         LastFrame = null;
         LastBulk = null;
@@ -202,34 +217,40 @@ public class DcsController
             if (parsedFrame != null)
             {
                 if (_session != parsedFrame.Session)
+                {
+                    PrevFrame = LastFrame = null;
                     Status = "Session changed; synchronising";
+                }
                 else
                 {
-                    if (LastFrame != null && LastFrame.SimTime != parsedFrame.SimTime) // don't do control on the very first frame, also filter out duplicate frames sent on pause / resume
-                    {
-                        parsedFrame.dT = parsedFrame.SimTime - LastFrame.SimTime;
-                        ControlData control = null;
-                        foreach (var ctl in FlightControllers)
-                            if (ctl.Enabled)
-                            {
-                                var cd = ctl.ProcessFrame(parsedFrame);
-                                if (cd != null)
-                                    control = cd; // todo: merge axes
-                            }
-                        LastControl = control;
-                        if (control != null)
-                            Send(control);
-                    }
-
                     Status = "Active control";
                     Frames = parsedFrame.Frame;
                     Skips = parsedFrame.Skips;
-                    LastFrameBytes = bytes.Length;
-                    LastFrameUtc = DateTime.UtcNow;
-                    LastFrame = parsedFrame;
-                    _latencies.Enqueue(parsedFrame.Latency);
-                    while (_latencies.Count > 200)
-                        _latencies.TryDequeue(out _);
+                    if (LastFrame?.SimTime != parsedFrame.SimTime) // the frame we've just received may be a duplicate, which happens on pause / resume
+                    {
+                        PrevFrame = LastFrame;
+                        LastFrame = parsedFrame;
+                        LastFrameBytes = bytes.Length;
+                        LastFrameUtc = DateTime.UtcNow;
+                        _latencies.Enqueue(LastFrame.Latency);
+                        while (_latencies.Count > 200)
+                            _latencies.TryDequeue(out _);
+                        if (PrevFrame != null) // don't do control on the very first frame
+                        {
+                            LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
+                            ControlData control = null;
+                            foreach (var ctl in FlightControllers)
+                                if (ctl.Enabled)
+                                {
+                                    var cd = ctl.ProcessFrame(LastFrame);
+                                    if (cd != null)
+                                        control = cd; // todo: merge axes
+                                }
+                            LastControl = control;
+                            if (control != null)
+                                Send(control);
+                        }
+                    }
                 }
             }
             if (parsedBulk != null)
@@ -244,6 +265,7 @@ public class DcsController
                 else
                 {
                     _session = parsedBulk.Session;
+                    PrevFrame = LastFrame = null;
                     foreach (var ctrl in FlightControllers)
                         if (ctrl.Enabled)
                         {
