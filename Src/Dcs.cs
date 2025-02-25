@@ -1,8 +1,9 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows.Input;
+using RT.Util;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -45,6 +46,7 @@ public class DcsController
     private IPEndPoint _endpoint;
     private CancellationTokenSource _cts;
     private Thread _thread;
+    private GlobalKeyboardListener _keyboardListener;
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
@@ -81,6 +83,9 @@ public class DcsController
         Warnings.Clear();
         _thread = new Thread(() => thread(_cts.Token)) { IsBackground = true };
         _thread.Start();
+        _keyboardListener = new() { HookAllKeys = true };
+        _keyboardListener.KeyDown += globalKeyDown;
+        _keyboardListener.KeyUp += globalKeyUp;
         IsRunning = true;
         Status = "Waiting for data from DCS";
     }
@@ -97,6 +102,11 @@ public class DcsController
         _endpoint = null;
         _cts = null;
         _thread = null;
+        _keyboardListener.KeyDown -= globalKeyDown;
+        _keyboardListener.KeyUp -= globalKeyUp;
+        _keyboardListener.Dispose();
+        _keyboardListener = null;
+
         IsRunning = false;
         Status = "Stopped";
         Frames = 0;
@@ -367,6 +377,26 @@ public class DcsController
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
+    }
+
+    private void globalKeyDown(object sender, GlobalKeyEventArgs e) => globalKeyEvent(e, down: true);
+    private void globalKeyUp(object sender, GlobalKeyEventArgs e) => globalKeyEvent(e, down: false);
+    private void globalKeyEvent(GlobalKeyEventArgs e, bool down)
+    {
+        if (!IsRunning || !DcsWindow.DcsHasFocus())
+            return;
+        var ee = new KeyEventArgs
+        {
+            Down = down,
+            Key = KeyInterop.KeyFromVirtualKey((int)e.VirtualKeyCode),
+            Modifiers = (e.ModifierKeys.Win ? ModifierKeys.Windows : 0) | (e.ModifierKeys.Ctrl ? ModifierKeys.Control : 0) | (e.ModifierKeys.Alt ? ModifierKeys.Alt : 0) | (e.ModifierKeys.Shift ? ModifierKeys.Shift : 0),
+        };
+        foreach (var c in FlightControllers)
+            if (c.Enabled && c.HandleKey(ee))
+            {
+                e.Handled = true;
+                return;
+            }
     }
 }
 

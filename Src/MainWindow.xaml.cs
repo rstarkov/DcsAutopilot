@@ -1,10 +1,8 @@
 ﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using RT.Util;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
 using RT.Util.Geometry;
@@ -24,7 +22,6 @@ public partial class MainWindow : ManagedWindow
     private double[] _joyAxes;
     private bool[] _joyButtons;
     private GameControllerSwitchPosition[] _joySwitches;
-    private GlobalKeyboardListener _keyboardListener = new();
     private Brush _brushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
     private Brush _brushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
     private Brush _brushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
@@ -60,9 +57,6 @@ public partial class MainWindow : ManagedWindow
         _joyAxes = new double[_joystick?.AxisCount ?? 0];
         _joySwitches = new GameControllerSwitchPosition[_joystick?.SwitchCount ?? 0];
         _joyButtons = new bool[_joystick?.ButtonCount ?? 0];
-        _keyboardListener.HookAllKeys = true;
-        _keyboardListener.KeyDown += _keyboardListener_KeyDown;
-        _keyboardListener.KeyUp += _keyboardListener_KeyUp;
 
         btnStop_Click(null, null);
     }
@@ -328,41 +322,5 @@ public partial class MainWindow : ManagedWindow
                 ctrl.IsEnabled = true;
             enableParents(VisualTreeHelper.GetParent(obj), stop);
         }
-    }
-
-    private KeyEventArgs convertGlobalKeyEvent(GlobalKeyEventArgs e, bool down)
-    {
-        return new KeyEventArgs
-        {
-            Down = down,
-            Key = KeyInterop.KeyFromVirtualKey((int)e.VirtualKeyCode),
-            Modifiers = (e.ModifierKeys.Win ? ModifierKeys.Windows : 0) | (e.ModifierKeys.Ctrl ? ModifierKeys.Control : 0) | (e.ModifierKeys.Alt ? ModifierKeys.Alt : 0) | (e.ModifierKeys.Shift ? ModifierKeys.Shift : 0),
-        };
-    }
-
-    private void _keyboardListener_KeyDown(object sender, GlobalKeyEventArgs e)
-    {
-        if (!_dcs.IsRunning || !DcsWindow.DcsHasFocus())
-            return;
-        var ee = convertGlobalKeyEvent(e, down: true);
-        foreach (var c in _dcs.FlightControllers)
-            if (c.Enabled && c.HandleKey(ee))
-            {
-                e.Handled = true;
-                return;
-            }
-    }
-
-    private void _keyboardListener_KeyUp(object sender, GlobalKeyEventArgs e)
-    {
-        if (!_dcs.IsRunning || !DcsWindow.DcsHasFocus())
-            return;
-        var ee = convertGlobalKeyEvent(e, down: false);
-        foreach (var c in _dcs.FlightControllers)
-            if (c.Enabled && c.HandleKey(ee))
-            {
-                e.Handled = true;
-                return;
-            }
     }
 }
