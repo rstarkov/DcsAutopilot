@@ -256,7 +256,12 @@ public class DcsController
                                 {
                                     var cd = ctl.ProcessFrame(LastFrame);
                                     if (cd != null)
-                                        control = cd; // todo: merge axes
+                                    {
+                                        if (control == null)
+                                            control = cd;
+                                        else if (!control.Merge(cd))
+                                            Warnings.Add($"Controller \"{ctl.Name}\" is setting the same controls as an earlier controller; partially ignored.");
+                                    }
                                 }
                             LastControl = control;
                             if (control != null)
@@ -525,4 +530,31 @@ public class ControlData
     /// <summary>Rate of change for yaw trim: -1.0 (max rate trim left), 0 (no change), 1.0 (max rate trim right).</summary>
     public double? YawTrimRate;
     public double? SpeedBrakeRate; // 1=more brake, -1=less brake
+
+    /// <summary>
+    ///     Merges <paramref name="other"/> into this instance. Returns <c>true</c> if none of the properties are set in both
+    ///     instances. Otherwise this instance takes priority and the method returns <c>false</c>.</summary>
+    public bool Merge(ControlData other)
+    {
+        bool ok = true;
+        PitchAxis = merge(PitchAxis, other.PitchAxis);
+        RollAxis = merge(RollAxis, other.RollAxis);
+        YawAxis = merge(YawAxis, other.YawAxis);
+        ThrottleAxis = merge(ThrottleAxis, other.ThrottleAxis);
+        PitchTrim = merge(PitchTrim, other.PitchTrim);
+        RollTrim = merge(RollTrim, other.RollTrim);
+        YawTrim = merge(YawTrim, other.YawTrim);
+        PitchTrimRate = merge(PitchTrimRate, other.PitchTrimRate);
+        RollTrimRate = merge(RollTrimRate, other.RollTrimRate);
+        YawTrimRate = merge(YawTrimRate, other.YawTrimRate);
+        SpeedBrakeRate = merge(SpeedBrakeRate, other.SpeedBrakeRate);
+        return ok;
+
+        double? merge(double? a, double? b)
+        {
+            if (a != null && b != null)
+                ok = false;
+            return a ?? b;
+        }
+    }
 }
