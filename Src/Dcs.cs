@@ -47,6 +47,7 @@ public class DcsController
     private CancellationTokenSource _cts;
     private Thread _thread;
     private GlobalKeyboardListener _keyboardListener;
+    private JoystickState _joystick = new();
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
@@ -71,6 +72,7 @@ public class DcsController
     public FrameData LastFrame { get; private set; }
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
+    public JoystickReader Joystick => _joystick.Reader;
 
     public void Start(int udpPort = 9876)
     {
@@ -250,6 +252,7 @@ public class DcsController
                         {
                             LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
                             LastFrame.BankRate = bankRateFilter.Step((LastFrame.Bank - PrevFrame.Bank) / LastFrame.dT);
+                            _joystick.Update();
                             ControlData control = null;
                             foreach (var ctl in FlightControllers)
                                 if (ctl.Enabled)

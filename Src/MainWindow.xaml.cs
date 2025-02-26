@@ -18,10 +18,6 @@ public partial class MainWindow : ManagedWindow
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private FlightControllerBase _ctrl;
     public static ChartLine LineR = new(), LineG = new(), LineY = new();
-    private RawGameController _joystick;
-    private double[] _joyAxes;
-    private bool[] _joyButtons;
-    private GameControllerSwitchPosition[] _joySwitches;
     private Brush _brushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
     private Brush _brushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
     private Brush _brushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
@@ -52,12 +48,6 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
         ctControllers.ItemsSource = _dcs.FlightControllers;
 
-        RawGameController.RawGameControllers.ToList(); // oddly enough the first call to this returns nothing; second call succeeds
-        _joystick = RawGameController.RawGameControllers.FirstOrDefault();
-        _joyAxes = new double[_joystick?.AxisCount ?? 0];
-        _joySwitches = new GameControllerSwitchPosition[_joystick?.SwitchCount ?? 0];
-        _joyButtons = new bool[_joystick?.ButtonCount ?? 0];
-
         btnStop_Click(null, null);
     }
 
@@ -76,7 +66,6 @@ public partial class MainWindow : ManagedWindow
 
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
-        _joystick?.GetCurrentReading(_joyButtons, _joySwitches, _joyAxes);
         WithController<RollAutoTrim>(vat =>
         {
             if (!vat.Enabled) return;
@@ -87,7 +76,6 @@ public partial class MainWindow : ManagedWindow
         });
         WithController<SmartThrottle>(hct =>
         {
-            hct.ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, _joyAxes[4]);
             btnSmartThrottleAfterburner.BorderBrush = hct.AfterburnerActive ? _brushToggleBorderHigh : hct.AllowAfterburner ? _brushToggleBorderActive : _brushToggleBorderNormal;
             btnSmartThrottleSpeedbrake.BorderBrush = hct.SpeedbrakeActive ? _brushToggleBorderHigh : hct.AllowSpeedbrake ? _brushToggleBorderActive : _brushToggleBorderNormal;
             btnSmartThrottleAfterburner.Background = hct.AfterburnerActive ? _brushToggleBackHigh : hct.AllowAfterburner ? _brushToggleBackActive : _brushToggleBackNormal;
