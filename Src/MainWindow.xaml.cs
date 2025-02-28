@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -6,7 +6,6 @@ using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
 using RT.Util.Geometry;
-using Windows.Gaming.Input;
 
 namespace DcsAutopilot;
 
@@ -30,6 +29,7 @@ public partial class MainWindow : ManagedWindow
     {
         InitializeComponent();
         _dcs = new();
+        _dcs.LoadConfig();
         _refreshTimer.Interval = TimeSpan.FromMilliseconds(100);
         _refreshTimer.Tick += refreshTimer_Tick;
         _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
@@ -195,6 +195,7 @@ public partial class MainWindow : ManagedWindow
     private void btnStop_Click(object sender, RoutedEventArgs e)
     {
         _dcs.Stop();
+        _dcs.SaveConfig();
         _refreshTimer.Stop();
         refreshTimer_Tick(sender, null);
         lblStats.Content = "";

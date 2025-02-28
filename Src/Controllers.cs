@@ -69,7 +69,7 @@ class SmartThrottle : FlightControllerBase
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, Dcs.Joystick.TryAxis(4).Value);
+        ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, Dcs.Joystick.GetAxis("throttle"));
         // todo: use separate bool for active
         if (!Enabled || frame.LandingGear > 0)
         {

@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows.Input;
+using RT.Serialization;
 using RT.Util;
 using RT.Util.ExtensionMethods;
 
@@ -47,7 +49,8 @@ public class DcsController
     private CancellationTokenSource _cts;
     private Thread _thread;
     private GlobalKeyboardListener _keyboardListener;
-    private JoystickState _joystick = new();
+    private JoystickState _joystick;
+    private JoystickConfig _joystickConfig = new();
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
@@ -74,6 +77,16 @@ public class DcsController
     public ControlData LastControl { get; private set; }
     public JoystickReader Joystick => _joystick.Reader;
 
+    public void LoadConfig()
+    {
+        if (File.Exists(PathUtil.AppPathCombine("Config", "joystick.xml")))
+            _joystickConfig = ClassifyXml.DeserializeFile<JoystickConfig>(PathUtil.AppPathCombine("Config", "joystick.xml"));
+    }
+    public void SaveConfig()
+    {
+        ClassifyXml.SerializeToFile(_joystickConfig, PathUtil.AppPathCombine("Config", "joystick.xml"));
+    }
+
     public void Start(int udpPort = 9876)
     {
         if (IsRunning)
@@ -88,6 +101,7 @@ public class DcsController
         _keyboardListener = new() { HookAllKeys = true };
         _keyboardListener.KeyDown += globalKeyDown;
         _keyboardListener.KeyUp += globalKeyUp;
+        _joystick = new(_joystickConfig);
         IsRunning = true;
         Status = "Waiting for data from DCS";
     }
