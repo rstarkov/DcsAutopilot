@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -46,6 +46,7 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Clear();
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
+        _dcs.FlightControllers.Add(new SmartThrottle());
         ctControllers.ItemsSource = _dcs.FlightControllers;
 
         btnStop_Click(null, null);
@@ -80,11 +81,11 @@ public partial class MainWindow : ManagedWindow
             btnSmartThrottleSpeedbrake.BorderBrush = hct.SpeedbrakeActive ? _brushToggleBorderHigh : hct.AllowSpeedbrake ? _brushToggleBorderActive : _brushToggleBorderNormal;
             btnSmartThrottleAfterburner.Background = hct.AfterburnerActive ? _brushToggleBackHigh : hct.AllowAfterburner ? _brushToggleBackActive : _brushToggleBackNormal;
             btnSmartThrottleSpeedbrake.Background = hct.SpeedbrakeActive ? _brushToggleBackHigh : hct.AllowSpeedbrake ? _brushToggleBackActive : _brushToggleBackNormal;
-            lblSmartThrottle.Content = !hct.Enabled ? "off" : hct.TargetSpeedIasKts == null ? hct.Status : $"{hct.TargetSpeedIasKts:0} kt";
-            if (!hct.Enabled || hct.TargetSpeedIasKts == null)
+            lblSmartThrottle.Content = !hct.Enabled ? "off" : hct.AutothrottleSpeedKts == null ? hct.Status : $"{hct.AutothrottleSpeedKts:0} kt";
+            if (!hct.Enabled || hct.AutothrottleSpeedKts == null)
                 lblSmartThrottle.Foreground = Brushes.Black;
             else
-                lblSmartThrottle.Foreground = Math.Abs(hct.TargetSpeedIasKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Green : Brushes.DarkRed;
+                lblSmartThrottle.Foreground = Math.Abs(hct.AutothrottleSpeedKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Green : Brushes.DarkRed;
         });
 
         var status = _dcs.Status;

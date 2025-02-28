@@ -1,4 +1,4 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -55,70 +55,112 @@ class RollAutoTrim : FlightControllerBase
 class SmartThrottle : FlightControllerBase
 {
     public override string Name { get; set; } = "Smart Throttle";
+    public bool UseIdleSpeedbrake { get; set; } = true;
+    public bool UseAfterburnerDetent { get; set; } = true;
+
+    public double? AutothrottleSpeedKts { get; set; }
+    public double AutothrottleInitialPos; // to detect throttle movement and disengage
     public bool AllowAfterburner { get; set; } = false;
     public bool AllowSpeedbrake { get; set; } = true;
-    public double ThrottleInput { get; set; }
-    public double? TargetSpeedIasKts { get; set; }
     public bool AfterburnerActive { get; private set; }
     public bool SpeedbrakeActive { get; private set; }
 
     private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
-    private IFilter _throttleFilter = Filters.BesselD10;
+    private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
+    private bool _pastAfterburnerDetent;
+    private double _lastAfterburnerSound;
 
-    private double _lastSpeedBrake;
+    private Sound SndAfterburnerBump = new("LoudClick.mp3", 50);
+    private Sound SndAfterburnerUnbump = new("ReverseLoudClick.mp3", 40);
+    private Sound SndAfterburnerActive = new("DoubleBeepHighFast.mp3");
+    private Sound SndAutothrottleEngaged = new("AirbusAutopilotDisengageSingle.mp3");
+    private Sound SndAutothrottleDisengaged = new("AirbusAutopilotDisengage.mp3");
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        ThrottleInput = Util.Linterp(0.082, 0.890, 0, 1, Dcs.Joystick.GetAxis("throttle"));
-        // todo: use separate bool for active
-        if (!Enabled || frame.LandingGear > 0)
-        {
-            _status = !Enabled ? "off" : "GEAR";
-            TargetSpeedIasKts = null;
-            AfterburnerActive = SpeedbrakeActive = false;
-            if (frame.SimTime - _lastSpeedBrake < 2)
-                return new ControlData { SpeedBrakeRate = -1 };
-            return null;
-        }
+        var ctrl = new ControlData();
+        var throttlePos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
+        var prevThrottlePos = mapThrottle(Dcs.Joystick.GetAxisPrev("throttle"));
+        ctrl.ThrottleAxis = throttlePos;
 
-        var t = _throttleFilter.Step(ThrottleInput);
-        if (t > 0.7)
+        if (AutothrottleSpeedKts != null)
         {
-            TargetSpeedIasKts = null;
-            AfterburnerActive = SpeedbrakeActive = false;
-            _status = "THR";
-            return null;
+            _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
+            var speedError = AutothrottleSpeedKts.Value - frame.SpeedIndicated.MsToKts();
+            ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
+            if (AllowSpeedbrake && speedError < -20)
+                ctrl.SpeedBrakeRate = 1;
+            // detect movement and disengage
+            if (Math.Abs(throttlePos - AutothrottleInitialPos) > 0.1)
+            {
+                AutothrottleSpeedKts = null;
+                SndAutothrottleDisengaged?.Play();
+            }
         }
         else
         {
-            var ctrl = new ControlData();
-            TargetSpeedIasKts = Util.Linterp(0, 0.65, 180, 500, t.Clip(0, 0.65));
-            _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
-            var speedError = TargetSpeedIasKts.Value - frame.SpeedIndicated.MsToKts();
-            ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
-            _status = "act";
-            AfterburnerActive = ctrl.ThrottleAxis > 1.5;
-            SpeedbrakeActive = false;
-            if (AllowSpeedbrake && speedError < -20)
+            if (UseAfterburnerDetent)
             {
-                ctrl.SpeedBrakeRate = 1;
-                SpeedbrakeActive = true;
-                _lastSpeedBrake = frame.SimTime;
+                if (!_pastAfterburnerDetent)
+                {
+                    if (throttlePos >= 1.99)
+                    {
+                        _pastAfterburnerDetent = true;
+                        _lastAfterburnerSound = frame.SimTime;
+                        SndAfterburnerActive?.Play();
+                    }
+                    else if (throttlePos > 1.5)
+                    {
+                        ctrl.ThrottleAxis = 1.5;
+                        if (prevThrottlePos <= 1.5)
+                            SndAfterburnerBump?.Play();
+                    }
+                }
+                else
+                {
+                    if (throttlePos < 0.5)
+                    {
+                        _pastAfterburnerDetent = false;
+                        if (prevThrottlePos >= 0.5)
+                            SndAfterburnerUnbump?.Play();
+                    }
+                }
             }
-            else if (frame.SimTime - _lastSpeedBrake < 2)
-                ctrl.SpeedBrakeRate = -1;
-            return ctrl;
+            if (UseIdleSpeedbrake)
+            {
+                if (throttlePos <= 0.01 && frame.SpeedIndicated.MsToKts() > 200)
+                    ctrl.SpeedBrakeRate = 1;
+            }
         }
+
+        // Afterburner warning
+        if (ctrl.ThrottleAxis > 1.5 && frame.SimTime - _lastAfterburnerSound > 30)
+        {
+            _lastAfterburnerSound = frame.SimTime;
+            SndAfterburnerActive?.Play();
+        }
+        // Retract speedbrake for 2 seconds if we're not trying to extend it
+        if (ctrl.SpeedBrakeRate > 0)
+            _lastSpeedBrake = frame.SimTime;
+        if (ctrl.SpeedBrakeRate == null && frame.SimTime - _lastSpeedBrake < 2)
+            ctrl.SpeedBrakeRate = -1;
+        // Update indicators
+        AfterburnerActive = ctrl.ThrottleAxis > 1.5;
+        SpeedbrakeActive = ctrl.SpeedBrakeRate > 0;
+        return ctrl;
     }
 
     public override bool HandleKey(KeyEventArgs e)
     {
-        if (e.Key == Key.T && e.Modifiers == default)
+        if (e.Down && e.Key == Key.H && e.Modifiers == default)
         {
-            // todo: use separate bool for active
-            Enabled = !Enabled;
+            AutothrottleSpeedKts = Dcs.LastFrame.SpeedIndicated.MsToKts();
+            AutothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
+            SndAutothrottleEngaged?.Play();
             return true;
         }
         return false;
     }
+
+    private double mapThrottle(double throttleAxis) => Util.Linterp(0, 1, 0, 2, throttleAxis);
 }

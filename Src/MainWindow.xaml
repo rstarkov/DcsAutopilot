@@ -40,7 +40,7 @@
                                     <StackPanel>
                                         <Label Name="lblAutoTrimRollLabel" Padding="0,5,5,0">Roll:</Label>
                                         <Label Padding="0,5,5,0">Trim:</Label>
-                                        <Label Padding="0,5,5,0">State:</Label>
+                                        <Label Padding="0,5,5,0">Action:</Label>
                                     </StackPanel>
                                     <StackPanel>
                                         <Label Name="lblAutoTrimRoll" Padding="0,5,5,0">?</Label>
