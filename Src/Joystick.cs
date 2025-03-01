@@ -73,6 +73,7 @@ public class JoystickDeviceState
     {
         (Buttons, ButtonsPrev) = (ButtonsPrev, Buttons);
         (AxesRaw, AxesRawPrev) = (AxesRawPrev, AxesRaw);
+        (Axes, AxesPrev) = (AxesPrev, Axes);
         _joystick.GetCurrentReading(Buttons, Switches, AxesRaw);
         for (int i = 0; i < AxesRaw.Length; i++)
             Axes[i] = _axisFilters[i].Step(Config.Axes[i].Map(AxesRaw[i]));
