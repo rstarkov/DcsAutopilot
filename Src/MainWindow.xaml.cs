@@ -77,15 +77,13 @@ public partial class MainWindow : ManagedWindow
         });
         WithController<SmartThrottle>(hct =>
         {
-            btnSmartThrottleAfterburner.BorderBrush = hct.AfterburnerActive ? _brushToggleBorderHigh : hct.AllowAfterburner ? _brushToggleBorderActive : _brushToggleBorderNormal;
-            btnSmartThrottleSpeedbrake.BorderBrush = hct.SpeedbrakeActive ? _brushToggleBorderHigh : hct.AllowSpeedbrake ? _brushToggleBorderActive : _brushToggleBorderNormal;
-            btnSmartThrottleAfterburner.Background = hct.AfterburnerActive ? _brushToggleBackHigh : hct.AllowAfterburner ? _brushToggleBackActive : _brushToggleBackNormal;
-            btnSmartThrottleSpeedbrake.Background = hct.SpeedbrakeActive ? _brushToggleBackHigh : hct.AllowSpeedbrake ? _brushToggleBackActive : _brushToggleBackNormal;
-            lblSmartThrottle.Content = !hct.Enabled ? "off" : hct.AutothrottleSpeedKts == null ? hct.Status : $"{hct.AutothrottleSpeedKts:0} kt";
-            if (!hct.Enabled || hct.AutothrottleSpeedKts == null)
-                lblSmartThrottle.Foreground = Brushes.Black;
-            else
-                lblSmartThrottle.Foreground = Math.Abs(hct.AutothrottleSpeedKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Green : Brushes.DarkRed;
+            lblSmartThrottleSpdHold.ClearValue(CheckBox.ForegroundProperty);
+            if (!hct.Enabled) return;
+            lblSmartThrottleAftB.Background = hct.AfterburnerActive ? _brushToggleBackActive : _brushToggleBackNormal;
+            lblSmartThrottleSpdB.Background = hct.SpeedbrakeActive ? _brushToggleBackActive : _brushToggleBackNormal;
+            lblSmartThrottleSpdHold.Background = hct.AutothrottleSpeedKts != null ? _brushToggleBackActive : _brushToggleBackNormal;
+            if (hct.AutothrottleSpeedKts != null)
+                lblSmartThrottleSpdHold.Foreground = Math.Abs(hct.AutothrottleSpeedKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Black : Brushes.DarkRed;
         });
 
         var status = _dcs.Status;
@@ -219,29 +217,46 @@ public partial class MainWindow : ManagedWindow
 
     private void btnAutoTrimOnOff_Click(object sender, RoutedEventArgs e)
     {
-        if (_updating) return;
         if (!_dcs.FlightControllers.OfType<RollAutoTrim>().Any())
             _dcs.FlightControllers.Add(new RollAutoTrim());
-        var c = _dcs.FlightControllers.OfType<RollAutoTrim>().Single();
-        c.Enabled = !c.Enabled;
-        if (c.Enabled)
-            c.Reset();
+        WithController<RollAutoTrim>(c =>
+        {
+            c.Enabled = !c.Enabled;
+            if (c.Enabled)
+                c.Reset();
+        });
         UpdateGui();
     }
 
-    private void btnSmartThrottleAfterburner_Click(object sender, RoutedEventArgs e)
+    private void chkSmartThrottleIdleSpeedbrake_Checked(object sender, RoutedEventArgs e)
     {
-        WithController<SmartThrottle>(c => c.AllowAfterburner = !c.AllowAfterburner);
+        if (_updating) return;
+        WithController<SmartThrottle>(c => c.UseIdleSpeedbrake = chkSmartThrottleIdleSpeedbrake.IsChecked == true);
     }
 
-    private void btnSmartThrottleSpeedbrake_Click(object sender, RoutedEventArgs e)
+    private void chkSmartThrottleIdleAftbDetent_Checked(object sender, RoutedEventArgs e)
     {
-        WithController<SmartThrottle>(c => c.AllowSpeedbrake = !c.AllowSpeedbrake);
+        if (_updating) return;
+        WithController<SmartThrottle>(c => c.UseAfterburnerDetent = chkSmartThrottleAftbDetent.IsChecked == true);
     }
 
-    private void lblSmartThrottle_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void chkSmartThrottleIdleAutothrottleAftb_Checked(object sender, RoutedEventArgs e)
     {
-        WithController<SmartThrottle>(c => c.Enabled = !c.Enabled);
+        if (_updating) return;
+        WithController<SmartThrottle>(c => c.AutothrottleAfterburner = chkSmartThrottleAutothrottleAftb.IsChecked == true);
+    }
+
+    private void btnSmartThrottleOnOff_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_dcs.FlightControllers.OfType<SmartThrottle>().Any())
+            _dcs.FlightControllers.Add(new SmartThrottle());
+        WithController<SmartThrottle>(c =>
+        {
+            c.Enabled = !c.Enabled;
+            if (c.Enabled)
+                c.Reset();
+        });
+        UpdateGui();
     }
 
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
@@ -266,14 +281,15 @@ public partial class MainWindow : ManagedWindow
         _updating = true;
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
+        updateSmartThrottle();
         updateAutoTrim();
         _updating = false;
         refreshTimer_Tick(null, null);
 
         void updateAutoTrim()
         {
-            var on = updateCtrlPanel<RollAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
-            if (!on)
+            var c = updateCtrlPanel<RollAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
+            if (c?.Enabled != true)
             {
                 lblAutoTrimRoll.Content = "?";
                 lblAutoTrimTrim.Content = "?";
@@ -281,7 +297,18 @@ public partial class MainWindow : ManagedWindow
             }
         }
 
-        bool updateCtrlPanel<TCtrl>(DependencyObject panel, Button btnOnOff) where TCtrl : FlightControllerBase
+        void updateSmartThrottle()
+        {
+            var c = updateCtrlPanel<SmartThrottle>(pnlSmartThrottle, btnSmartThrottleOnOff);
+            if (c != null)
+            {
+                chkSmartThrottleIdleSpeedbrake.IsChecked = c.UseIdleSpeedbrake;
+                chkSmartThrottleAftbDetent.IsChecked = c.UseAfterburnerDetent;
+                chkSmartThrottleAutothrottleAftb.IsChecked = c.AutothrottleAfterburner;
+            }
+        }
+
+        TCtrl updateCtrlPanel<TCtrl>(DependencyObject panel, Button btnOnOff) where TCtrl : FlightControllerBase
         {
             var c = _dcs.FlightControllers.OfType<TCtrl>().SingleOrDefault();
             if (c?.Enabled == true)
@@ -295,7 +322,7 @@ public partial class MainWindow : ManagedWindow
                 enableTree(panel, false);
                 enableParents(btnOnOff, panel);
             }
-            return c?.Enabled == true;
+            return c;
         }
         void enableTree(DependencyObject obj, bool enable)
         {

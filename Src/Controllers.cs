@@ -57,15 +57,14 @@ class SmartThrottle : FlightControllerBase
     public override string Name { get; set; } = "Smart Throttle";
     public bool UseIdleSpeedbrake { get; set; } = true;
     public bool UseAfterburnerDetent { get; set; } = true;
+    public bool AutothrottleAfterburner { get; set; } = false;
 
     public double? AutothrottleSpeedKts { get; set; }
-    public double AutothrottleInitialPos; // to detect throttle movement and disengage
-    public bool AllowAfterburner { get; set; } = false;
-    public bool AllowSpeedbrake { get; set; } = true;
     public bool AfterburnerActive { get; private set; }
     public bool SpeedbrakeActive { get; private set; }
 
     private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
+    private double _autothrottleInitialPos; // to detect throttle movement and disengage
     private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
     private bool _pastAfterburnerDetent;
     private double _lastAfterburnerSound;
@@ -85,13 +84,13 @@ class SmartThrottle : FlightControllerBase
 
         if (AutothrottleSpeedKts != null)
         {
-            _pid.MaxControl = AllowAfterburner ? 2.0 : 1.5;
+            _pid.MaxControl = AutothrottleAfterburner ? 2.0 : 1.5;
             var speedError = AutothrottleSpeedKts.Value - frame.SpeedIndicated.MsToKts();
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
-            if (AllowSpeedbrake && speedError < -20)
+            if (speedError < -20)
                 ctrl.SpeedBrakeRate = 1;
             // detect movement and disengage
-            if (Math.Abs(throttlePos - AutothrottleInitialPos) > 0.1)
+            if (Math.Abs(throttlePos - _autothrottleInitialPos) > 0.1)
             {
                 AutothrottleSpeedKts = null;
                 SndAutothrottleDisengaged?.Play();
@@ -155,7 +154,7 @@ class SmartThrottle : FlightControllerBase
         if (e.Down && e.Key == Key.H && e.Modifiers == default)
         {
             AutothrottleSpeedKts = Dcs.LastFrame.SpeedIndicated.MsToKts();
-            AutothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
+            _autothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
             SndAutothrottleEngaged?.Play();
             return true;
         }
