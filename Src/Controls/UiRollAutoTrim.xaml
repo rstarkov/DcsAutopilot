@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="DcsAutopilot.UiRollAutoTrim"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DcsAutopilot"
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="150">
+    <Border Name="pnlMain" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
+        <StackPanel>
+            <DockPanel MinWidth="100">
+                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30">ON</Button>
+                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0">Roll trim</Label>
+            </DockPanel>
+            <DockPanel>
+                <StackPanel>
+                    <Label Name="lblRollLabel" Padding="0,5,5,0">Roll:</Label>
+                    <Label Padding="0,5,5,0">Trim:</Label>
+                    <Label Padding="0,5,5,0">Action:</Label>
+                </StackPanel>
+                <StackPanel>
+                    <Label Name="lblRoll" Padding="0,5,5,0">?</Label>
+                    <Label Name="lblTrim" Padding="0,5,5,0">?</Label>
+                    <Label Name="lblState" Padding="0,5,5,0">off</Label>
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

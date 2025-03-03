@@ -1,0 +1,25 @@
+﻿<UserControl x:Class="DcsAutopilot.UiSmartThrottle"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DcsAutopilot"
+             mc:Ignorable="d" 
+             d:DesignWidth="200" d:DesignHeight="150">
+    <Border Name="pnlMain" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
+        <StackPanel>
+            <DockPanel MinWidth="120" Margin="0,0,0,5">
+                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30">ON</Button>
+                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0">Smart throttle</Label>
+            </DockPanel>
+            <CheckBox Name="chkUseIdleSpeedbrake" Margin="0,5,0,0" Checked="chkUseIdleSpeedbrake_Checked" Unchecked="chkUseIdleSpeedbrake_Checked">Idle speedbrake</CheckBox>
+            <CheckBox Name="chkUseAfterburnerDetent" Margin="0,5,0,0" Checked="chkUseAfterburnerDetent_Checked" Unchecked="chkUseAfterburnerDetent_Checked">Afterburner detent</CheckBox>
+            <CheckBox Name="chkAutothrottleAfterburner" Margin="0,5,0,0" Checked="chkAutothrottleAfterburner_Checked" Unchecked="chkAutothrottleAfterburner_Checked">Autothrottle AftB</CheckBox>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <Label Name="lblAftB" Background="Silver" Padding="4,0">AftB</Label>
+                <Label Name="lblSpdB" Background="Silver" Margin="8,0,0,0" Padding="4,0">SpdB</Label>
+                <Label Name="lblSpdHold" Background="Silver" Margin="8,0,0,0" Padding="4,0">Hold</Label>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

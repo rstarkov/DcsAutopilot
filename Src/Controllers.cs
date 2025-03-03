@@ -1,9 +1,9 @@
-﻿using System.Windows.Input;
+using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-class RollAutoTrim : FlightControllerBase
+public class RollAutoTrim : FlightControllerBase
 {
     public override string Name { get; set; } = "Roll Auto-Trim";
     private bool _active;
@@ -52,7 +52,7 @@ class RollAutoTrim : FlightControllerBase
     }
 }
 
-class SmartThrottle : FlightControllerBase
+public class SmartThrottle : FlightControllerBase
 {
     public override string Name { get; set; } = "Smart Throttle";
     public bool UseIdleSpeedbrake { get; set; } = true;

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
 using RT.Util.Geometry;
+using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
 
@@ -17,18 +18,13 @@ public partial class MainWindow : ManagedWindow
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private FlightControllerBase _ctrl;
     public static ChartLine LineR = new(), LineG = new(), LineY = new();
-    private Brush _brushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
-    private Brush _brushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
-    private Brush _brushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
-    private Brush _brushToggleBackNormal = new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
-    private Brush _brushToggleBackActive = new SolidColorBrush(Color.FromRgb(0xB5, 0xFF, 0xA3)); // BFFAFF
-    private Brush _brushToggleBackHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0xDE, 0xDB));
     private BobbleheadWindow _bobblehead;
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
         InitializeComponent();
-        _dcs = new();
+        Dcs = new();
+        _dcs = Dcs;
         _dcs.LoadConfig();
         _refreshTimer.Interval = TimeSpan.FromMilliseconds(100);
         _refreshTimer.Tick += refreshTimer_Tick;
@@ -67,24 +63,8 @@ public partial class MainWindow : ManagedWindow
 
     private void refreshTimer_Tick(object sender, EventArgs e)
     {
-        WithController<RollAutoTrim>(vat =>
-        {
-            if (!vat.Enabled) return;
-            lblAutoTrimRollLabel.Content = vat.UsingBankRate ? "Bank:" : "Roll:";
-            lblAutoTrimRoll.Content = _dcs.LastFrame == null ? "?" : vat.UsingBankRate ? (Util.SignStr(_dcs.LastFrame.Bank, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°") : (Util.SignStr(_dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s");
-            lblAutoTrimTrim.Content = _dcs.LastFrame?.TrimRoll == null ? "?" : Util.SignStr(_dcs.LastFrame.TrimRoll.Value * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
-            lblAutoTrimState.Content = vat.Status;
-        });
-        WithController<SmartThrottle>(hct =>
-        {
-            lblSmartThrottleSpdHold.ClearValue(CheckBox.ForegroundProperty);
-            if (!hct.Enabled) return;
-            lblSmartThrottleAftB.Background = hct.AfterburnerActive ? _brushToggleBackActive : _brushToggleBackNormal;
-            lblSmartThrottleSpdB.Background = hct.SpeedbrakeActive ? _brushToggleBackActive : _brushToggleBackNormal;
-            lblSmartThrottleSpdHold.Background = hct.AutothrottleSpeedKts != null ? _brushToggleBackActive : _brushToggleBackNormal;
-            if (hct.AutothrottleSpeedKts != null)
-                lblSmartThrottleSpdHold.Foreground = Math.Abs(hct.AutothrottleSpeedKts.Value - (_dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Black : Brushes.DarkRed;
-        });
+        uiSmartThrottle.UpdateGuiTimer();
+        uiRollAutoTrim.UpdateGuiTimer();
 
         var status = _dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - _dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -215,50 +195,6 @@ public partial class MainWindow : ManagedWindow
         ctrl.Window = _bobblehead;
     }
 
-    private void btnAutoTrimOnOff_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_dcs.FlightControllers.OfType<RollAutoTrim>().Any())
-            _dcs.FlightControllers.Add(new RollAutoTrim());
-        WithController<RollAutoTrim>(c =>
-        {
-            c.Enabled = !c.Enabled;
-            if (c.Enabled)
-                c.Reset();
-        });
-        UpdateGui();
-    }
-
-    private void chkSmartThrottleIdleSpeedbrake_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_updating) return;
-        WithController<SmartThrottle>(c => c.UseIdleSpeedbrake = chkSmartThrottleIdleSpeedbrake.IsChecked == true);
-    }
-
-    private void chkSmartThrottleIdleAftbDetent_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_updating) return;
-        WithController<SmartThrottle>(c => c.UseAfterburnerDetent = chkSmartThrottleAftbDetent.IsChecked == true);
-    }
-
-    private void chkSmartThrottleIdleAutothrottleAftb_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_updating) return;
-        WithController<SmartThrottle>(c => c.AutothrottleAfterburner = chkSmartThrottleAutothrottleAftb.IsChecked == true);
-    }
-
-    private void btnSmartThrottleOnOff_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_dcs.FlightControllers.OfType<SmartThrottle>().Any())
-            _dcs.FlightControllers.Add(new SmartThrottle());
-        WithController<SmartThrottle>(c =>
-        {
-            c.Enabled = !c.Enabled;
-            if (c.Enabled)
-                c.Reset();
-        });
-        UpdateGui();
-    }
-
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
     {
         var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
@@ -267,77 +203,12 @@ public partial class MainWindow : ManagedWindow
             ctrl.HandleSignal(signal);
     }
 
-    private void WithController<T>(Action<T> action)
-    {
-        var c = _dcs.FlightControllers.OfType<T>().FirstOrDefault();
-        if (c != null)
-            action(c);
-    }
-
-    private bool _updating = false;
-
     private void UpdateGui()
     {
-        _updating = true;
         btnStart.IsEnabled = !_dcs.IsRunning;
         btnStop.IsEnabled = _dcs.IsRunning;
-        updateSmartThrottle();
-        updateAutoTrim();
-        _updating = false;
+        uiSmartThrottle.UpdateGui();
+        uiRollAutoTrim.UpdateGui();
         refreshTimer_Tick(null, null);
-
-        void updateAutoTrim()
-        {
-            var c = updateCtrlPanel<RollAutoTrim>(pnlAutoTrim, btnAutoTrimOnOff);
-            if (c?.Enabled != true)
-            {
-                lblAutoTrimRoll.Content = "?";
-                lblAutoTrimTrim.Content = "?";
-                lblAutoTrimState.Content = "disabled";
-            }
-        }
-
-        void updateSmartThrottle()
-        {
-            var c = updateCtrlPanel<SmartThrottle>(pnlSmartThrottle, btnSmartThrottleOnOff);
-            if (c != null)
-            {
-                chkSmartThrottleIdleSpeedbrake.IsChecked = c.UseIdleSpeedbrake;
-                chkSmartThrottleAftbDetent.IsChecked = c.UseAfterburnerDetent;
-                chkSmartThrottleAutothrottleAftb.IsChecked = c.AutothrottleAfterburner;
-            }
-        }
-
-        TCtrl updateCtrlPanel<TCtrl>(DependencyObject panel, Button btnOnOff) where TCtrl : FlightControllerBase
-        {
-            var c = _dcs.FlightControllers.OfType<TCtrl>().SingleOrDefault();
-            if (c?.Enabled == true)
-            {
-                btnOnOff.Content = "ON";
-                enableTree(panel, true);
-            }
-            else
-            {
-                btnOnOff.Content = "off";
-                enableTree(panel, false);
-                enableParents(btnOnOff, panel);
-            }
-            return c;
-        }
-        void enableTree(DependencyObject obj, bool enable)
-        {
-            if (obj is Control ctrl)
-                ctrl.IsEnabled = enable;
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
-                enableTree(VisualTreeHelper.GetChild(obj, i), enable);
-        }
-        void enableParents(DependencyObject obj, DependencyObject stop)
-        {
-            if (obj == null || obj == stop)
-                return;
-            if (obj is Control ctrl)
-                ctrl.IsEnabled = true;
-            enableParents(VisualTreeHelper.GetParent(obj), stop);
-        }
     }
 }

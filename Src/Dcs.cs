@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -17,9 +17,10 @@ public abstract class FlightControllerBase
     protected string _status = "";
     /// <summary>
     ///     Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get { return _enabled; } set { _enabled = value; if (_enabled && Dcs.IsRunning) Reset(); } }
+    private bool _enabled = false;
     public DcsController Dcs { get; set; }
-    /// <summary>Called on start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
+    /// <summary>Called on Dcs.Start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
     public virtual void Reset() { }
     public virtual void NewSession(BulkData bulk) { }
     /// <summary>
@@ -419,6 +420,18 @@ public class DcsController
                 e.Handled = true;
                 return;
             }
+    }
+
+    public T GetController<T>(bool orAdd = false) where T : FlightControllerBase, new()
+    {
+        var ctrl = FlightControllers.OfType<T>().SingleOrDefault();
+        if (ctrl == null && orAdd)
+        {
+            ctrl = new T();
+            ctrl.Dcs = this;
+            FlightControllers.Add(ctrl);
+        }
+        return ctrl;
     }
 }
 
