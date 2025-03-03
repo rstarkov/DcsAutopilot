@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -97,6 +97,9 @@ public class DcsController
         _endpoint = new IPEndPoint(IPAddress.Any, 0);
         _cts = new CancellationTokenSource();
         Warnings.Clear();
+        foreach (var c in FlightControllers)
+            if (c.Enabled)
+                c.Reset();
         _thread = new Thread(() => thread(_cts.Token)) { IsBackground = true };
         _thread.Start();
         _keyboardListener = new() { HookAllKeys = true };

@@ -164,9 +164,6 @@ public partial class MainWindow : ManagedWindow
         refreshTimer_Tick(sender, null);
         foreach (var line in ctChart.Lines)
             line.Data.Clear();
-        foreach (var c in _dcs.FlightControllers)
-            if (c.Enabled)
-                c.Reset();
         _dcs.Start();
         UpdateGui();
     }
