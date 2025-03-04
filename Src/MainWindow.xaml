@@ -24,24 +24,12 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0" Margin="10,5,10,0" >
             <TabItem Header="Flight">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="7*" />
-                        <ColumnDefinition Width="3*"/>
-                    </Grid.ColumnDefinitions>
-                    <Canvas Grid.Column="0">
-                        <local:UiSmartThrottle x:Name="uiSmartThrottle" Margin="10,15" />
-                        <local:UiRollAutoTrim x:Name="uiRollAutoTrim" Margin="165,15" />
-                    </Canvas>
-                    <DockPanel Grid.Column="1">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <local:WindComp x:Name="ctWindComp" Width="100" Height="100"/>
-                                <local:WindDir x:Name="ctWindDir" Width="100" Height="100"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </DockPanel>
-                </Grid>
+                <Canvas>
+                    <local:UiSmartThrottle x:Name="uiSmartThrottle" Canvas.Left="10" Canvas.Top="15" />
+                    <local:UiRollAutoTrim x:Name="uiRollAutoTrim" Canvas.Left="165" Canvas.Top="15" />
+                    <local:WindComp x:Name="ctWindComp" Width="100" Height="100" Canvas.Left="10" Canvas.Top="170" />
+                    <local:WindDir x:Name="ctWindDir" Width="100" Height="100" Canvas.Left="140" Canvas.Top="170"/>
+                </Canvas>
             </TabItem>
             <TabItem Header="Special">
                 <Grid>

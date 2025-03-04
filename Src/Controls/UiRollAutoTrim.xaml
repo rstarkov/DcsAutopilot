@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:DcsAutopilot"
              mc:Ignorable="d" 
              d:DesignHeight="120" d:DesignWidth="150">
-    <Border Name="pnlMain" BorderThickness="0.5" BorderBrush="Gray" Padding="5,5">
+    <Border Name="pnlMain" Padding="5,5">
         <StackPanel>
             <DockPanel MinWidth="100">
                 <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30">ON</Button>

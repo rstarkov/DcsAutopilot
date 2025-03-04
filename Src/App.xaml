@@ -4,6 +4,11 @@
              xmlns:local="clr-namespace:DcsAutopilot"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <Style TargetType="Border">
+                <Setter Property="BorderThickness" Value="0.5"/>
+                <Setter Property="BorderBrush" Value="Gray"/>
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

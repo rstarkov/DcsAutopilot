@@ -6,21 +6,23 @@
              xmlns:local="clr-namespace:DcsAutopilot"
              mc:Ignorable="d" 
              d:DesignHeight="100" d:DesignWidth="100">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="20"/>
-            <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="20"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="1*"/>
-            <RowDefinition Height="20"/>
-        </Grid.RowDefinitions>
-        <Grid Name="vbArrow" Grid.Column="1" Grid.Row="1" >
-            <Path Name="ctArrow" Fill="Maroon" Margin="10,10"  Data="M 45,10 L 55,10 55,76 65,76 50,95 35,76 45,76 45,10" Stretch="Uniform"/>
+    <Border>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="20"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="20"/>
+            </Grid.RowDefinitions>
+            <Grid Name="vbArrow" Grid.Column="1" Grid.Row="1" >
+                <Path Name="ctArrow" Fill="Maroon" Margin="10,10"  Data="M 45,10 L 55,10 55,76 65,76 50,95 35,76 45,76 45,10" Stretch="Uniform"/>
+            </Grid>
+            <Label Name="lblTop" Padding="0,0" Grid.Column="1" Grid.Row="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Bottom">331°</Label>
+            <Label Name="lblBottom" Padding="0,0" Grid.Column="1" Grid.Row="2" HorizontalContentAlignment="Center" VerticalContentAlignment="Top">20 kt</Label>
         </Grid>
-        <Label Name="lblTop" Padding="0,0" Grid.Column="1" Grid.Row="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Bottom">331°</Label>
-        <Label Name="lblBottom" Padding="0,0" Grid.Column="1" Grid.Row="2" HorizontalContentAlignment="Center" VerticalContentAlignment="Top">20 kt</Label>
-    </Grid>
+    </Border>
 </UserControl>
