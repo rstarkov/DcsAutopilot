@@ -43,6 +43,8 @@ public partial class MainWindow : ManagedWindow
         _dcs.FlightControllers.Add(new ChartPopulate(this));
         _dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
         _dcs.FlightControllers.Add(new SmartThrottle());
+        foreach (var c in _dcs.FlightControllers)
+            c.Dcs = _dcs;
         ctControllers.ItemsSource = _dcs.FlightControllers;
 
         btnStop_Click(null, null);
