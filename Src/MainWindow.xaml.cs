@@ -9,22 +9,17 @@ namespace DcsAutopilot;
 
 public partial class MainWindow : ManagedWindow
 {
-    private DispatcherTimer _refreshTimer = new();
+    private DispatcherTimer _updateGuiTimer = new();
     private BobbleheadWindow _bobblehead;
+    private Queue<(DateTime ts, int frames)> _fps = new();
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
         InitializeComponent();
         Dcs = new();
         Dcs.LoadConfig();
-        _refreshTimer.Interval = TimeSpan.FromMilliseconds(100);
-        _refreshTimer.Tick += refreshTimer_Tick;
-        Dcs.FlightControllers.Clear();
-        Dcs.FlightControllers.Add(new ChartPopulate());
-        Dcs.FlightControllers.Add(new RollAutoTrim());
-        Dcs.FlightControllers.Add(new SmartThrottle());
-        foreach (var c in Dcs.FlightControllers)
-            c.Dcs = Dcs;
+        _updateGuiTimer.Interval = TimeSpan.FromMilliseconds(100);
+        _updateGuiTimer.Tick += UpdateGuiTimer;
         ctControllers.ItemsSource = Dcs.FlightControllers;
 
         btnStop_Click(null, null);
@@ -35,9 +30,17 @@ public partial class MainWindow : ManagedWindow
         App.SettingsFile.SaveInBackground();
     }
 
-    private Queue<(DateTime ts, int frames)> _fps = new();
+    private void UpdateGui()
+    {
+        btnStart.IsEnabled = !Dcs.IsRunning;
+        btnStop.IsEnabled = Dcs.IsRunning;
+        uiSmartThrottle.UpdateGui();
+        uiRollAutoTrim.UpdateGui();
+        uiChart.UpdateGui();
+        UpdateGuiTimer(null, null);
+    }
 
-    private void refreshTimer_Tick(object sender, EventArgs e)
+    private void UpdateGuiTimer(object sender, EventArgs e)
     {
         uiSmartThrottle.UpdateGuiTimer();
         uiRollAutoTrim.UpdateGuiTimer();
@@ -68,8 +71,8 @@ public partial class MainWindow : ManagedWindow
 
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
-        _refreshTimer.Start();
-        refreshTimer_Tick(sender, null);
+        _updateGuiTimer.Start();
+        UpdateGuiTimer(sender, null);
         Dcs.Start();
         UpdateGui();
     }
@@ -78,8 +81,8 @@ public partial class MainWindow : ManagedWindow
     {
         Dcs.Stop();
         Dcs.SaveConfig();
-        _refreshTimer.Stop();
-        refreshTimer_Tick(sender, null);
+        _updateGuiTimer.Stop();
+        UpdateGuiTimer(sender, null);
         lblStats.Content = "";
         _fps.Clear();
         UpdateGui();
@@ -104,15 +107,5 @@ public partial class MainWindow : ManagedWindow
         var signal = ((Button)sender).Content.ToString();
         if (ctrl.Enabled)
             ctrl.HandleSignal(signal);
-    }
-
-    private void UpdateGui()
-    {
-        btnStart.IsEnabled = !Dcs.IsRunning;
-        btnStop.IsEnabled = Dcs.IsRunning;
-        uiSmartThrottle.UpdateGui();
-        uiRollAutoTrim.UpdateGui();
-        uiChart.UpdateGui();
-        refreshTimer_Tick(null, null);
     }
 }

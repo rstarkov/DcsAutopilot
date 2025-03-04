@@ -44,7 +44,8 @@ public partial class UiSmartThrottle : UserControl
     public void UpdateGuiTimer()
     {
         var ctrl = Dcs.GetController<SmartThrottle>();
-        if (!ctrl.Enabled) return;
+        if (ctrl?.Enabled != true)
+            return;
         lblAftB.Background = ctrl.AfterburnerActive ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
         lblSpdB.Background = ctrl.SpeedbrakeActive ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
         lblSpdHold.Background = ctrl.AutothrottleSpeedKts != null ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
