@@ -10,8 +10,6 @@ namespace DcsAutopilot;
 public partial class MainWindow : ManagedWindow
 {
     private DispatcherTimer _refreshTimer = new();
-    private DispatcherTimer _sliderTimer = new();
-    private SmoothMover _sliderMover = new(10.0, -1, 1);
     private BobbleheadWindow _bobblehead;
 
     public MainWindow() : base(App.Settings.MainWindow)
@@ -21,9 +19,6 @@ public partial class MainWindow : ManagedWindow
         Dcs.LoadConfig();
         _refreshTimer.Interval = TimeSpan.FromMilliseconds(100);
         _refreshTimer.Tick += refreshTimer_Tick;
-        _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
-        _sliderTimer.Tick += _sliderTimer_Tick;
-        _sliderTimer.Start();
         Dcs.FlightControllers.Clear();
         Dcs.FlightControllers.Add(new ChartPopulate());
         Dcs.FlightControllers.Add(new RollAutoTrim());
@@ -38,12 +33,6 @@ public partial class MainWindow : ManagedWindow
     private void ManagedWindow_SizeLocationChanged(object sender, EventArgs e)
     {
         App.SettingsFile.SaveInBackground();
-    }
-
-    private void _sliderTimer_Tick(object sender, EventArgs e)
-    {
-        var tgt = ctSliderTest2.Value / 1000.0;
-        ctSliderTest1.Value = _sliderMover.MoveTo(tgt, (DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds) * 1000.0;
     }
 
     private Queue<(DateTime ts, int frames)> _fps = new();

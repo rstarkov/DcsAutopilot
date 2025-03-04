@@ -31,11 +31,6 @@
                     <local:WindDir x:Name="ctWindDir" Width="100" Height="100" Canvas.Left="140" Canvas.Top="170"/>
                 </Canvas>
             </TabItem>
-            <TabItem Header="Special">
-                <Grid>
-                    <TextBlock>Stuff like slow fly, climb performance etc</TextBlock>
-                </Grid>
-            </TabItem>
             <TabItem Header="Dev">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -47,8 +42,6 @@
                         <Slider Name="ctrlPitch" HorizontalAlignment="Left" Margin="141,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
                         <Slider Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="2" TickFrequency="0.5" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
                         <Slider Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,291,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
-                        <Slider Name="ctSliderTest1" HorizontalAlignment="Left" Height="21" Margin="10,10,0,0" VerticalAlignment="Top" Width="300" Minimum="-1000" Maximum="1000" />
-                        <Slider Name="ctSliderTest2" HorizontalAlignment="Left" Height="21" Margin="10,36,0,0" VerticalAlignment="Top" Width="300" Minimum="-1000" Maximum="1000" />
                         <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="180"  Margin="0,0,8,108">
                             <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">A</Button>
                             <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">B</Button>
@@ -72,6 +65,9 @@
                         <local:UiChart x:Name="uiChart" Grid.Row="1" />
                     </Grid>
                 </Grid>
+            </TabItem>
+            <TabItem Header="Experiments">
+                <local:Experiments />
             </TabItem>
         </TabControl>
         <DockPanel Grid.Row="1" Margin="0,8,0,8">
