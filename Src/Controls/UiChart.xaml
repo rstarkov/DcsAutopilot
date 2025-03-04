@@ -6,12 +6,17 @@
              xmlns:local="clr-namespace:DcsAutopilot"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="600">
-    <Grid>
+    <Grid Name="pnlMain">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <TextBlock Name="lblChartInfo" TextWrapping="WrapWithOverflow" Margin="0,0,0,4" Grid.Row="0">Chart Info</TextBlock>
-        <local:Chart x:Name="ctChart" Grid.Row="1"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click"  Width="30">ON</Button>
+        <TextBlock Name="lblChartInfo" TextWrapping="WrapWithOverflow" Margin="5,0,0,0" Grid.Row="0" Grid.Column="1"></TextBlock>
+        <local:Chart x:Name="ctChart" Margin="0,5,0,0" Grid.Row="1" Grid.ColumnSpan="2"/>
     </Grid>
 </UserControl>

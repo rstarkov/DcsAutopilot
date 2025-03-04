@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Windows.Controls;
+using DcsAutopilot.Controls;
 using RT.Util.ExtensionMethods;
 using static DcsAutopilot.Globals;
 
@@ -12,8 +13,18 @@ public partial class UiChart : UserControl
         InitializeComponent();
     }
 
+    private void btnOnOff_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var ctrl = Dcs.GetController<ChartPopulate>(orAdd: true);
+        ctrl.Enabled = !ctrl.Enabled;
+        UpdateGui();
+        UpdateGuiTimer();
+    }
+
     public void UpdateGui()
     {
+        var ctrl = Dcs.GetController<ChartPopulate>();
+        UiShared.UpdateUiPanel(ctrl, pnlMain, btnOnOff);
     }
 
     public void UpdateGuiTimer()
