@@ -75,11 +75,14 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </Grid>
-                    <DockPanel Grid.Column="1">
-                        <local:Chart x:Name="ctChart" Height="150" DockPanel.Dock="Bottom" />
-                        <TextBlock Name="lblChartInfo" TextWrapping="WrapWithOverflow" DockPanel.Dock="Bottom" Margin="0,0,0,4">Chart Info</TextBlock>
-                        <TextBlock Name="lblInfo" TextWrapping="WrapWithOverflow">Info</TextBlock>
-                    </DockPanel>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Name="lblInfo" TextWrapping="WrapWithOverflow" Grid.Row="0">Info</TextBlock>
+                        <local:UiChart x:Name="uiChart" Grid.Row="1" />
+                    </Grid>
                 </Grid>
             </TabItem>
         </TabControl>

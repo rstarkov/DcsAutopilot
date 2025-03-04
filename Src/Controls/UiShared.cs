@@ -13,6 +13,14 @@ static class UiShared
     public static Brush BrushToggleBackActive = new SolidColorBrush(Color.FromRgb(0xB5, 0xFF, 0xA3)); // BFFAFF
     public static Brush BrushToggleBackHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0xDE, 0xDB));
 
+    public static Pen[] ChartPens = [new Pen(Brushes.Red, 1), new Pen(Brushes.Lime, 1), new Pen(Brushes.Yellow, 1)];
+
+    static UiShared()
+    {
+        foreach (var pen in ChartPens)
+            pen.Freeze();
+    }
+
     public static void UpdateUiPanel(FlightControllerBase ctrl, DependencyObject panel, Button btnOnOff)
     {
         if (ctrl?.Enabled == true)

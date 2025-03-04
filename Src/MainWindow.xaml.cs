@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
@@ -16,7 +15,6 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
     private FlightControllerBase _ctrl;
-    public static ChartLine LineR = new(), LineG = new(), LineY = new();
     private BobbleheadWindow _bobblehead;
 
     public MainWindow() : base(App.Settings.MainWindow)
@@ -29,16 +27,8 @@ public partial class MainWindow : ManagedWindow
         _sliderTimer.Interval = TimeSpan.FromMilliseconds(10);
         _sliderTimer.Tick += _sliderTimer_Tick;
         _sliderTimer.Start();
-        ctChart.Lines.Add(LineR);
-        ctChart.Lines.Add(LineG);
-        ctChart.Lines.Add(LineY);
-        LineR.Pen = new Pen(Brushes.Red, 1);
-        LineG.Pen = new Pen(Brushes.Lime, 1);
-        LineY.Pen = new Pen(Brushes.Yellow, 1);
-        foreach (var line in ctChart.Lines)
-            line.Pen.Freeze();
         Dcs.FlightControllers.Clear();
-        Dcs.FlightControllers.Add(new ChartPopulate(this));
+        Dcs.FlightControllers.Add(new ChartPopulate());
         Dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
         Dcs.FlightControllers.Add(new SmartThrottle());
         foreach (var c in Dcs.FlightControllers)
@@ -65,6 +55,7 @@ public partial class MainWindow : ManagedWindow
     {
         uiSmartThrottle.UpdateGuiTimer();
         uiRollAutoTrim.UpdateGuiTimer();
+        uiChart.UpdateGuiTimer();
 
         var status = Dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -109,18 +100,6 @@ public partial class MainWindow : ManagedWindow
         setSlider(ctrlYaw, Dcs.LastControl?.YawAxis);
         setSlider(ctrlThrottle, Dcs.LastControl?.ThrottleAxis);
 
-        ctChart.InvalidateVisual();
-
-        string oscPeriod(ChartLine line)
-        {
-            var tgt = line.Data.Count == 0 ? 0 : line.Data.Average();
-            var intersections = line.Data.ConsecutivePairs(false).SelectIndexWhere(p => p.Item1 < tgt && p.Item2 > tgt).ToList();
-            var times = ctChart.Times.ToList();
-            var periods = intersections.Select(i => times[i]).SelectConsecutivePairs(false, (p1, p2) => p2 - p1).Order().ToList();
-            return periods.Count < 3 ? "n/a" : periods[periods.Count / 2].Rounded();
-        }
-        lblChartInfo.Text = $"Oscillation:  R={oscPeriod(LineR)}  G={oscPeriod(LineG)}  Y={oscPeriod(LineY)}";
-
         if (Dcs.LastFrame != null)
         {
             var windabs = new PointD(Dcs.LastFrame.WindX.MsToKts(), Dcs.LastFrame.WindZ.MsToKts());
@@ -130,40 +109,10 @@ public partial class MainWindow : ManagedWindow
         }
     }
 
-    private class ChartPopulate : FlightControllerBase
-    {
-        private MainWindow _wnd;
-        private int _skip = 0;
-
-        public override string Name { get; set; } = "Chart Populate";
-
-        public ChartPopulate(MainWindow wnd)
-        {
-            _wnd = wnd;
-        }
-
-        public override ControlData ProcessFrame(FrameData frame)
-        {
-            if (_skip % 3 == 0)
-            {
-                _wnd.ctChart.Times.Enqueue(frame.SimTime);
-                LineY.Data.Enqueue(Math.Atan2(frame.VelY, Math.Sqrt(frame.VelX * frame.VelX + frame.VelZ * frame.VelZ)));
-                //LineY.Data.Enqueue(frame.AccY);
-                //LineY.Data.Enqueue(frame.Pitch);
-                LineR.Data.Enqueue(Dcs.LastControl?.PitchAxis ?? 0);
-                //LineR.Data.Enqueue(frame.Bank);
-            }
-            _skip++;
-            return null;
-        }
-    }
-
     private void btnStart_Click(object sender, RoutedEventArgs e)
     {
         _refreshTimer.Start();
         refreshTimer_Tick(sender, null);
-        foreach (var line in ctChart.Lines)
-            line.Data.Clear();
         Dcs.Start();
         UpdateGui();
     }
@@ -206,6 +155,7 @@ public partial class MainWindow : ManagedWindow
         btnStop.IsEnabled = Dcs.IsRunning;
         uiSmartThrottle.UpdateGui();
         uiRollAutoTrim.UpdateGui();
+        uiChart.UpdateGui();
         refreshTimer_Tick(null, null);
     }
 }

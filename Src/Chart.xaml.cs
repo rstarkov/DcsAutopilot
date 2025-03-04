@@ -2,10 +2,17 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Shapes;
+using DcsAutopilot.Controls;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
+
+public class ChartData
+{
+    public ConcurrentQueue<double> Times = new();
+    public ConcurrentDictionary<string, ChartLine> Lines = new();
+    public ChartLine this[string key] => Lines.GetOrAdd(key, _ => new() { Pen = UiShared.ChartPens[Lines.Count % UiShared.ChartPens.Length] });
+}
 
 public class ChartLine
 {
@@ -15,8 +22,7 @@ public class ChartLine
 
 public partial class Chart : UserControl
 {
-    public ConcurrentBag<ChartLine> Lines = new();
-    public ConcurrentQueue<double> Times = new();
+    public ChartData Data = new();
 
     public Chart()
     {
@@ -28,7 +34,7 @@ public partial class Chart : UserControl
     {
         dc.DrawRectangle(Brushes.Black, null, new Rect(0, 0, ActualWidth, ActualHeight));
         var xscale = 1 / 3.0;
-        foreach (var line in Lines)
+        foreach (var line in Data.Lines.Values)
         {
             if (line.Data.Count < 2)
                 continue;
@@ -50,7 +56,7 @@ public partial class Chart : UserControl
             }
             //dc.DrawGeometry(null, line.Pen, geometry); // far far slower than the lines
         }
-        while (Times.Count > ActualWidth / xscale)
-            Times.TryDequeue(out _);
+        while (Data.Times.Count > ActualWidth / xscale)
+            Data.Times.TryDequeue(out _);
     }
 }
