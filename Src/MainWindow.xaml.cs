@@ -45,6 +45,7 @@ public partial class MainWindow : ManagedWindow
         ctWindComp.UpdateGuiTimer();
         ctWindDir.UpdateGuiTimer();
         uiInfoDump.UpdateGuiTimer();
+        uiControlPositions.UpdateGuiTimer();
 
         var status = Dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -63,16 +64,6 @@ public partial class MainWindow : ManagedWindow
         if (latency > 0)
             statsStr = $"Latency: {latency * 1000:0.0}ms   " + statsStr;
         lblStats.Content = statsStr;
-
-        void setSlider(Slider sl, double? value)
-        {
-            sl.IsEnabled = Dcs.IsRunning ? value != null : false;
-            sl.Value = Dcs.IsRunning ? value ?? 0 : 0;
-        }
-        setSlider(ctrlPitch, -Dcs.LastControl?.PitchAxis);
-        setSlider(ctrlRoll, Dcs.LastControl?.RollAxis);
-        setSlider(ctrlYaw, Dcs.LastControl?.YawAxis);
-        setSlider(ctrlThrottle, Dcs.LastControl?.ThrottleAxis);
     }
 
     private void btnStart_Click(object sender, RoutedEventArgs e)

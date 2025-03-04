@@ -38,10 +38,7 @@
                         <ColumnDefinition Width="4*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
-                        <Slider Name="ctrlRoll" HorizontalAlignment="Left" Margin="82,181,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
-                        <Slider Name="ctrlPitch" HorizontalAlignment="Left" Margin="141,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
-                        <Slider Name="ctrlThrottle" HorizontalAlignment="Left" Margin="28,122,0,0" VerticalAlignment="Top" Width="30" Height="150" Minimum="0" Maximum="2" TickFrequency="0.5" TickPlacement="Both" IsSnapToTickEnabled="False" Orientation="Vertical" />
-                        <Slider Name="ctrlYaw" HorizontalAlignment="Left" Margin="82,291,0,0" VerticalAlignment="Top" Width="150" Height="30" Minimum="-1" Maximum="1" TickFrequency="0.50" TickPlacement="Both" IsSnapToTickEnabled="False" />
+                        <local:UiControlPositions x:Name="uiControlPositions" />
                         <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="180"  Margin="0,0,8,108">
                             <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">A</Button>
                             <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">B</Button>
