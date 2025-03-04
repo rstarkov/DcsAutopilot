@@ -80,7 +80,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Name="lblInfo" TextWrapping="WrapWithOverflow" Grid.Row="0">Info</TextBlock>
+                        <local:UiInfoDump x:Name="uiInfoDump" Grid.Row="0" />
                         <local:UiChart x:Name="uiChart" Grid.Row="1" />
                     </Grid>
                 </Grid>

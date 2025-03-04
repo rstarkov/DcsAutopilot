@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
@@ -13,7 +12,6 @@ public partial class MainWindow : ManagedWindow
     private DispatcherTimer _refreshTimer = new();
     private DispatcherTimer _sliderTimer = new();
     private SmoothMover _sliderMover = new(10.0, -1, 1);
-    private FlightControllerBase _ctrl;
     private BobbleheadWindow _bobblehead;
 
     public MainWindow() : base(App.Settings.MainWindow)
@@ -28,7 +26,7 @@ public partial class MainWindow : ManagedWindow
         _sliderTimer.Start();
         Dcs.FlightControllers.Clear();
         Dcs.FlightControllers.Add(new ChartPopulate());
-        Dcs.FlightControllers.Add(_ctrl = new RollAutoTrim());
+        Dcs.FlightControllers.Add(new RollAutoTrim());
         Dcs.FlightControllers.Add(new SmartThrottle());
         foreach (var c in Dcs.FlightControllers)
             c.Dcs = Dcs;
@@ -57,6 +55,7 @@ public partial class MainWindow : ManagedWindow
         uiChart.UpdateGuiTimer();
         ctWindComp.UpdateGuiTimer();
         ctWindDir.UpdateGuiTimer();
+        uiInfoDump.UpdateGuiTimer();
 
         var status = Dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -75,21 +74,6 @@ public partial class MainWindow : ManagedWindow
         if (latency > 0)
             statsStr = $"Latency: {latency * 1000:0.0}ms   " + statsStr;
         lblStats.Content = statsStr;
-
-        var sb = new StringBuilder();
-        sb.AppendLine($"Altitude ASL: {Dcs.LastFrame?.AltitudeAsl.MetersToFeet():#,0.000} ft");
-        sb.AppendLine($"Vertical speed: {Dcs.LastFrame?.SpeedVertical.MetersToFeet() * 60:#,0.000} ft/min");
-        sb.AppendLine($"AoA: {Dcs.LastFrame?.AngleOfAttack:0.00}°    AoSS: {Dcs.LastFrame?.AngleOfSideSlip:0.000}°");
-        sb.AppendLine($"Mach: {Dcs.LastFrame?.SpeedMach:0.00000}    IAS: {Dcs.LastFrame?.SpeedIndicated.MsToKts():0.0} kts");
-        sb.AppendLine($"Pitch: {Dcs.LastFrame?.Pitch:0.00}°/{Dcs.LastFrame?.VelPitch:0.00}°   Bank: {Dcs.LastFrame?.Bank:0.00}°   Hdg: {Dcs.LastFrame?.Heading:0.00}°");
-        sb.AppendLine($"Gyros: pitch={Dcs.LastFrame?.GyroPitch:0.00}   roll={Dcs.LastFrame?.GyroRoll:0.00}   yaw={Dcs.LastFrame?.GyroYaw:0.00}");
-        sb.AppendLine($"Joystick: {Dcs.LastFrame?.JoyPitch:0.000}   {Dcs.LastFrame?.JoyRoll:0.000}   {Dcs.LastFrame?.JoyYaw:0.000}   T:{Dcs.LastFrame?.JoyThrottle1:0.000}");
-        sb.AppendLine($"Flaps: {Dcs.LastFrame?.Flaps:0.000}   Speedbrakes: {Dcs.LastFrame?.Airbrakes:0.000}   Gear: {Dcs.LastFrame?.LandingGear:0.000}");
-        sb.AppendLine($"Acc: {Dcs.LastFrame?.AccX:0.000} / {Dcs.LastFrame?.AccY:0.000} / {Dcs.LastFrame?.AccZ:0.000}");
-        sb.AppendLine($"Test: {Dcs.LastFrame?.FuelFlow:#,0} / {Dcs.LastFrame?.Test1:0.000} / {Dcs.LastFrame?.Test2:0.000} / {Dcs.LastFrame?.Test3:0.000} / {Dcs.LastFrame?.Test4:0.000}");
-        sb.AppendLine("Controller: " + _ctrl?.Status);
-        sb.AppendLine();
-        lblInfo.Text = sb.ToString();
 
         void setSlider(Slider sl, double? value)
         {
@@ -136,7 +120,7 @@ public partial class MainWindow : ManagedWindow
 
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
     {
-        var ctrl = (FlightControllerBase)(ctControllers.SelectedItem ?? _ctrl);
+        var ctrl = (FlightControllerBase)(ctControllers.SelectedItem);
         var signal = ((Button)sender).Content.ToString();
         if (ctrl.Enabled)
             ctrl.HandleSignal(signal);
