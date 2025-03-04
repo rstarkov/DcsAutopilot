@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
-using RT.Util.Geometry;
 using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
@@ -56,6 +55,8 @@ public partial class MainWindow : ManagedWindow
         uiSmartThrottle.UpdateGuiTimer();
         uiRollAutoTrim.UpdateGuiTimer();
         uiChart.UpdateGuiTimer();
+        ctWindComp.UpdateGuiTimer();
+        ctWindDir.UpdateGuiTimer();
 
         var status = Dcs.Status;
         if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
@@ -99,14 +100,6 @@ public partial class MainWindow : ManagedWindow
         setSlider(ctrlRoll, Dcs.LastControl?.RollAxis);
         setSlider(ctrlYaw, Dcs.LastControl?.YawAxis);
         setSlider(ctrlThrottle, Dcs.LastControl?.ThrottleAxis);
-
-        if (Dcs.LastFrame != null)
-        {
-            var windabs = new PointD(Dcs.LastFrame.WindX.MsToKts(), Dcs.LastFrame.WindZ.MsToKts());
-            var dir = new PointD(Dcs.LastFrame.Heading.ToRad());
-            ctWindComp.SetWind(-windabs.Dot(dir), -windabs.Dot(dir.Rotated(Math.PI / 2)));
-            ctWindDir.SetWind(windabs.Theta().ToDeg(), windabs.Abs(), Dcs.LastFrame.Heading);
-        }
     }
 
     private void btnStart_Click(object sender, RoutedEventArgs e)

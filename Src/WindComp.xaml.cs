@@ -1,6 +1,7 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
+using RT.Util.Geometry;
+using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
 
@@ -10,6 +11,18 @@ public partial class WindComp : UserControl
     {
         InitializeComponent();
         SetWind(0, 0);
+    }
+
+    public void UpdateGuiTimer()
+    {
+        if (Dcs.LastFrame == null)
+            SetWind(0, 0);
+        else
+        {
+            var windabs = new PointD(Dcs.LastFrame.WindX.MsToKts(), Dcs.LastFrame.WindZ.MsToKts());
+            var dir = new PointD(Dcs.LastFrame.Heading.ToRad());
+            SetWind(-windabs.Dot(dir), -windabs.Dot(dir.Rotated(Math.PI / 2)));
+        }
     }
 
     public void SetWind(double headwind, double crosswind)
