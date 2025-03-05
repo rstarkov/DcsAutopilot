@@ -9,10 +9,10 @@
     <Border Name="pnlMain" Padding="5,5">
         <StackPanel>
             <DockPanel MinWidth="100">
-                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30">ON</Button>
-                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0">Roll trim</Label>
+                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30" Content="{Binding Enabled, FallbackValue='off', Converter={StaticResource OnOffConverter}}"/>
+                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}">Roll trim</Label>
             </DockPanel>
-            <DockPanel>
+            <DockPanel IsEnabled="{Binding Enabled, FallbackValue=False}">
                 <StackPanel>
                     <Label Name="lblRollLabel" Padding="0,5,5,0">Roll:</Label>
                     <Label Padding="0,5,5,0">Trim:</Label>

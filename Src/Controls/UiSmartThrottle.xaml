@@ -9,13 +9,13 @@
     <Border Name="pnlMain" Padding="5,5">
         <StackPanel>
             <DockPanel MinWidth="120" Margin="0,0,0,5">
-                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30">ON</Button>
-                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0">Smart throttle</Label>
+                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click" Width="30" Content="{Binding Enabled, FallbackValue='off', Converter={StaticResource OnOffConverter}}"/>
+                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}">Smart throttle</Label>
             </DockPanel>
-            <CheckBox Name="chkUseIdleSpeedbrake" Margin="0,5,0,0" Checked="chkUseIdleSpeedbrake_Checked" Unchecked="chkUseIdleSpeedbrake_Checked">Idle speedbrake</CheckBox>
-            <CheckBox Name="chkUseAfterburnerDetent" Margin="0,5,0,0" Checked="chkUseAfterburnerDetent_Checked" Unchecked="chkUseAfterburnerDetent_Checked">Afterburner detent</CheckBox>
-            <CheckBox Name="chkAutothrottleAfterburner" Margin="0,5,0,0" Checked="chkAutothrottleAfterburner_Checked" Unchecked="chkAutothrottleAfterburner_Checked">Autothrottle AftB</CheckBox>
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+            <CheckBox Name="chkUseIdleSpeedbrake" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkUseIdleSpeedbrake_Checked" Unchecked="chkUseIdleSpeedbrake_Checked">Idle speedbrake</CheckBox>
+            <CheckBox Name="chkUseAfterburnerDetent" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkUseAfterburnerDetent_Checked" Unchecked="chkUseAfterburnerDetent_Checked">Afterburner detent</CheckBox>
+            <CheckBox Name="chkAutothrottleAfterburner" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkAutothrottleAfterburner_Checked" Unchecked="chkAutothrottleAfterburner_Checked">Autothrottle AftB</CheckBox>
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}">
                 <Label Name="lblAftB" Background="Silver" Padding="4,0">AftB</Label>
                 <Label Name="lblSpdB" Background="Silver" Margin="8,0,0,0" Padding="4,0">SpdB</Label>
                 <Label Name="lblSpdHold" Background="Silver" Margin="8,0,0,0" Padding="4,0">Hold</Label>

@@ -5,6 +5,7 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
+            <local:OnOffConverter x:Key="OnOffConverter"/>
             <Style TargetType="Border">
                 <Setter Property="BorderThickness" Value="0.5"/>
                 <Setter Property="BorderBrush" Value="Gray"/>

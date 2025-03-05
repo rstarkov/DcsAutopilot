@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -10,14 +12,23 @@ using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
-public abstract class FlightControllerBase
+public abstract class FlightControllerBase : INotifyPropertyChanged
 {
     public abstract string Name { get; set; }
     public virtual string Status => _status;
     protected string _status = "";
     /// <summary>
     ///     Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
-    public bool Enabled { get { return _enabled; } set { _enabled = value; if (_enabled && Dcs.IsRunning) Reset(); } }
+    public bool Enabled
+    {
+        get { return _enabled; }
+        set
+        {
+            _enabled = value;
+            if (_enabled && Dcs.IsRunning) Reset();
+            PropertyChanged?.Invoke(this, new(nameof(Enabled)));
+        }
+    }
     private bool _enabled = false;
     public DcsController Dcs { get; set; }
     /// <summary>Called on Dcs.Start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
@@ -34,6 +45,7 @@ public abstract class FlightControllerBase
     public virtual void ProcessBulkUpdate(BulkData bulk) { }
     public virtual void HandleSignal(string signal) { }
     public virtual bool HandleKey(KeyEventArgs e) { return false; }
+    public event PropertyChangedEventHandler PropertyChanged;
 }
 
 public class KeyEventArgs
@@ -55,7 +67,7 @@ public class DcsController
     private double _session;
     private ConcurrentQueue<double> _latencies = new();
 
-    public List<FlightControllerBase> FlightControllers { get; private set; } = new();
+    public ObservableCollection<FlightControllerBase> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
     public ConcurrentBag<string> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
     public byte[] LastReceiveWithWarnings { get; private set; }

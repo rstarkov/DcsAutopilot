@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using DcsAutopilot.Controls;
 using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
@@ -10,6 +9,8 @@ public partial class UiRollAutoTrim : UserControl
     public UiRollAutoTrim()
     {
         InitializeComponent();
+        if (Dcs?.FlightControllers != null)
+            Dcs.FlightControllers.CollectionChanged += (_, _) => pnlMain.DataContext = Dcs.GetController<RollAutoTrim>();
     }
 
     private void btnOnOff_Click(object sender, RoutedEventArgs e)
@@ -23,7 +24,6 @@ public partial class UiRollAutoTrim : UserControl
     public void UpdateGui()
     {
         var ctrl = Dcs.GetController<RollAutoTrim>();
-        UiShared.UpdateUiPanel(ctrl, pnlMain, btnOnOff);
         if (ctrl?.Enabled != true)
         {
             lblRoll.Content = "?";

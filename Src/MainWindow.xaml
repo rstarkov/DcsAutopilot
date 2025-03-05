@@ -38,28 +38,20 @@
                         <ColumnDefinition Width="4*"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
-                        <local:UiControlPositions x:Name="uiControlPositions" />
-                        <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="180"  Margin="0,0,8,108">
-                            <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">A</Button>
-                            <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">B</Button>
-                            <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">C</Button>
-                            <Button Padding="8,0" Margin="0,0,8,0" Click="ControllerButton_Click">D</Button>
-                        </WrapPanel>
-                        <ListBox Name="ctControllers" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="180"  Height="100" Margin="0,0,8,0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
-                    <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <local:UiInfoDump x:Name="uiInfoDump" Grid.Row="0" />
-                        <local:UiChart x:Name="uiChart" Grid.Row="1" />
+                        <local:ControllerList x:Name="ctControllerList" Margin="0,0,20,15" Grid.Row="0"/>
+                        <local:UiInfoDump x:Name="uiInfoDump" Margin="0,0,20,0" Grid.Row="1"/>
+                    </Grid>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <local:UiChart x:Name="uiChart" Margin="0,0,0,15" Grid.Row="0" />
+                        <local:UiControlPositions x:Name="uiControlPositions" Grid.Row="1" />
                     </Grid>
                 </Grid>
             </TabItem>

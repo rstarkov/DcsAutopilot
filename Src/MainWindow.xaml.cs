@@ -15,12 +15,11 @@ public partial class MainWindow : ManagedWindow
 
     public MainWindow() : base(App.Settings.MainWindow)
     {
-        InitializeComponent();
         Dcs = new();
         Dcs.LoadConfig();
+        InitializeComponent();
         _updateGuiTimer.Interval = TimeSpan.FromMilliseconds(100);
         _updateGuiTimer.Tick += UpdateGuiTimer;
-        ctControllers.ItemsSource = Dcs.FlightControllers;
 
         btnStop_Click(null, null);
     }
@@ -99,13 +98,5 @@ public partial class MainWindow : ManagedWindow
         _bobblehead.Closing += delegate { _bobblehead = null; ctrl.Window = null; };
         _bobblehead.Show();
         ctrl.Window = _bobblehead;
-    }
-
-    private void ControllerButton_Click(object sender, RoutedEventArgs e)
-    {
-        var ctrl = (FlightControllerBase)(ctControllers.SelectedItem);
-        var signal = ((Button)sender).Content.ToString();
-        if (ctrl.Enabled)
-            ctrl.HandleSignal(signal);
     }
 }

@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using DcsAutopilot.Controls;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;

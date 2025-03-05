@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using DcsAutopilot.Controls;
 using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
@@ -13,6 +12,8 @@ public partial class UiSmartThrottle : UserControl
     public UiSmartThrottle()
     {
         InitializeComponent();
+        if (Dcs?.FlightControllers != null)
+            Dcs.FlightControllers.CollectionChanged += (_, _) => pnlMain.DataContext = Dcs.GetController<SmartThrottle>();
     }
 
     private void btnOnOff_Click(object sender, RoutedEventArgs e)
@@ -27,7 +28,6 @@ public partial class UiSmartThrottle : UserControl
     {
         _updating = true;
         var ctrl = Dcs.GetController<SmartThrottle>();
-        UiShared.UpdateUiPanel(ctrl, pnlMain, btnOnOff);
         chkUseIdleSpeedbrake.IsChecked = ctrl?.UseIdleSpeedbrake;
         chkUseAfterburnerDetent.IsChecked = ctrl?.UseAfterburnerDetent;
         chkAutothrottleAfterburner.IsChecked = ctrl?.AutothrottleAfterburner;

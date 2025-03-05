@@ -24,10 +24,6 @@ public partial class UiInfoDump : UserControl
         sb.AppendLine($"Flaps: {Dcs.LastFrame?.Flaps:0.000}   Speedbrakes: {Dcs.LastFrame?.Airbrakes:0.000}   Gear: {Dcs.LastFrame?.LandingGear:0.000}");
         sb.AppendLine($"Acc: {Dcs.LastFrame?.AccX:0.000} / {Dcs.LastFrame?.AccY:0.000} / {Dcs.LastFrame?.AccZ:0.000}");
         sb.AppendLine($"Test: {Dcs.LastFrame?.FuelFlow:#,0} / {Dcs.LastFrame?.Test1:0.000} / {Dcs.LastFrame?.Test2:0.000} / {Dcs.LastFrame?.Test3:0.000} / {Dcs.LastFrame?.Test4:0.000}");
-        foreach (var c in Dcs.FlightControllers)
-            if (c.Enabled && c.GetType() != typeof(ChartPopulate))
-                sb.AppendLine("- " + c.Name + ": " + c.Status);
-        sb.AppendLine();
         lblInfo.Text = sb.ToString();
     }
 }
