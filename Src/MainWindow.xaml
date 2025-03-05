@@ -31,6 +31,9 @@
                     <local:WindDir x:Name="ctWindDir" Width="100" Height="100" Canvas.Left="140" Canvas.Top="170"/>
                 </Canvas>
             </TabItem>
+            <TabItem Header="Experiments">
+                <local:Experiments />
+            </TabItem>
             <TabItem Header="Dev">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -54,9 +57,6 @@
                         <local:UiControlPositions x:Name="uiControlPositions" Grid.Row="1" />
                     </Grid>
                 </Grid>
-            </TabItem>
-            <TabItem Header="Experiments">
-                <local:Experiments />
             </TabItem>
         </TabControl>
         <DockPanel Grid.Row="1" Margin="0,8,0,8">
