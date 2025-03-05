@@ -23,10 +23,10 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <WrapPanel Orientation="Vertical" Grid.Column="1">
-            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click">A</Button>
-            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click">B</Button>
-            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click">C</Button>
-            <Button Padding="8,0" Margin="0,0,0,0" Click="ControllerButton_Click">D</Button>
+            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click" IsEnabled="{Binding SelectedItem.Enabled, ElementName=ctControllers, FallbackValue=False}">A</Button>
+            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click" IsEnabled="{Binding SelectedItem.Enabled, ElementName=ctControllers, FallbackValue=False}">B</Button>
+            <Button Padding="8,0" Margin="0,0,0,8" Click="ControllerButton_Click" IsEnabled="{Binding SelectedItem.Enabled, ElementName=ctControllers, FallbackValue=False}">C</Button>
+            <Button Padding="8,0" Margin="0,0,0,0" Click="ControllerButton_Click" IsEnabled="{Binding SelectedItem.Enabled, ElementName=ctControllers, FallbackValue=False}">D</Button>
         </WrapPanel>
     </Grid>
 </UserControl>
