@@ -71,7 +71,7 @@ public class SmartThrottle : FlightControllerBase
 
     private Sound SndAfterburnerBump = new("LoudClick.mp3", 50);
     private Sound SndAfterburnerUnbump = new("ReverseLoudClick.mp3", 40);
-    private Sound SndAfterburnerActive = new("DoubleBeepHighFast.mp3");
+    private Sound SndAfterburnerActive = new("SarahAfterburner.mp3");
     private Sound SndAutothrottleEngaged = new("AirbusAutopilotDisengageSingle.mp3");
     private Sound SndAutothrottleDisengaged = new("AirbusAutopilotDisengage.mp3");
 
@@ -162,4 +162,60 @@ public class SmartThrottle : FlightControllerBase
     }
 
     private double mapThrottle(double throttleAxis) => Util.Linterp(0, 1, 0, 2, throttleAxis);
+}
+
+class SoundWarnings : FlightControllerBase
+{
+    public override string Name { get; set; } = "Sound warnings";
+
+    public bool UseGearNotUp { get; set; } = true;
+    public bool? IsGearNotUp { get; set; }
+    public double GearNotUpMinAltFt { get; set; } = 3000;
+    public double GearNotUpMinSpdKts { get; set; } = 200;
+    private Sound SndGearNotUp = new("SarahGearUp.mp3");
+    private double _lastGearNotUpT;
+
+    public bool UseGearNotDown { get; set; } = true;
+    public bool? IsGearNotDown { get; set; }
+    public double GearNotDownMaxAltFt { get; set; } = 800;
+    public double GearNotDownMaxSpdKts { get; set; } = 220;
+    private Sound SndGearNotDown = new("SarahGearDown.mp3");
+    private double _lastGearNotDownT;
+
+    public override void Reset()
+    {
+        _lastGearNotUpT = double.MinValue;
+        _lastGearNotDownT = double.MinValue;
+    }
+
+    public override ControlData ProcessFrame(FrameData frame)
+    {
+        var speedKts = frame.SpeedIndicated.MsToKts();
+        var altitudeAglFt = frame.AltitudeRadar.MetersToFeet();
+        if (!UseGearNotUp)
+            IsGearNotUp = null;
+        else
+        {
+            IsGearNotUp = frame.LandingGear > 0 && speedKts > GearNotUpMinSpdKts && altitudeAglFt > GearNotUpMinAltFt;
+            if (IsGearNotUp == true && frame.SimTime - _lastGearNotUpT > 60)
+            {
+                SndGearNotUp?.Play();
+                _lastGearNotUpT = frame.SimTime;
+            }
+        }
+
+        if (!UseGearNotDown)
+            IsGearNotDown = null;
+        else
+        {
+            IsGearNotDown = frame.LandingGear < 1 && speedKts < GearNotDownMaxSpdKts && altitudeAglFt < GearNotDownMaxAltFt;
+            if (IsGearNotDown == true && frame.SimTime - _lastGearNotDownT > 60)
+            {
+                SndGearNotDown?.Play();
+                _lastGearNotDownT = frame.SimTime;
+            }
+        }
+
+        return null;
+    }
 }

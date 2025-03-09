@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -25,7 +25,7 @@ public abstract class FlightControllerBase : INotifyPropertyChanged
         set
         {
             _enabled = value;
-            if (_enabled && Dcs.IsRunning) Reset();
+            if (_enabled && Dcs?.IsRunning == true) Reset();
             PropertyChanged?.Invoke(this, new(nameof(Enabled)));
         }
     }
@@ -520,7 +520,9 @@ public class FrameData
     ///     Total fuel flow in pounds/hour. May be read off gauges which cause glitches in the reading as it goes through
     ///     changing decimal places.</summary>
     public double FuelFlow;
-    public double Flaps, Airbrakes, LandingGear;
+    public double Flaps, Airbrakes;
+    /// <summary>Position of the landing gear lever: 0 for gear up, 1 for gear down, 0..1 while the lever is moving.</summary>
+    public double LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double? TrimRoll, TrimPitch, TrimYaw;
     public double WindX, WindY, WindZ;

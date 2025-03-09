@@ -134,6 +134,8 @@ function LuaExportAfterNextFrame()
             dt[#dt+1] = "joyt2"
             dt[#dt+1] = GetDevice(0):get_argument_value(105)
             dt[#dt+1] = "lg"
+            dt[#dt+1] = 1.0 - GetDevice(0):get_argument_value(226)
+            dt[#dt+1] = "lgp" -- actual gear extension
             dt[#dt+1] = (LoGetAircraftDrawArgumentValue(115) + LoGetAircraftDrawArgumentValue(0)) / 2
             dt[#dt+1] = "ytrm"
             dt[#dt+1] = GetDevice(0):get_argument_value(345)
@@ -146,6 +148,8 @@ function LuaExportAfterNextFrame()
             dt[#dt+1] = -GetDevice(0):get_argument_value(560)
             dt[#dt+1] = "ytrm"
             dt[#dt+1] = GetDevice(0):get_argument_value(565)
+            dt[#dt+1] = "lg"
+            dt[#dt+1] = 1.0 - GetDevice(0):get_argument_value(362)
         end
     end
 
