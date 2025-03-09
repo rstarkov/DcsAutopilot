@@ -24,9 +24,10 @@
     </PackageReference>
     <PackageReference Include="OpenTK" Version="4.7.7" />
     <PackageReference Include="OpenTK.GLWpfControl" Version="4.2.3" />
-    <PackageReference Include="RT.Serialization.Xml" Version="2.0.1752" />
-    <PackageReference Include="RT.Util" Version="2.0.1752" />
-    <PackageReference Include="RT.Util.Core" Version="2.0.1752" />
+    <PackageReference Include="RT.Keyboard" Version="1.23.3" />
+    <PackageReference Include="RT.Serialization.Xml" Version="2.0.1777" />
+    <PackageReference Include="RT.Util" Version="2.0.1777" />
+    <PackageReference Include="RT.Util.Core" Version="2.0.1777" />
   </ItemGroup>
 
 </Project>

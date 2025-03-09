@@ -21,7 +21,7 @@ public partial class WindDir : UserControl
         else
         {
             var windabs = new PointD(Dcs.LastFrame.WindX.MsToKts(), Dcs.LastFrame.WindZ.MsToKts());
-            SetWind(windabs.Theta().ToDeg(), windabs.Abs(), Dcs.LastFrame.Heading);
+            SetWind(windabs.Theta().ToDeg(), windabs.Distance(), Dcs.LastFrame.Heading);
         }
     }
 
