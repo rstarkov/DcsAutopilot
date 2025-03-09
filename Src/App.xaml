@@ -7,6 +7,9 @@
         <ResourceDictionary>
             <local:OnOffConverter x:Key="OnOffConverter"/>
 
+            <Thickness x:Key="Control.BorderThickness">0.75</Thickness>
+            <Thickness x:Key="Container.BorderThickness">0.75</Thickness>
+
             <Color x:Key="Color.Control.Static.Foreground">#DDDDDD</Color>
             <Color x:Key="Color.Control.Static.Background">#303030</Color>
             <Color x:Key="Color.Control.Static.Border">#707070</Color>
@@ -90,7 +93,7 @@
                 <Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource Button.Static.Border}"/>
                 <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Control.BorderThickness}"/>
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Padding" Value="1"/>
@@ -157,8 +160,8 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type TabItem}">
                             <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
-                                <Border x:Name="mainBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,1,1,0" Margin="0">
-                                    <Border x:Name="innerBorder" Background="{StaticResource TabItem.Selected.Background}" BorderBrush="{StaticResource TabItem.Selected.Border}" BorderThickness="1,1,1,0" Margin="-1" Opacity="0"/>
+                                <Border x:Name="mainBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0.75,0.75,0.75,0" Margin="0">
+                                    <Border x:Name="innerBorder" Background="{StaticResource TabItem.Selected.Background}" BorderBrush="{StaticResource TabItem.Selected.Border}" BorderThickness="0.75,0.75,0.75,0" Margin="-1" Opacity="0"/>
                                 </Border>
                                 <ContentPresenter x:Name="contentPresenter" ContentSource="Header" Focusable="False" HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
                             </Grid>
@@ -200,8 +203,8 @@
                                     </MultiDataTrigger.Conditions>
                                     <Setter Property="Background" TargetName="mainBorder" Value="{StaticResource TabItem.MouseOver.Background}"/>
                                     <Setter Property="BorderBrush" TargetName="mainBorder" Value="{StaticResource TabItem.MouseOver.Border}"/>
-                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="1,1,1,0"/>
-                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="1,1,1,0"/>
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0.75,0.75,0.75,0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0.75,0.75,0.75,0"/>
                                 </MultiDataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -244,8 +247,8 @@
                                     <Setter Property="Opacity" TargetName="contentPresenter" Value="0.56"/>
                                     <Setter Property="Background" TargetName="mainBorder" Value="{StaticResource TabItem.Disabled.Background}"/>
                                     <Setter Property="BorderBrush" TargetName="mainBorder" Value="{StaticResource TabItem.Disabled.Border}"/>
-                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="1,1,1,0"/>
-                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="1,1,1,0"/>
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0.75,0.75,0.75,0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0.75,0.75,0.75,0"/>
                                 </MultiDataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -309,8 +312,8 @@
                                         <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="false"/>
                                         <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}" Value="Top"/>
                                     </MultiDataTrigger.Conditions>
-                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="1,1,1,0"/>
-                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="1,1,1,0"/>
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0.75,0.75,0.75,0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0.75,0.75,0.75,0"/>
                                 </MultiDataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
@@ -320,8 +323,8 @@
                                     <Setter Property="Panel.ZIndex" Value="1"/>
                                     <Setter Property="Margin" Value="-2,-2,-2,0"/>
                                     <Setter Property="Opacity" TargetName="innerBorder" Value="1"/>
-                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="1,1,1,0"/>
-                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="1,1,1,0"/>
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0.75,0.75,0.75,0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0.75,0.75,0.75,0"/>
                                 </MultiDataTrigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -334,7 +337,7 @@
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Background" Value="{StaticResource TabItem.Selected.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource TabItem.Selected.Border}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Container.BorderThickness}"/>
                 <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -397,7 +400,7 @@
                 <Setter Property="Background" Value="{StaticResource OptionMark.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource OptionMark.Static.Border}"/>
                 <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Control.BorderThickness}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type CheckBox}">
@@ -455,7 +458,7 @@
             <Style TargetType="{x:Type ListBox}">
                 <Setter Property="Background" Value="{StaticResource ListBox.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource ListBox.Static.Border}"/>
-                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Container.BorderThickness}"/>
                 <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
@@ -496,7 +499,7 @@
                 <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Control.BorderThickness}"/>
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -541,15 +544,15 @@
                 <Setter Property="Background" Value="#101010"/>
             </Style>
             <Style TargetType="Border">
-                <Setter Property="BorderThickness" Value="0.5"/>
-                <Setter Property="BorderBrush" Value="Gray"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Container.BorderThickness}"/>
+                <Setter Property="BorderBrush" Value="#444444"/>
             </Style>
             <Style x:Key="Indicator" TargetType="{x:Type Label}">
                 <Setter Property="FontWeight" Value="DemiBold"/>
                 <Setter Property="Background" Value="#080808"/>
                 <Setter Property="Foreground" Value="#808080"/>
                 <Setter Property="BorderBrush" Value="#333333"/>
-                <Setter Property="BorderThickness" Value="0.5"/>
+                <Setter Property="BorderThickness" Value="{StaticResource Control.BorderThickness}"/>
                 <Style.Triggers>
                     <Trigger Property="local:MyProperties.IndicatorState" Value="red">
                         <Setter Property="Background" Value="#f44037"/>
