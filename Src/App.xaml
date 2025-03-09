@@ -7,14 +7,6 @@
         <ResourceDictionary>
             <local:OnOffConverter x:Key="OnOffConverter"/>
 
-            <Style TargetType="Window">
-                <Setter Property="Background" Value="#101010"/>
-            </Style>
-            <Style TargetType="Border">
-                <Setter Property="BorderThickness" Value="0.5"/>
-                <Setter Property="BorderBrush" Value="Gray"/>
-            </Style>
-
             <Color x:Key="Color.Control.Static.Foreground">#DDDDDD</Color>
             <Color x:Key="Color.Control.Static.Background">#303030</Color>
             <Color x:Key="Color.Control.Static.Border">#707070</Color>
@@ -543,6 +535,48 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="#101010"/>
+            </Style>
+            <Style TargetType="Border">
+                <Setter Property="BorderThickness" Value="0.5"/>
+                <Setter Property="BorderBrush" Value="Gray"/>
+            </Style>
+            <Style x:Key="Indicator" TargetType="{x:Type Label}">
+                <Setter Property="FontWeight" Value="DemiBold"/>
+                <Setter Property="Background" Value="#080808"/>
+                <Setter Property="Foreground" Value="#808080"/>
+                <Setter Property="BorderBrush" Value="#333333"/>
+                <Setter Property="BorderThickness" Value="0.5"/>
+                <Style.Triggers>
+                    <Trigger Property="local:MyProperties.IndicatorState" Value="red">
+                        <Setter Property="Background" Value="#f44037"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                    <Trigger Property="local:MyProperties.IndicatorState" Value="green">
+                        <Setter Property="Background" Value="#00aa00"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                    </Trigger>
+                    <Trigger Property="local:MyProperties.IndicatorState" Value="redtext">
+                        <Setter Property="Foreground" Value="#ff7577"/>
+                        <Setter Property="BorderBrush" Value="#f44037"/>
+                    </Trigger>
+                    <Trigger Property="local:MyProperties.IndicatorState" Value="greentext">
+                        <Setter Property="Foreground" Value="#83d05c"/>
+                        <Setter Property="BorderBrush" Value="#00aa00"/>
+                    </Trigger>
+                    <Trigger Property="local:MyProperties.IndicatorState" Value="yellowtext">
+                        <Setter Property="Foreground" Value="#f5b542"/>
+                        <Setter Property="BorderBrush" Value="#d89701"/>
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Background" Value="#222222"/>
+                        <Setter Property="Foreground" Value="{StaticResource Control.Disabled.Foreground}"/>
+                        <Setter Property="BorderBrush" Value="#333333"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
         </ResourceDictionary>

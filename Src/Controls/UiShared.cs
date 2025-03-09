@@ -8,13 +8,6 @@ namespace DcsAutopilot;
 
 static class UiShared
 {
-    public static Brush BrushToggleBorderNormal = new SolidColorBrush(Color.FromRgb(0x70, 0x70, 0x70));
-    public static Brush BrushToggleBorderActive = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x07)); // 1447FF
-    public static Brush BrushToggleBorderHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00));
-    public static Brush BrushToggleBackNormal = new SolidColorBrush(Color.FromRgb(0xDD, 0xDD, 0xDD));
-    public static Brush BrushToggleBackActive = new SolidColorBrush(Color.FromRgb(0xB5, 0xFF, 0xA3)); // BFFAFF
-    public static Brush BrushToggleBackHigh = new SolidColorBrush(Color.FromRgb(0xFF, 0xDE, 0xDB));
-
     public static Pen[] ChartPens = [new Pen(Brushes.Red, 1), new Pen(Brushes.Lime, 1), new Pen(Brushes.Yellow, 1)];
 
     static UiShared()
@@ -54,6 +47,13 @@ static class UiShared
             ctrl.IsEnabled = true;
         enableParents(VisualTreeHelper.GetParent(obj), stop);
     }
+}
+
+public static class MyProperties
+{
+    public static readonly DependencyProperty IndicatorStateProperty = DependencyProperty.RegisterAttached("IndicatorState", typeof(string), typeof(MyProperties), new PropertyMetadata(null));
+    public static string GetIndicatorState(Label obj) => (string)obj.GetValue(IndicatorStateProperty);
+    public static void SetIndicatorState(Label obj, string value) => obj.SetValue(IndicatorStateProperty, value);
 }
 
 public class OnOffConverter : IValueConverter

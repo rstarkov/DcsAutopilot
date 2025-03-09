@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using static DcsAutopilot.Globals;
 
 namespace DcsAutopilot;
@@ -31,13 +30,6 @@ public partial class UiSmartThrottle : UserControl
         chkUseIdleSpeedbrake.IsChecked = ctrl?.UseIdleSpeedbrake;
         chkUseAfterburnerDetent.IsChecked = ctrl?.UseAfterburnerDetent;
         chkAutothrottleAfterburner.IsChecked = ctrl?.AutothrottleAfterburner;
-        if (ctrl?.Enabled != true)
-        {
-            lblAftB.Background = UiShared.BrushToggleBackNormal;
-            lblSpdB.Background = UiShared.BrushToggleBackNormal;
-            lblSpdHold.Background = UiShared.BrushToggleBackNormal;
-            lblSpdHold.ClearValue(Label.ForegroundProperty);
-        }
         _updating = false;
     }
 
@@ -46,13 +38,9 @@ public partial class UiSmartThrottle : UserControl
         var ctrl = Dcs.GetController<SmartThrottle>();
         if (ctrl?.Enabled != true)
             return;
-        lblAftB.Background = ctrl.AfterburnerActive ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
-        lblSpdB.Background = ctrl.SpeedbrakeActive ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
-        lblSpdHold.Background = ctrl.AutothrottleSpeedKts != null ? UiShared.BrushToggleBackActive : UiShared.BrushToggleBackNormal;
-        if (ctrl.AutothrottleSpeedKts != null)
-            lblSpdHold.Foreground = Math.Abs(ctrl.AutothrottleSpeedKts.Value - (Dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? Brushes.Black : Brushes.DarkRed;
-        else
-            lblSpdHold.ClearValue(Label.ForegroundProperty);
+        MyProperties.SetIndicatorState(lblAftB, ctrl.AfterburnerActive ? "redtext" : "off");
+        MyProperties.SetIndicatorState(lblSpdB, ctrl.SpeedbrakeActive ? "yellowtext" : "off");
+        MyProperties.SetIndicatorState(lblSpdHold, ctrl.AutothrottleSpeedKts == null ? "off" : Math.Abs(ctrl.AutothrottleSpeedKts.Value - (Dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? "greentext" : "yellowtext");
     }
 
     private void chkUseIdleSpeedbrake_Checked(object sender, RoutedEventArgs e)
