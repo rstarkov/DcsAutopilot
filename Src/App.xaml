@@ -1,4 +1,4 @@
-﻿<Application x:Class="DcsAutopilot.App"
+<Application x:Class="DcsAutopilot.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:DcsAutopilot"
@@ -15,6 +15,9 @@
                 <Setter Property="BorderBrush" Value="Gray"/>
             </Style>
 
+            <SolidColorBrush x:Key="FocusVisual.Border" Color="#000000"/>
+            <SolidColorBrush x:Key="Control.Static.Foreground" Color="#000000"/>
+            <SolidColorBrush x:Key="Control.Disabled.Foreground" Color="#808080"/>
             <SolidColorBrush x:Key="Button.Static.Background" Color="#FFDDDDDD"/>
             <SolidColorBrush x:Key="Button.Static.Border" Color="#FF707070"/>
             <SolidColorBrush x:Key="Button.MouseOver.Background" Color="#FFBEE6FD"/>
@@ -24,6 +27,7 @@
             <SolidColorBrush x:Key="Button.Disabled.Background" Color="#FFF4F4F4"/>
             <SolidColorBrush x:Key="Button.Disabled.Border" Color="#FFADB2B5"/>
             <SolidColorBrush x:Key="Button.Disabled.Foreground" Color="#FF838383"/>
+            <SolidColorBrush x:Key="Button.Defaulted.Border" Color="#0a246a"/>
             <LinearGradientBrush x:Key="TabItem.Static.Background" EndPoint="0,1" StartPoint="0,0">
                 <GradientStop Color="#F0F0F0" Offset="0.0"/>
                 <GradientStop Color="#E5E5E5" Offset="1.0"/>
@@ -65,7 +69,7 @@
                 <Setter Property="Control.Template">
                     <Setter.Value>
                         <ControlTemplate>
-                            <Rectangle Margin="2" StrokeDashArray="1 2" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" SnapsToDevicePixels="true" StrokeThickness="1"/>
+                            <Rectangle Margin="2" StrokeDashArray="1 2" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="1"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -74,7 +78,7 @@
                 <Setter Property="Control.Template">
                     <Setter.Value>
                         <ControlTemplate>
-                            <Rectangle Margin="14,0,0,0" StrokeDashArray="1 2" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" SnapsToDevicePixels="true" StrokeThickness="1"/>
+                            <Rectangle Margin="14,0,0,0" StrokeDashArray="1 2" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="1"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -84,7 +88,7 @@
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
                 <Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource Button.Static.Border}"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -97,7 +101,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsDefaulted" Value="true">
-                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Defaulted.Border}"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="true">
                                     <Setter Property="Background" TargetName="border" Value="{StaticResource Button.MouseOver.Background}"/>
@@ -118,7 +122,7 @@
                 </Setter>
             </Style>
             <Style TargetType="{x:Type Label}">
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Padding" Value="5"/>
                 <Setter Property="HorizontalContentAlignment" Value="Left"/>
@@ -131,7 +135,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="false">
-                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource Control.Disabled.Foreground}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -141,7 +145,7 @@
 
             <Style TargetType="{x:Type TabItem}">
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
-                <Setter Property="Foreground" Value="Black"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="Background" Value="{StaticResource TabItem.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource TabItem.Static.Border}"/>
                 <Setter Property="Margin" Value="0"/>
@@ -330,7 +334,7 @@
                 <Setter Property="Background" Value="{StaticResource TabItem.Selected.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource TabItem.Selected.Border}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type TabControl}">
@@ -379,7 +383,7 @@
                                     <Setter Property="Margin" TargetName="headerPanel" Value="0,2,2,2"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="false">
-                                    <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{StaticResource Control.Disabled.Foreground}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -391,7 +395,7 @@
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
                 <Setter Property="Background" Value="{StaticResource OptionMark.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource OptionMark.Static.Border}"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -450,7 +454,7 @@
                 <Setter Property="Background" Value="{StaticResource ListBox.Static.Background}"/>
                 <Setter Property="BorderBrush" Value="{StaticResource ListBox.Static.Border}"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Foreground" Value="{StaticResource Control.Static.Foreground}"/>
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
                 <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
@@ -523,7 +527,7 @@
                                     <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
                                 </MultiTrigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{StaticResource Control.Disabled.Foreground}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
