@@ -13,9 +13,9 @@
             <Color x:Key="Color.Control.Static.Foreground">#DDDDDD</Color>
             <Color x:Key="Color.Control.Static.Background">#303030</Color>
             <Color x:Key="Color.Control.Static.Border">#707070</Color>
-            <Color x:Key="Color.Control.MouseOver.Background">#000213</Color>
+            <Color x:Key="Color.Control.MouseOver.Background">#444444</Color>
             <Color x:Key="Color.Control.MouseOver.Border">#3e6d9a</Color>
-            <Color x:Key="Color.Control.Pressed.Background">#00030f</Color>
+            <Color x:Key="Color.Control.Pressed.Background">#222222</Color>
             <Color x:Key="Color.Control.Pressed.Border">#004c99</Color>
             <Color x:Key="Color.Control.Disabled.Foreground">#555555</Color>
             <Color x:Key="Color.Control.Disabled.Background">#222222</Color>
@@ -25,7 +25,7 @@
             <Color x:Key="Color.Container.Disabled.Background">#191919</Color>
             <Color x:Key="Color.OptionMark.Glyph">#DDDDDD</Color>
 
-            <SolidColorBrush x:Key="FocusVisual.Border" Color="{StaticResource Color.Control.Static.Foreground}"/>
+            <SolidColorBrush x:Key="FocusVisual.Border" Color="#1568c5"/>
             <SolidColorBrush x:Key="Control.Static.Foreground" Color="{StaticResource Color.Control.Static.Foreground}"/>
             <SolidColorBrush x:Key="Control.Disabled.Foreground" Color="{StaticResource Color.Control.Disabled.Foreground}"/>
             <SolidColorBrush x:Key="Button.Static.Background" Color="{StaticResource Color.Control.Static.Background}"/>
@@ -73,7 +73,7 @@
                 <Setter Property="Control.Template">
                     <Setter.Value>
                         <ControlTemplate>
-                            <Rectangle Margin="2" StrokeDashArray="1 2" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="1"/>
+                            <Rectangle Margin="2" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="0.5"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -82,7 +82,7 @@
                 <Setter Property="Control.Template">
                     <Setter.Value>
                         <ControlTemplate>
-                            <Rectangle Margin="14,0,0,0" StrokeDashArray="1 2" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="1"/>
+                            <Rectangle Margin="18,0,0,0" Stroke="{StaticResource FocusVisual.Border}" SnapsToDevicePixels="true" StrokeThickness="0.5"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
