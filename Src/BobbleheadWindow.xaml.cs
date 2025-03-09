@@ -19,7 +19,6 @@ public partial class BobbleheadWindow : ManagedWindow
     public BobbleheadWindow() : base(App.Settings.BobbleheadWindow)
     {
         InitializeComponent();
-        canvas.RegisterToEventsDirectly = false; // workaround for StackOverflow in https://github.com/opentk/GLWpfControl/issues/82
         canvas.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 1 });
         _sim1 = new BobbleheadForwardSim();
         _sim2 = new BobbleheadSideSim();
