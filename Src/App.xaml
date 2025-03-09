@@ -1,4 +1,4 @@
-﻿<Application x:Class="DcsAutopilot.App"
+<Application x:Class="DcsAutopilot.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:DcsAutopilot"
@@ -6,6 +6,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <local:OnOffConverter x:Key="OnOffConverter"/>
+
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="#101010"/>
+            </Style>
             <Style TargetType="Border">
                 <Setter Property="BorderThickness" Value="0.5"/>
                 <Setter Property="BorderBrush" Value="Gray"/>

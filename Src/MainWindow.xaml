@@ -9,20 +9,14 @@
         TextOptions.TextFormattingMode="Display"
         UseLayoutRounding="True"
         SizeChanged="ManagedWindow_SizeLocationChanged" LocationChanged="ManagedWindow_SizeLocationChanged"
-        Style="{DynamicResource CustomWindowStyle}"
+        Style="{StaticResource {x:Type Window}}"
         Title="DCS Autopilot" Height="471" Width="800">
-    <Window.Resources>
-        <Style TargetType="{x:Type TabControl}">
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="0,5,0,0" />
-        </Style>
-    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0" Margin="10,5,10,0" >
+        <TabControl Grid.Row="0" Margin="10,5,10,0">
             <TabItem Header="Flight">
                 <Canvas>
                     <local:UiSmartThrottle x:Name="uiSmartThrottle" Canvas.Left="10" Canvas.Top="15" />
