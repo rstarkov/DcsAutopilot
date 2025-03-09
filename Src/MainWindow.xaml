@@ -18,18 +18,30 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0" Margin="10,5,10,0">
             <TabItem Header="Flight">
-                <Canvas>
-                    <local:UiSmartThrottle x:Name="uiSmartThrottle" Canvas.Left="10" Canvas.Top="15" />
-                    <local:UiRollAutoTrim x:Name="uiRollAutoTrim" Canvas.Left="165" Canvas.Top="15" />
-                    <local:WindComp x:Name="ctWindComp" Width="100" Height="100" Canvas.Left="10" Canvas.Top="170" />
-                    <local:WindDir x:Name="ctWindDir" Width="100" Height="100" Canvas.Left="140" Canvas.Top="170"/>
-                </Canvas>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Canvas Grid.Column="1" Grid.Row="1" Width="270" Height="270">
+                        <local:UiSmartThrottle x:Name="uiSmartThrottle" Canvas.Left="0" Canvas.Top="0" />
+                        <local:UiRollAutoTrim x:Name="uiRollAutoTrim" Canvas.Left="155" Canvas.Top="0" />
+                        <local:WindComp x:Name="ctWindComp" Width="100" Height="100" Canvas.Left="30" Canvas.Top="160" />
+                        <local:WindDir x:Name="ctWindDir" Width="100" Height="100" Canvas.Left="160" Canvas.Top="160"/>
+                    </Canvas>
+                </Grid>
             </TabItem>
             <TabItem Header="Experiments">
                 <local:Experiments />
             </TabItem>
             <TabItem Header="Dev">
-                <Grid>
+                <Grid Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="6*" />
                         <ColumnDefinition Width="4*"/>
