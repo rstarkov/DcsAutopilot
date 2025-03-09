@@ -28,15 +28,9 @@
             <SolidColorBrush x:Key="Button.Disabled.Border" Color="#FFADB2B5"/>
             <SolidColorBrush x:Key="Button.Disabled.Foreground" Color="#FF838383"/>
             <SolidColorBrush x:Key="Button.Defaulted.Border" Color="#0a246a"/>
-            <LinearGradientBrush x:Key="TabItem.Static.Background" EndPoint="0,1" StartPoint="0,0">
-                <GradientStop Color="#F0F0F0" Offset="0.0"/>
-                <GradientStop Color="#E5E5E5" Offset="1.0"/>
-            </LinearGradientBrush>
+            <SolidColorBrush x:Key="TabItem.Static.Background" Color="#F0F0F0" />
             <SolidColorBrush x:Key="TabItem.Static.Border" Color="#ACACAC"/>
-            <LinearGradientBrush x:Key="TabItem.MouseOver.Background" EndPoint="0,1" StartPoint="0,0">
-                <GradientStop Color="#ECF4FC" Offset="0.0"/>
-                <GradientStop Color="#DCECFC" Offset="1.0"/>
-            </LinearGradientBrush>
+            <SolidColorBrush x:Key="TabItem.MouseOver.Background" Color="#ECF4FC"/>
             <SolidColorBrush x:Key="TabItem.MouseOver.Border" Color="#7EB4EA"/>
             <SolidColorBrush x:Key="TabItem.Selected.Background" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="TabItem.Selected.Border" Color="#ACACAC"/>
@@ -83,7 +77,7 @@
                     </Setter.Value>
                 </Setter>
             </Style>
-            
+
             <Style TargetType="{x:Type Button}">
                 <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
                 <Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
@@ -429,6 +423,7 @@
                                     <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{StaticResource OptionMark.Disabled.Border}"/>
                                     <Setter Property="Fill" TargetName="optionMark" Value="{StaticResource OptionMark.Disabled.Glyph}"/>
                                     <Setter Property="Fill" TargetName="indeterminateMark" Value="{StaticResource OptionMark.Disabled.Glyph}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Control.Disabled.Foreground}"/>
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="true">
                                     <Setter Property="Background" TargetName="checkBoxBorder" Value="{StaticResource OptionMark.Pressed.Background}"/>
