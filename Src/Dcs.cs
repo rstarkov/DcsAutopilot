@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -66,7 +66,7 @@ public class DcsController
     private JoystickState _joystick;
     private JoystickConfig _joystickConfig = new();
     private double _session;
-    private ConcurrentQueue<double> _latencies = new();
+    private ConcurrentQueue<(double data, double ctrl)> _latencies = new();
 
     public ObservableCollection<FlightControllerBase> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
@@ -75,11 +75,9 @@ public class DcsController
 
     public bool IsRunning { get; private set; } = false;
     public string Status { get; private set; } = "Stopped";
-    public int Frames { get; private set; } = 0;
-    public int Skips { get; private set; } = 0;
     public int LastFrameBytes { get; private set; }
     public DateTime LastFrameUtc { get; private set; }
-    public IEnumerable<double> Latencies => _latencies;
+    public IEnumerable<(double data, double ctrl)> Latencies => _latencies;
     /// <summary>
     ///     The frame that preceded <see cref="LastFrame"/>. Not null during all <see cref="FlightControllerBase"/> callbacks.</summary>
     public FrameData PrevFrame { get; private set; }
@@ -142,8 +140,6 @@ public class DcsController
 
         IsRunning = false;
         Status = "Stopped";
-        Frames = 0;
-        Skips = 0;
         PrevFrame = null;
         LastFrameUtc = DateTime.MinValue;
         LastFrame = null;
@@ -177,11 +173,11 @@ public class DcsController
                         switch (data[i++])
                         {
                             case "sess": fd.Session = double.Parse(data[i++]); break;
-                            case "fr": fd.Frame = int.Parse(data[i++]); break;
-                            case "skips": fd.Skips = int.Parse(data[i++]); break;
+                            case "fr": fd.FrameNum = int.Parse(data[i++]); break;
+                            case "ufof": fd.Underflows = int.Parse(data[i++]); fd.Overflows = int.Parse(data[i++]); break;
                             case "time": fd.SimTime = double.Parse(data[i++]); break;
-                            case "sent": fd.FrameTimestamp = double.Parse(data[i++]); break;
-                            case "ltcy": fd.Latency = double.Parse(data[i++]); break;
+                            case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(data[i++]); break;
+                            case "ltcy": fd.LatencyControl = double.Parse(data[i++]); break;
                             case "exp": fd.ExportAllowed = data[i++] == "true"; break;
                             case "pitch": fd.Pitch = double.Parse(data[i++]).ToDeg(); break;
                             case "bank": fd.Bank = double.Parse(data[i++]).ToDeg(); break;
@@ -268,15 +264,13 @@ public class DcsController
                 else
                 {
                     Status = "Active control";
-                    Frames = parsedFrame.Frame;
-                    Skips = parsedFrame.Skips;
                     if (LastFrame?.SimTime != parsedFrame.SimTime) // the frame we've just received may be a duplicate, which happens on pause / resume
                     {
                         PrevFrame = LastFrame;
                         LastFrame = parsedFrame;
                         LastFrameBytes = bytes.Length;
                         LastFrameUtc = DateTime.UtcNow;
-                        _latencies.Enqueue(LastFrame.Latency);
+                        _latencies.Enqueue((LastFrame.LatencyData, LastFrame.LatencyControl));
                         while (_latencies.Count > 200)
                             _latencies.TryDequeue(out _);
                         if (PrevFrame != null) // don't do control on the very first frame
@@ -337,8 +331,7 @@ public class DcsController
     {
         var cmd = new StringBuilder();
 
-        if (data.FrameTimestamp != null)
-            cmd.Append($"1;ts;{data.FrameTimestamp.Value};");
+        cmd.Append($"1;ts;{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:0.000};");
         if (data.PitchAxis != null)
             cmd.Append($"2;sc;2001;{data.PitchAxis.Value};");
         if (data.RollAxis != null)
@@ -462,9 +455,15 @@ public class BulkData
 public class FrameData
 {
     public double Session;
-    public int Frame, Skips;
+    public int FrameNum;
     public bool ExportAllowed;
-    public double FrameTimestamp, Latency;
+    /// <summary>
+    ///     Number of times DCS Lua tried to receive a UDP control frame before a tick and either got none, or more than one.</summary>
+    public int Underflows, Overflows;
+    /// <summary>Seconds between DCS Lua populating the data and DcsAutopilot receiving and parsing it (for this data frame).</summary>
+    public double LatencyData;
+    /// <summary>Seconds between DcsAutopilot sending Control and DCS Lua receiving and parsing it (for prev control frame).</summary>
+    public double LatencyControl;
 
     public double SimTime, dT;
     /// <summary>
@@ -539,7 +538,6 @@ public class FrameData
 
 public class ControlData
 {
-    public double? FrameTimestamp; // for latency reports
     /// <summary>
     ///     Pitch input: -1.0 (max pitch down), 0 (neutral), 1.0 (max pitch up). Controls the stick position. The motion range
     ///     varies by plane. F-18: -0.5 to 1.0.</summary>

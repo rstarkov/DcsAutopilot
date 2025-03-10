@@ -46,8 +46,9 @@ class ClimbPerfStraightController : FlightControllerBase
             Test.Result.RawFuelAtEndExt = frame.FuelExternal;
             Test.Result.ClimbDuration = frame.SimTime - 20;
             Test.Result.ClimbDistance = Math.Sqrt(Math.Pow(frame.PosX - _startX, 2) + Math.Pow(frame.PosZ - _startZ, 2));
-            Test.Skips = frame.Skips;
-            Test.EffectiveFps = frame.Frame / frame.SimTime;
+            Test.Underflows = frame.Underflows;
+            Test.Overflows = frame.Overflows;
+            Test.EffectiveFps = frame.FrameNum / frame.SimTime;
         }
 
         _speed2axisPID.MaxControl = Test.Config.Throttle;

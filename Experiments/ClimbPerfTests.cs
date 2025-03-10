@@ -220,7 +220,7 @@ static class ClimbPerfTests
             var prevFrames = 0;
             while (true)
             {
-                if (dcs.Frames > 0 && !seenFirstFrame)
+                if (dcs.LastFrame?.FrameNum > 0 && !seenFirstFrame)
                 {
                     seenFirstFrame = true;
                     DcsWindow.SpeedUp(); // this can Thread.Sleep but it's okay; nothing time-sensitive happens in this loop anyway
@@ -230,16 +230,16 @@ static class ClimbPerfTests
                 Thread.Sleep(100);
                 var lf = dcs.LastFrame;
                 var lc = dcs.LastControl;
-                var fps = ((lf?.Frame ?? 0) - prevFrames) / (DateTime.UtcNow - prevTime).TotalSeconds;
+                var fps = ((lf?.FrameNum ?? 0) - prevFrames) / (DateTime.UtcNow - prevTime).TotalSeconds;
                 prevTime = DateTime.UtcNow;
-                prevFrames = lf?.Frame ?? 0;
+                prevFrames = lf?.FrameNum ?? 0;
 
                 var fuelSoFar = ctrl.Test.Result.RawFuelAtStartInt == 0 ? 0 : (ctrl.Test.Result.RawFuelAtStartInt - lf?.FuelInternal) * ctrl.Test.Config.MEFuelMassIntLb + (ctrl.Test.Result.RawFuelAtStartExt - lf?.FuelExternal) * ctrl.Test.Config.MEFuelMassExtLb;
                 ConsoleColoredString cyan(string v) => v.Color(ConsoleColor.Cyan);
                 PrintLine(11, $"#{TestLogs.Count + 1}: throttle={cfg.Throttle:0.0} speed={cfg.PreClimbSpeedKts:0} angle={cfg.ClimbAngle,2:0} lvloff={levelOffAltFt:0} --- alt=" + cyan($"{ctrl.Test.Result.MaxAltitudeFt:0}") + " fuel=" + cyan($"{fuelSoFar:0}") + " dur=" + cyan($"{ctrl.Test.Result.ClimbDuration:0}") + " dist=" + cyan($"{ctrl.Test.Result.ClimbDistance:#,0}"));
 
                 var sep = " --- ".Color(ConsoleColor.DarkGray);
-                PrintLine(14, $"    {lf?.SimTime ?? 0:0.0}s" + sep + $"{overhead.TotalMilliseconds:00}ms overhead" + sep + $"{fps:0} ({ctrl.Test.EffectiveFps:0}) FPS" + sep + $"{lf?.Skips ?? 0} skips" + sep + $"{dcs.Status}");
+                PrintLine(14, $"    {lf?.SimTime ?? 0:0.0}s" + sep + $"{overhead.TotalMilliseconds:00}ms overhead" + sep + $"{fps:0} ({ctrl.Test.EffectiveFps:0}) FPS" + sep + $"{lf?.Underflows ?? 0} u/f {lf?.Overflows ?? 0} o/f" + sep + $"{dcs.Status}");
                 PrintLine(15, $"    Stage: {ctrl.Stage}   tgtpitch: {ctrl.TgtPitch:0.0}");
 
                 ConsoleColoredString fmt(string num, string suff, int len, ConsoleColor numClr = ConsoleColor.White) => (num.Color(numClr) + suff.Color(ConsoleColor.DarkGray)).PadRight(len + suff.Length);
@@ -317,7 +317,7 @@ class StraightClimbTest
     public DateTime StartedUtc;
     public string LogName;
     public string DcsVersion;
-    public int Skips;
+    public int Underflows, Overflows;
     public double EffectiveFps;
 
     public TestConfig Config = new();

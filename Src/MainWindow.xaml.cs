@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
@@ -58,15 +57,23 @@ public partial class MainWindow : ManagedWindow
             status = $"{Dcs.Warnings.Count} warnings: {Dcs.Warnings.First()} ...";
         lblStatus.Content = status;
 
-        var fpsnew = (DateTime.UtcNow, Dcs.Frames);
+        var fpsnew = (DateTime.UtcNow, Dcs.LastFrame?.FrameNum ?? 0);
         _fps.Enqueue(fpsnew);
         while (_fps.Count > 0 && _fps.Peek().ts < DateTime.UtcNow.AddSeconds(-1))
             _fps.Dequeue();
         var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
-        var latency = Dcs.Latencies.Count() > 0 ? Dcs.Latencies.Average() : 0;
-        var statsStr = $"FPS: {fps:0}   Skips: {Dcs.Skips:#,0} of {Dcs.Frames:#,0}   Bytes: {Dcs.LastFrameBytes:#,0}";
-        if (latency > 0)
-            statsStr = $"Latency: {latency * 1000:0.0}ms   " + statsStr;
+        var statsStr = $"FPS: {fps:0}   Frames: {Dcs.LastFrame?.FrameNum ?? 0:#,0} ({Dcs.LastFrame?.Underflows ?? 0}/{Dcs.LastFrame?.Overflows ?? 0})   Bytes: {Dcs.LastFrameBytes:#,0}";
+        if (Dcs.Latencies.Count() > 0)
+        {
+            var avgD = Dcs.Latencies.Average(x => x.data) * 1000;
+            var maxD = Dcs.Latencies.Max(x => x.data) * 1000;
+            var avgC = Dcs.Latencies.Average(x => x.ctrl) * 1000;
+            var maxC = Dcs.Latencies.Max(x => x.ctrl) * 1000;
+            if (avgD < 2.0 && avgC < 2.0 && maxD < 10 && maxC < 10)
+                statsStr = $"Latency: {Math.Max(avgC, avgD):0.0}ms   " + statsStr;
+            else
+                statsStr = $"Latency: D={avgD:0.0}ms ({maxD:0}), C={avgC:0.0}ms ({maxC:0})   " + statsStr;
+        }
         lblStats.Content = statsStr;
     }
 

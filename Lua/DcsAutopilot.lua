@@ -3,7 +3,8 @@ local lfs = require('lfs')
 local UdpSocket = nil
 local LogFile = nil
 local CurFrame = 0
-local Skips = 0
+local Underflows = 0
+local Overflows = 0
 local Session = socket.gettime()
 local Latency = 0
 local LastBulkData = 0
@@ -40,8 +41,9 @@ function LuaExportAfterNextFrame()
     dt[#dt+1] = Session
     dt[#dt+1] = "fr"
     dt[#dt+1] = CurFrame
-    dt[#dt+1] = "skips"
-    dt[#dt+1] = Skips
+    dt[#dt+1] = "ufof"
+    dt[#dt+1] = Underflows
+    dt[#dt+1] = Overflows
     dt[#dt+1] = "time"
     dt[#dt+1] = LoGetModelTime()
     dt[#dt+1] = "sent"
@@ -192,8 +194,18 @@ function LuaExportBeforeNextFrame()
 
     local received = UdpSocket:receive()
     if not received then
-        Skips = Skips + 1
+        Underflows = Underflows + 1
     else
+        while true do -- empty out the receive queue, if any
+            local another = UdpSocket:receive()
+            if another then
+                received = another
+                Overflows = Overflows + 1
+            else
+                break
+            end
+        end
+
         local data = { }
         local dataN = 0 -- Lua can't efficiently track table size by itself. It just can't. Because Lua.
         for val in string.gmatch(received, "([^;]*);") do
