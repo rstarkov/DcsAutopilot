@@ -35,6 +35,7 @@ public partial class MainWindow : ManagedWindow
         btnStop.IsEnabled = Dcs.IsRunning;
         uiSmartThrottle.UpdateGui();
         uiRollAutoTrim.UpdateGui();
+        uiSoundWarnings.UpdateGui();
         uiChart.UpdateGui();
         UpdateGuiTimer(null, null);
     }
@@ -43,6 +44,7 @@ public partial class MainWindow : ManagedWindow
     {
         uiSmartThrottle.UpdateGuiTimer();
         uiRollAutoTrim.UpdateGuiTimer();
+        uiSoundWarnings.UpdateGuiTimer();
         uiChart.UpdateGuiTimer();
         ctWindComp.UpdateGuiTimer();
         ctWindDir.UpdateGuiTimer();

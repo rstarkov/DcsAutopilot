@@ -182,10 +182,15 @@ class SoundWarnings : FlightControllerBase
     private Sound SndGearNotDown = new("SarahGearDown.mp3");
     private double _lastGearNotDownT;
 
+    public bool UseAfterburner { get; set; }
+    public bool? IsAfterburner { get; set; }
+    private double _lastAfterburnerT;
+
     public override void Reset()
     {
         _lastGearNotUpT = double.MinValue;
         _lastGearNotDownT = double.MinValue;
+        _lastAfterburnerT = double.MinValue;
     }
 
     public override ControlData ProcessFrame(FrameData frame)

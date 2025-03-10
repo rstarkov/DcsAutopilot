@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="DcsAutopilot.UiSoundWarnings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DcsAutopilot"
+             mc:Ignorable="d" 
+             d:DesignWidth="220" d:DesignHeight="130">
+    <Border Name="pnlMain" Padding="5,5">
+        <StackPanel>
+            <DockPanel MinWidth="120" Margin="0,0,0,5">
+                <Button Name="btnOnOff" Padding="4,0" Click="btnOnOff_Click"  Width="30" Content="{Binding Enabled, FallbackValue='off', Converter={StaticResource OnOffConverter}}"/>
+                <Label HorizontalContentAlignment="Center" Padding="5,0,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}">Sound warnings</Label>
+            </DockPanel>
+            <Grid IsEnabled="{Binding Enabled, FallbackValue=False}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <CheckBox Grid.Column="0" Grid.Row="0" Name="chkUseAfterburnerActive" Margin="0,5,0,0" Checked="chkUseAfterburnerActive_Checked"  Unchecked="chkUseAfterburnerActive_Checked">Afterburner active</CheckBox>
+                <CheckBox Grid.Column="0" Grid.Row="1" Name="chkUseGearNotUp" Margin="0,5,0,0" Checked="chkUseGearNotUp_Checked"  Unchecked="chkUseGearNotUp_Checked">Landing gear not up</CheckBox>
+                <CheckBox Grid.Column="0" Grid.Row="2" Name="chkUseGearNotDown" Margin="0,5,0,0" Checked="chkUseGearNotDown_Checked"  Unchecked="chkUseGearNotDown_Checked">Landing gear not down</CheckBox>
+
+                <Label Grid.Column="1" Grid.Row="0" Name="lblAfterburner" Style="{StaticResource Indicator}" Margin="8,5,0,0" Padding="4,0">AftB</Label>
+                <Label Grid.Column="1" Grid.Row="1" Name="lblGearNotUp" Style="{StaticResource Indicator}" Margin="8,5,0,0" Padding="4,0">LG ⮝</Label>
+                <Label Grid.Column="1" Grid.Row="2" Name="lblGearNotDown" Style="{StaticResource Indicator}" Margin="8,5,0,0" Padding="4,0">LG ⮟</Label>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>
