@@ -63,7 +63,7 @@ public class SmartThrottle : FlightControllerBase
     public bool AfterburnerActive { get; private set; }
     public bool SpeedbrakeActive { get; private set; }
 
-    private BasicPid _pid = new() { P = 0.5, I = 0.7, D = 0.05, MinControl = 0, MaxControl = 2.0, IntegrationLimit = 1 /*m/s / sec*/ };
+    private BasicPid _pid = new BasicPid { IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(1.3, 4.33); // F-16 at 20,000, 300kts, min weight
     private double _autothrottleInitialPos; // to detect throttle movement and disengage
     private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
     private bool _pastAfterburnerDetent;
