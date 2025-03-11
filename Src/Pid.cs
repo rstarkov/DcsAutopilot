@@ -1,4 +1,4 @@
-using RT.Util.ExtensionMethods;
+﻿using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
 
@@ -19,6 +19,7 @@ public class BasicPid
     private double _prevError = double.NaN;
     public bool Integrating { get; private set; }
     public double Bias { get; set; }
+    public double OutputRaw{ get; private set; } // same as what Update returns, but without clipping to control limits
 
     public double Update(double error, double dt)
     {
@@ -31,6 +32,7 @@ public class BasicPid
         double p = (P * error).Clip(MinTermP, MaxTermP);
         double output = p + I * ErrorIntegral + D * Derivative + Bias;
 
+        OutputRaw = output;
         output = output.Clip(MinControl, MaxControl);
         Integrating = Math.Abs(Derivative) < IntegrationLimit && output > MinControl && output < MaxControl && p > MinTermP && p < MaxTermP;
         if (Integrating)

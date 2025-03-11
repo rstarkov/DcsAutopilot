@@ -1,7 +1,30 @@
-﻿using System.Windows.Input;
-using RT.Util.ExtensionMethods;
+﻿namespace DcsAutopilot;
 
-namespace DcsAutopilot;
+public class ViperClimber : FlightControllerBase
+{
+    public override string Name { get; set; } = "Viper Climber";
+
+    private BasicPid _pidThrottle = new BasicPid { MaxControl = 1.5, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(1.3, 4.33); // F-16 at 20,000, 300kts, min weight
+    private BasicPid _pidPitch = new BasicPid { MinControl = -0.1, MaxControl = 0.1 }.SetZiNiClassic(2.0, 2.1);
+    private double _tgtSpeedKts = 300;
+
+    public override ControlData ProcessFrame(FrameData frame)
+    {
+        var ctrl = new ControlData();
+        var tgtThrottle = 1.45;
+
+        var speedError = _tgtSpeedKts - frame.SpeedIndicated.MsToKts();
+        ctrl.ThrottleAxis = _pidThrottle.Update(speedError.KtsToMs(), frame.dT);
+        var throttleError = tgtThrottle - _pidThrottle.OutputRaw;
+        var pitchAxis = _pidPitch.Update(throttleError, frame.dT);
+        pitchAxis += 0.044 * Math.Sign(pitchAxis); // dead zone
+        ctrl.PitchAxis = pitchAxis;
+
+        Status = $"thr={ctrl.ThrottleAxis:0.000} pitch={ctrl.PitchAxis:0.000}";
+
+        return ctrl;
+    }
+}
 
 // Viper throttle: smooth control in 0.0..1.0 range. 1.5 is 0% afterburner which is marginally stronger than 1.0. There are 6 distinct afterburner settings, from 1.5 to 2.0 in 0.1 increments.
 // Viper pitch: deadzone from -0.04375 to 0.04375; pitch rate commanded is linear in the low region and intersects zero at +/-0.04375.
