@@ -107,7 +107,7 @@ class ViperTestPitch : FlightControllerBase
         _frames.Enqueue(frame);
         while (_frames.Peek().SimTime < frame.SimTime - 5.0)
             _frames.Dequeue();
-        _status = $"{_frames.Average(f => f.GyroPitch):0.000000}";
+        Status = $"{_frames.Average(f => f.GyroPitch):0.000000}";
 
         //if (!Enabled) return null;
         //var ctrl = new ControlData();

@@ -12,7 +12,7 @@ public class RollAutoTrim : FlightControllerBase
     public override void Reset()
     {
         _active = false;
-        _status = "(no data)";
+        Status = "(no data)";
         UsingBankRate = false;
     }
 
@@ -21,7 +21,7 @@ public class RollAutoTrim : FlightControllerBase
         UsingBankRate = Math.Abs(frame.Bank) > 30;
         if (!_active)
         {
-            _status = "(press T)";
+            Status = "(press T)";
             return null;
         }
         var ctrl = new ControlData();
@@ -32,7 +32,7 @@ public class RollAutoTrim : FlightControllerBase
         var trimRate = -(P * rollRate).Clip(-trimRateLimit, trimRateLimit);
         if (!supportsAbsoluteTrim && Math.Abs(rollRate) < 0.10) // one tick of relative roll trim changes roll rate by about 0.1 deg/sec so don't try to make this trim any better
             trimRate = 0;
-        _status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + (supportsAbsoluteTrim ? "%/s" : "%");
+        Status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + (supportsAbsoluteTrim ? "%/s" : "%");
         if (supportsAbsoluteTrim)
             ctrl.RollTrim = (frame.TrimRoll.Value + trimRate * frame.dT).Clip(-1, 1);
         else

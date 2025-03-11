@@ -23,8 +23,6 @@ class HornetSlowFlightController : FlightControllerBase
 
     public double TargetAltitudeFt { get; set; } = 2000;
 
-    public override string Status => $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
-
     public override void Reset()
     {
         _pitch.Reset(0);
@@ -66,6 +64,7 @@ class HornetSlowFlightController : FlightControllerBase
             ctl.RollAxis = _bank2axisSlowPID.Update(wantedBank - frame.Bank, frame.dT);
         }
 
+        Status = $"vspd={_vspeed2pitchPID.Integrating}; speed={_speed2axisPID.Integrating};\npitch={_pitch2axisPID.Integrating}; bank={_bank2axisPID.Integrating}; wanted={wantedSpeed:0.0}";
         return ctl;
     }
 }

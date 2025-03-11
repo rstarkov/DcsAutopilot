@@ -16,8 +16,6 @@ namespace DcsAutopilot;
 public abstract class FlightControllerBase : INotifyPropertyChanged
 {
     public abstract string Name { get; set; }
-    public virtual string Status => _status;
-    protected string _status = "";
     /// <summary>
     ///     Disabled controllers receive no callbacks, and are as good as completely removed from the list of controllers.</summary>
     public bool Enabled
@@ -31,6 +29,8 @@ public abstract class FlightControllerBase : INotifyPropertyChanged
         }
     }
     private bool _enabled = false;
+    public string Status { get { return _status; } protected set { _status = value; PropertyChanged?.Invoke(this, new(nameof(Status))); } }
+    private string _status = "";
     public DcsController Dcs { get; set; }
     /// <summary>Called on Dcs.Start, on setting <see cref="Enabled"/>=true, and also before every <see cref="NewSession"/>.</summary>
     public virtual void Reset() { }

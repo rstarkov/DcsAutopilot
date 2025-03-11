@@ -279,7 +279,7 @@ class ClimbPerfTuneController : FlightControllerBase
         }
 
         ctl.RollAxis = _roll.MoveTo(_bank2axisSmoothPID.Update(wantedBank - frame.Bank, frame.dT), frame.SimTime);
-        _status = $"{_stage}; testangle={_curTestAngle}";
+        Status = $"{_stage}; testangle={_curTestAngle}";
 
         return ctl;
     }
