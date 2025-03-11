@@ -18,6 +18,9 @@ public static class Util
     public static double KtsToMs(this double kts) => kts * 0.51444444;
     public static double KtsToMs(this int kts) => kts * 0.51444444;
 
+    public static string ToStringNullTerm(this Span<char> span) => span[..span.IndexOf('\0')].ToString(); // throws if no null terminator
+    public static string ToStringNullTerm(this char[] chars) => chars.AsSpan().ToStringNullTerm();
+
     public static string Rounded(this double n, int sf = 5)
     {
         var a = Math.Abs(n);

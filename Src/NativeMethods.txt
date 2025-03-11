@@ -3,3 +3,5 @@ SendInput
 GetForegroundWindow
 SetForegroundWindow
 EnumWindows
+GetClassName
+GetWindowText

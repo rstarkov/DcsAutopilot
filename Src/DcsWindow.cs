@@ -23,19 +23,19 @@ public static class DcsWindow
         PInvoke.SendInput(inputs, Marshal.SizeOf<INPUT>());
     }
 
-    // this is easier with a direct import because of https://github.com/microsoft/CsWin32/issues/614
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
     private static HWND findDcsWindow()
     {
         var candidates = new List<HWND>();
+        var name = new char[256];
         PInvoke.EnumWindows((HWND param0, LPARAM param1) =>
         {
-            var name = new StringBuilder(256);
-            GetClassName(param0, name, name.Capacity);
-            if (name.ToString() == "DCS")
-                candidates.Add(param0);
+            PInvoke.GetClassName(param0, name);
+            if (name.ToStringNullTerm() == "DCS")
+            {
+                PInvoke.GetWindowText(param0, name);
+                if (name.ToStringNullTerm().Contains("Digital Combat Simulator"))
+                    candidates.Add(param0);
+            }
             return true;
         }, default);
         if (candidates.Count == 0)
