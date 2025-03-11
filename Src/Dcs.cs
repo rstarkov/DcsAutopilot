@@ -70,7 +70,7 @@ public class DcsController
 
     public ObservableCollection<FlightControllerBase> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
-    public ConcurrentBag<string> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
+    public ConcurrentDictionary<string, bool> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
     public byte[] LastReceiveWithWarnings { get; private set; }
 
     public bool IsRunning { get; private set; } = false;
@@ -222,7 +222,7 @@ public class DcsController
                             case "test4": fd.Test4 = double.Parse(data[i++]); break;
                             default:
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
-                                Warnings.Add($"Unrecognized frame data entry: \"{data[i - 1]}\"");
+                                Warnings[$"Unrecognized frame data entry: \"{data[i - 1]}\""] = true;
                                 LastReceiveWithWarnings = bytes;
                                 goto exitloop; // can't continue parsing because we don't know how long this entry is
                         }
@@ -240,7 +240,7 @@ public class DcsController
                             case "aircraft": bd.Aircraft = data[i++]; break;
                             case "ver": bd.DcsVersion = data[i++]; break;
                             default:
-                                Warnings.Add($"Unrecognized bulk data entry: \"{data[i - 1]}\"");
+                                Warnings[$"Unrecognized bulk data entry: \"{data[i - 1]}\""] = true;
                                 LastReceiveWithWarnings = bytes;
                                 goto exitloop; // can't continue parsing because we don't know how long this entry is
                         }
@@ -250,7 +250,7 @@ public class DcsController
             }
             catch (Exception e)
             {
-                Warnings.Add($"Exception while parsing UDP message: \"{e.Message}\"");
+                Warnings[$"Exception while parsing UDP message: \"{e.Message}\""] = true;
                 LastReceiveWithWarnings = bytes;
             }
 
@@ -288,7 +288,7 @@ public class DcsController
                                         if (control == null)
                                             control = cd;
                                         else if (!control.Merge(cd))
-                                            Warnings.Add($"Controller \"{ctl.Name}\" is setting the same controls as an earlier controller; partially ignored.");
+                                            Warnings[$"Controller \"{ctl.Name}\" is setting the same controls as an earlier controller; partially ignored."] = true;
                                     }
                                 }
                             LastControl = control;

@@ -20,7 +20,7 @@ public partial class ControllerList : UserControl
 
     private void ControllerButton_Click(object sender, RoutedEventArgs e)
     {
-        var ctrl = (FlightControllerBase)(ctControllers.SelectedItem);
+        var ctrl = (FlightControllerBase)ctControllers.SelectedItem;
         var signal = ((Button)sender).Content.ToString();
         if (ctrl.Enabled)
             ctrl.HandleSignal(signal);

@@ -71,7 +71,7 @@ public class SmartThrottle : FlightControllerBase
 
     private Sound SndAfterburnerBump = new("LoudClick.mp3", 50);
     private Sound SndAfterburnerUnbump = new("ReverseLoudClick.mp3", 40);
-    private Sound SndAfterburnerActive = new("SarahAfterburner.mp3");
+    private Sound SndAfterburnerActive = new("SarahAfterburner.mp3", 50);
     private Sound SndAutothrottleEngaged = new("AirbusAutopilotDisengageSingle.mp3");
     private Sound SndAutothrottleDisengaged = new("AirbusAutopilotDisengage.mp3");
 
@@ -170,8 +170,8 @@ class SoundWarnings : FlightControllerBase
 
     public bool UseGearNotUp { get; set; } = true;
     public bool? IsGearNotUp { get; set; }
-    public double GearNotUpMinAltFt { get; set; } = 3000;
-    public double GearNotUpMinSpdKts { get; set; } = 200;
+    public double GearNotUpMinAltFt { get; set; } = 4000;
+    public double GearNotUpMinSpdKts { get; set; } = 300;
     private Sound SndGearNotUp = new("SarahGearUp.mp3");
     private double _lastGearNotUpT;
 

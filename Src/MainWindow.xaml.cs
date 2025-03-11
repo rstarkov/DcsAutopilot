@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Threading;
 using RT.Util.ExtensionMethods;
 using RT.Util.Forms;
@@ -54,7 +54,7 @@ public partial class MainWindow : ManagedWindow
         if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
             status = $"Stalled; waiting for DCS";
         if (Dcs.Warnings.Count > 0)
-            status = $"{Dcs.Warnings.Count} warnings: {Dcs.Warnings.First()} ...";
+            status = $"{Dcs.Warnings.Count} warnings: {Dcs.Warnings.First().Key} ...";
         lblStatus.Content = status;
 
         var fpsnew = (DateTime.UtcNow, Dcs.LastFrame?.FrameNum ?? 0);
@@ -69,7 +69,7 @@ public partial class MainWindow : ManagedWindow
             var maxD = Dcs.Latencies.Max(x => x.data) * 1000;
             var avgC = Dcs.Latencies.Average(x => x.ctrl) * 1000;
             var maxC = Dcs.Latencies.Max(x => x.ctrl) * 1000;
-            if (avgD < 2.0 && avgC < 2.0 && maxD < 10 && maxC < 10)
+            if (avgD < 3.0 && avgC < 3.0 && maxD < 10 && maxC < 10)
                 statsStr = $"Latency: {Math.Max(avgC, avgD):0.0}ms   " + statsStr;
             else
                 statsStr = $"Latency: D={avgD:0.0}ms ({maxD:0}), C={avgC:0.0}ms ({maxC:0})   " + statsStr;
