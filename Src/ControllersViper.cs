@@ -1,26 +1,48 @@
-﻿namespace DcsAutopilot;
+﻿using RT.Util.ExtensionMethods;
+
+namespace DcsAutopilot;
 
 public class ViperClimber : FlightControllerBase
 {
     public override string Name { get; set; } = "Viper Climber";
 
     private BasicPid _pidThrottle = new BasicPid { MaxControl = 1.5, IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(1.3, 4.33); // F-16 at 20,000, 300kts, min weight
-    private BasicPid _pidPitch = new BasicPid { MinControl = -0.1, MaxControl = 0.1 }.SetZiNiClassic(2.0, 2.1);
+    private BasicPid _pidPitch = new BasicPid { MinControl = -0.1, MaxControl = 0.1, IntegrationLimit = 0.01, DerivativeSmoothing = 0.95 }.SetZiNiClassic(1.7, 3.17);
     private double _tgtSpeedKts = 300;
+    private bool _initialPitchUp; // don't throttle down or alter pitch until we're close to target speed
+
+    public override void Reset()
+    {
+        _initialPitchUp = true;
+    }
 
     public override ControlData ProcessFrame(FrameData frame)
     {
         var ctrl = new ControlData();
-        var tgtThrottle = 1.45;
+        var tgtThrottle = 1.50;
+
+        _pidThrottle.MinControl = tgtThrottle - 1.0; // limit error integration beyond these limits
+        _pidThrottle.MaxControl = tgtThrottle + 1.0;
 
         var speedError = _tgtSpeedKts - frame.SpeedIndicated.MsToKts();
-        ctrl.ThrottleAxis = _pidThrottle.Update(speedError.KtsToMs(), frame.dT);
+        ctrl.ThrottleAxis = _pidThrottle.Update(speedError.KtsToMs(), frame.dT).Clip(0, tgtThrottle); // allow it to throttle below target, which makes it much easier for the pitch PID to stay in the stable region
         var throttleError = tgtThrottle - _pidThrottle.OutputRaw;
         var pitchAxis = _pidPitch.Update(throttleError, frame.dT);
+        if (frame.VelPitch > 0 && frame.VelPitch < 1)
+            pitchAxis *= frame.VelPitch;
         pitchAxis += 0.044 * Math.Sign(pitchAxis); // dead zone
         ctrl.PitchAxis = pitchAxis;
+        if (frame.VelPitch <= 0)
+            ctrl.PitchAxis = null;
+        if (_initialPitchUp)
+        {
+            ctrl.ThrottleAxis = tgtThrottle;
+            ctrl.PitchAxis = null;
+            if (speedError > -20)
+                _initialPitchUp = false;
+        }
 
-        Status = $"thr={ctrl.ThrottleAxis:0.000} pitch={ctrl.PitchAxis:0.000}";
+        Status = $"thr={throttleError:0.000} pitch={ctrl.PitchAxis:0.000} erri={_pidPitch.ErrorIntegral:0.000}  derr={_pidPitch.Derivative:0.000}";
 
         return ctrl;
     }
