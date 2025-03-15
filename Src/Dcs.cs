@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -192,8 +192,8 @@ public class DcsController
                             case "ralt": fd.AltitudeRadar = double.Parse(data[i++]); break;
                             case "vspd": fd.SpeedVertical = double.Parse(data[i++]); break;
                             case "tas": fd.SpeedTrue = double.Parse(data[i++]); break;
-                            case "ias": fd.SpeedIndicated = double.Parse(data[i++]); break;
-                            case "mach": fd.SpeedMach = double.Parse(data[i++]); break;
+                            case "ias": fd.SpeedIndicatedBad = double.Parse(data[i++]); break;
+                            case "mach": fd.SpeedMachBad = double.Parse(data[i++]); break;
                             case "aoa": fd.AngleOfAttack = double.Parse(data[i++]); break;
                             case "aoss": fd.AngleOfSideSlip = -double.Parse(data[i++]); break;
                             case "fuint": fd.FuelInternal = double.Parse(data[i++]); break;
@@ -277,7 +277,7 @@ public class DcsController
                         {
                             LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
                             LastFrame.BankRate = bankRateFilter.Step((LastFrame.Bank - PrevFrame.Bank) / LastFrame.dT);
-                            _joystick.Update();
+                            _joystick?.Update();
                             ControlData control = null;
                             foreach (var ctl in FlightControllers)
                                 if (ctl.Enabled)
@@ -486,7 +486,19 @@ public class FrameData
     public double AltitudeBaro;
     /// <summary>Radar altitude in meters. Affected by buildings. Not affected by the radar range limit (eg in Hornet).</summary>
     public double AltitudeRadar;
-    public double SpeedTrue, SpeedIndicated, SpeedMach, SpeedVertical; // meters/second; details untested
+    /// <summary>
+    ///     True airspeed in m/s. Generally accurate and trustworthy but untested whether it actually takes wind into account.</summary>
+    public double SpeedTrue;
+    /// <summary>
+    ///     Indicated airspeed in m/s. Reported directly by DCS but does not take weather into account, so is of little use
+    ///     except in 15degC / 29.92 weather. Use <see cref="SpeedCalibrated"/> instead. This is actually a calibrated
+    ///     airspeed as it equals the expected value and does not appear to have instrument error (not thoroughly verified).</summary>
+    public double SpeedIndicatedBad;
+    /// <summary>
+    ///     Mach number. Reported directly by DCS but does not take sea level temperature into account, so is of little use
+    ///     except in 15degC weather. See <see cref="SpeedMach"/>.</summary>
+    public double SpeedMachBad;
+    public double SpeedVertical; // meters/second; details untested
     public double VelX, VelY, VelZ; // meters/second; details untested
     /// <summary>Pitch angle in degrees relative to the horizon; -90 (down) .. 0 (horizon) .. 90 (up).</summary>
     public double Pitch;
@@ -534,6 +546,30 @@ public class FrameData
     ///     filter. This can be a better metric than gyro roll rate for controllers attempting to control the bank angle,
     ///     especially when trying to keep it steady.</summary>
     public double BankRate;
+
+    // Calculate CAS because the IAS reported by DCS uses the wrong weather (ISA: 29.92 / 15degC)
+    // from https://aerotoolbox.com/airspeed-conversions/
+
+    /// <summary>
+    ///     Sea level pressure, Pascals. Cannot be obtained from DCS API directly. Required to compute the correct <see
+    ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
+    ///     weather isn't 29.92 / 15degC.</summary>
+    public double SeaLevelPress = 29.92 * 3386;
+    /// <summary>
+    ///     Sea level temperature, Celsius. Cannot be obtained from DCS API directly. Required to compute the correct <see
+    ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
+    ///     weather isn't 29.92 / 15degC.</summary>
+    public double SeaLevelTemp = 20;
+    /// <summary>Outside air temperature, Celsius. Requires <see cref="SeaLevelTemp"/>!</summary>
+    public double OutsideAirTemp => SeaLevelTemp - 0.0065 * AltitudeAsl;
+    /// <summary>Outside air pressure, Celsius. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
+    public double OutsideAirPress => SeaLevelPress * Math.Pow((OutsideAirTemp + 273.15) / (SeaLevelTemp + 273.15), 5.25588);
+    /// <summary>Speed of sound at current altitude, in m/s. Requires <see cref="SeaLevelTemp"/>!</summary>
+    public double SpeedOfSound => Math.Sqrt((OutsideAirTemp + 273.15) * 1.4 * 287.053);
+    /// <summary>Mach number. Requires <see cref="SeaLevelTemp"/>!</summary>
+    public double SpeedMach => SpeedTrue / SpeedOfSound;
+    /// <summary>Calibrated airspeed, in m/s. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
+    public double SpeedCalibrated => 340.27 * Math.Sqrt(5 * (Math.Pow(OutsideAirPress * (Math.Pow(1 + 0.2 * SpeedMach * SpeedMach, 3.5) - 1) / 101325 + 1, 2.0 / 7.0) - 1));
 }
 
 public class ControlData

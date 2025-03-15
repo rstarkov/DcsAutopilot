@@ -37,7 +37,7 @@ class TunePidController : FlightControllerBase
         }
 
         if (PidSpeedIndicated != null)
-            ctl.ThrottleAxis = update(PidSpeedIndicated, TgtSpeed - frame.SpeedIndicated, ref ErrSpeed, ref ErrRateSpeed, FilterSpeed);
+            ctl.ThrottleAxis = update(PidSpeedIndicated, TgtSpeed - frame.SpeedCalibrated, ref ErrSpeed, ref ErrRateSpeed, FilterSpeed);
         else if (PidSpeedMach != null)
             ctl.ThrottleAxis = update(PidSpeedMach, TgtSpeed - frame.SpeedMach, ref ErrSpeed, ref ErrRateSpeed, FilterSpeed);
         else

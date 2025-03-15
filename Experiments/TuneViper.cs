@@ -66,15 +66,15 @@ public static class TuneViper
 
                     var stable1 = waitStable(altitude);
                     var result1 = dcs.LastFrame;
-                    Console.WriteLine($"   from {(stable1.upward ? "below" : "above")}: {stable1.asymptote:0.000} @ {stable1.fit:0.00}, speed={result1.SpeedIndicated.MsToKts():0.000}");
+                    Console.WriteLine($"   from {(stable1.upward ? "below" : "above")}: {stable1.asymptote:0.000} @ {stable1.fit:0.00}, speed={result1.SpeedCalibrated.MsToKts():0.000}");
 
                     var stable2 = stable1;
                     var result2 = result1;
-                    var spd = dcs.LastFrame.SpeedIndicated.MsToKts();
+                    var spd = dcs.LastFrame.SpeedCalibrated.MsToKts();
                     if (!stable1.upward)
                     {
                         int waitOnSpeedbrake = 200;
-                        while (dcs.LastFrame.SpeedIndicated.MsToKts() > spd - 5)
+                        while (dcs.LastFrame.SpeedCalibrated.MsToKts() > spd - 5)
                         {
                             wait(2500);
                             ctrl.SpeedBrake = 1;
@@ -90,7 +90,7 @@ public static class TuneViper
                     }
                     else if (stable1.upward && throttle < 2.0)
                     {
-                        while (dcs.LastFrame.SpeedIndicated.MsToKts() < spd + 5)
+                        while (dcs.LastFrame.SpeedCalibrated.MsToKts() < spd + 5)
                         {
                             ctrl.Throttle += 0.02;
                             wait(100);
@@ -101,20 +101,20 @@ public static class TuneViper
                         if (stable2.upward) throw new Exception(); // expect this to be a "from above" fit
                     }
                     if (result1 != result2)
-                        Console.WriteLine($"   from {(stable2.upward ? "below" : "above")}: {stable2.asymptote:0.000} @ {stable2.fit:0.00}, speed={result2.SpeedIndicated.MsToKts():0.000}");
+                        Console.WriteLine($"   from {(stable2.upward ? "below" : "above")}: {stable2.asymptote:0.000} @ {stable2.fit:0.00}, speed={result2.SpeedCalibrated.MsToKts():0.000}");
 
                     double avg(Func<FrameData, double> sel) => (sel(result1) + sel(result2)) / 2;
                     File.AppendAllLines(filename, new[] {
                         Ut.FormatCsvRow(loadout, mass, $"{avg(x => x.AltitudeAsl).MetersToFeet():0}", $"{throttle:0.000}", $"{avg(x => x.Pitch):0.000}", $"{avg(x => x.VelPitch):0.000}",
-                        $"{(stable1.asymptote + stable2.asymptote) / 2:0.000}", $"{(stable1.fit + stable2.fit) / 2:0.00}", $"{avg(x => x.SpeedIndicated).MsToKts():0.0}", $"{avg(x => x.SpeedTrue).MsToKts():0.0}", $"{avg(x => x.SpeedMach):0.00000}", $"{avg(x => x.FuelFlow):0}", $"{avg(x => x.FuelInternal):0.0000}", $"{avg(x => x.FuelExternal):0.0000}", $"{DateTime.Now:HH:mm:ss.fff}", $"{Math.Abs(stable1.asymptote - stable2.asymptote):0.000}")
+                        $"{(stable1.asymptote + stable2.asymptote) / 2:0.000}", $"{(stable1.fit + stable2.fit) / 2:0.00}", $"{avg(x => x.SpeedCalibrated).MsToKts():0.0}", $"{avg(x => x.SpeedTrue).MsToKts():0.0}", $"{avg(x => x.SpeedMach):0.00000}", $"{avg(x => x.FuelFlow):0}", $"{avg(x => x.FuelInternal):0.0000}", $"{avg(x => x.FuelExternal):0.0000}", $"{DateTime.Now:HH:mm:ss.fff}", $"{Math.Abs(stable1.asymptote - stable2.asymptote):0.000}")
                     });
 
                     File.AppendAllLines($"viper-tune-straight-level-x2.csv", new[] {
                         Ut.FormatCsvRow(loadout, mass, $"{result1.AltitudeAsl.MetersToFeet():0}", $"{throttle:0.000}", $"{result1.Pitch:0.000}", $"{result1.VelPitch:0.000}",
-                        $"{stable1.asymptote:0.000}", $"{stable1.fit:0.00}", $"{result1.SpeedIndicated.MsToKts():0.0}", $"{result1.SpeedTrue.MsToKts():0.0}", $"{result1.SpeedMach:0.00000}", $"{result1.FuelFlow:0}", $"{result1.FuelInternal:0.0000}", $"{result1.FuelExternal:0.0000}")
+                        $"{stable1.asymptote:0.000}", $"{stable1.fit:0.00}", $"{result1.SpeedCalibrated.MsToKts():0.0}", $"{result1.SpeedTrue.MsToKts():0.0}", $"{result1.SpeedMach:0.00000}", $"{result1.FuelFlow:0}", $"{result1.FuelInternal:0.0000}", $"{result1.FuelExternal:0.0000}")
                         ,
                         Ut.FormatCsvRow(loadout, mass, $"{result2.AltitudeAsl.MetersToFeet():0}", $"{throttle:0.000}", $"{result2.Pitch:0.000}", $"{result2.VelPitch:0.000}",
-                        $"{stable2.asymptote:0.000}", $"{stable2.fit:0.00}", $"{result2.SpeedIndicated.MsToKts():0.0}", $"{result2.SpeedTrue.MsToKts():0.0}", $"{result2.SpeedMach:0.00000}", $"{result2.FuelFlow:0}", $"{result2.FuelInternal:0.0000}", $"{result2.FuelExternal:0.0000}")
+                        $"{stable2.asymptote:0.000}", $"{stable2.fit:0.00}", $"{result2.SpeedCalibrated.MsToKts():0.0}", $"{result2.SpeedTrue.MsToKts():0.0}", $"{result2.SpeedMach:0.00000}", $"{result2.FuelFlow:0}", $"{result2.FuelInternal:0.0000}", $"{result2.FuelExternal:0.0000}")
                     });
                     if (Math.Abs(stable1.asymptote - stable2.asymptote) > 0.5 /*kts*/)
                         throw new Exception();
@@ -144,7 +144,7 @@ public static class TuneViper
             {
                 Thread.Sleep(5);
                 if (!noconsole)
-                    Console.Title = $"spd = {dcs.LastFrame.SpeedIndicated.MsToKts():0.00}, alt = {dcs.LastFrame.AltitudeAsl.MetersToFeet():#,0.000}";
+                    Console.Title = $"spd = {dcs.LastFrame.SpeedCalibrated.MsToKts():0.00}, alt = {dcs.LastFrame.AltitudeAsl.MetersToFeet():#,0.000}";
             }
         }
 
@@ -158,11 +158,11 @@ public static class TuneViper
             while (true)
             {
                 wait(100, true);
-                log.Enqueue((dcs.LastFrame.SimTime, dcs.LastFrame.SpeedIndicated.MsToKts()));
+                log.Enqueue((dcs.LastFrame.SimTime, dcs.LastFrame.SpeedCalibrated.MsToKts()));
                 while (log.Count > 150)
                     log.Dequeue();
 
-                var speed = dcs.LastFrame.SpeedIndicated.MsToKts();
+                var speed = dcs.LastFrame.SpeedCalibrated.MsToKts();
                 var speedRate = ratefilter.Step((speed - prevSpeed) / (dcs.LastFrame.SimTime - prevSpeedAt));
                 prevSpeed = speed;
                 prevSpeedAt = dcs.LastFrame.SimTime;
@@ -313,7 +313,7 @@ public static class TuneViper
         public override ControlData ProcessFrame(FrameData frame)
         {
             if (Logging)
-                Log.Enqueue(Ut.FormatCsvRow(loadout, mass, PitchAxis, frame.GyroPitch, frame.SpeedIndicated.MsToKts(), frame.AltitudeAsl, frame.AngleOfAttack, frame.Pitch, frame.Bank));
+                Log.Enqueue(Ut.FormatCsvRow(loadout, mass, PitchAxis, frame.GyroPitch, frame.SpeedCalibrated.MsToKts(), frame.AltitudeAsl, frame.AngleOfAttack, frame.Pitch, frame.Bank));
             var ctrl = new ControlData();
             _control.ControlSpeedIAS(frame, ctrl, SpeedIas);
             ctrl.PitchAxis = PitchAxis;
@@ -352,7 +352,7 @@ public static class TuneViper
             ctrl.PitchAxis = pitchAxis;
             wait(2000);
             ctrl.Logging = true;
-            while (dcs.LastFrame.Pitch < pitchLimit + vpitchNeutral && dcs.LastFrame.SpeedIndicated.MsToKts() > 250)
+            while (dcs.LastFrame.Pitch < pitchLimit + vpitchNeutral && dcs.LastFrame.SpeedCalibrated.MsToKts() > 250)
             {
                 wait(50);
                 dumpLog();
@@ -379,7 +379,7 @@ public static class TuneViper
             {
                 Thread.Sleep(5);
                 if (!noconsole)
-                    Console.Title = $"spd = {dcs.LastFrame.SpeedIndicated.MsToKts():0.00}, alt = {dcs.LastFrame.AltitudeAsl.MetersToFeet():#,0.000}";
+                    Console.Title = $"spd = {dcs.LastFrame.SpeedCalibrated.MsToKts():0.00}, alt = {dcs.LastFrame.AltitudeAsl.MetersToFeet():#,0.000}";
             }
         }
 

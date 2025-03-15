@@ -55,7 +55,7 @@ class HornetSlowFlightController : FlightControllerBase
             var wantedPitchAxis = _pitch2axisPID.Update(wantedPitch - frame.Pitch, frame.dT);
             ctl.PitchAxis = _pitch.MoveTo(wantedPitchAxis, frame.SimTime);
             ctl.RollAxis = _bank2axisPID.Update(wantedBank - frame.Bank, frame.dT);
-            ctl.ThrottleAxis = _speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT);
+            ctl.ThrottleAxis = _speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT);
         }
         else
         {

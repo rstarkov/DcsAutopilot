@@ -58,7 +58,7 @@ class ClimbPerfStraightController : FlightControllerBase
             var wantedSpeed = 200;
             var wantedAlt = 200;
             var wantedPitch = _alt2pitchPID.Update(wantedAlt.FeetToMeters() - frame.AltitudeAsl, frame.dT);
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - frame.VelPitch, frame.dT), frame.SimTime);
             if (frame.SimTime >= 20)
             {
@@ -75,7 +75,7 @@ class ClimbPerfStraightController : FlightControllerBase
             var wantedPitch = _alt2pitchPID.Update(wantedAlt.FeetToMeters() - frame.AltitudeAsl, frame.dT);
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - frame.VelPitch, frame.dT), frame.SimTime);
             ctl.ThrottleAxis = _throttle.MoveTo(Test.Config.Throttle, frame.SimTime);
-            if (frame.SpeedIndicated >= Test.Config.PreClimbSpeedKts.KtsToMs())
+            if (frame.SpeedCalibrated >= Test.Config.PreClimbSpeedKts.KtsToMs())
             {
                 Stage = "pitchup";
                 TgtPitch = 0;
@@ -111,8 +111,8 @@ class ClimbPerfStraightController : FlightControllerBase
             //_tgtPitch -= 1.5 * frame.dT;
             //ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(_tgtPitch - velPitch, frame.dT), frame.SimTime);
             ctl.PitchAxis = _g2pitchPID.Update(0 - frame.AccY, frame.dT);
-            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            var wantedSpeed = frame.SpeedCalibrated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             wantedBank = 0;
             if (frame.VelPitch <= 4)
             {
@@ -126,8 +126,8 @@ class ClimbPerfStraightController : FlightControllerBase
             _minVelPitch = Math.Min(_minVelPitch, frame.VelPitch);
             var wantedPitch = 0;
             ctl.PitchAxis = _pitch.MoveTo(_velpitch2axisSmoothPID.Update(wantedPitch - frame.VelPitch, frame.dT), frame.SimTime);
-            var wantedSpeed = frame.SpeedIndicated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            var wantedSpeed = frame.SpeedCalibrated / frame.SpeedMach * Test.Config.FinalTargetMach + 5.KtsToMs(); // accel to 5kts over M0.9: don't waste fuel with full throttle, but don't creep up on 0.90 mach too slowly either
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             if (frame.SpeedMach >= Test.Config.FinalTargetMach && _minVelPitch < 0.1) // this phase starts at 4 deg vel.pitch; we don't want to consider the test ended if the aircraft never properly levelled off (as we could then achieve better numbers with a slightly earlier level-off). So require the vel pitch to drop to essentially zero (but don't enforce the exact pitch at end time as we can't control it with absolute precision)
                 Stage = "done";
             if (frame.AltitudeAsl.MetersToFeet() < Test.Result.MaxAltitudeFt - 500)
@@ -151,7 +151,7 @@ class ClimbPerfStraightController : FlightControllerBase
 
         if (wasStage != "done" && wasStage != "failed")
         {
-            ClimbPerfTests.Log.Enqueue(Ut.FormatCsvRow(frame.SimTime, frame.FuelInternal, frame.FuelExternal, frame.AltitudeAsl.MetersToFeet(), frame.Pitch, frame.VelPitch, frame.AngleOfAttack, frame.SpeedTrue.MsToKts(), frame.SpeedIndicated.MsToKts(), frame.SpeedMach, frame.SpeedVertical.MetersToFeet(), frame.PosX, frame.PosZ, frame.PosY, frame.AccY, ctl.ThrottleAxis, ctl.RollAxis));
+            ClimbPerfTests.Log.Enqueue(Ut.FormatCsvRow(frame.SimTime, frame.FuelInternal, frame.FuelExternal, frame.AltitudeAsl.MetersToFeet(), frame.Pitch, frame.VelPitch, frame.AngleOfAttack, frame.SpeedTrue.MsToKts(), frame.SpeedCalibrated.MsToKts(), frame.SpeedMach, frame.SpeedVertical.MetersToFeet(), frame.PosX, frame.PosZ, frame.PosY, frame.AccY, ctl.ThrottleAxis, ctl.RollAxis));
             if (Stage == "done")
                 ClimbPerfTests.Log.Enqueue("DONE");
             if (Stage == "failed")
@@ -194,7 +194,7 @@ class ClimbPerfTuneController : FlightControllerBase
         {
             // tune _velpitch2axisHighPID at high altitude
             var wantedSpeed = 227;
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             var wantedPitch = ((int)(frame.SimTime / 10)) % 6 == 0 ? -25 : ((int)(frame.SimTime / 10)) % 6 == 3 ? 25 : 0;
             ctl.PitchAxis = _velpitch2axisHighPID.Update(wantedPitch - velPitch, frame.dT);
         }
@@ -202,7 +202,7 @@ class ClimbPerfTuneController : FlightControllerBase
         {
             // tune _g2pitchPID (set _tgtPitch = 20 initially)
             var wantedSpeed = 227;
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             var wantedG = _tgtPitch > 0 ? 2 : 0;
             if (_tgtPitch < 0)
                 wantedBank = 0;
@@ -222,9 +222,9 @@ class ClimbPerfTuneController : FlightControllerBase
         {
             // tune the level out altitude by pitch angle and speed
             var wantedSpeed = 250;
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             ctl.PitchAxis = _velpitch2axisHighPID.Update(0 - velPitch, frame.dT);
-            if (Math.Abs(velPitch) < 0.5 && Math.Abs(frame.GyroRoll) < 0.5 && frame.SpeedIndicated.MsToKts() > 249)
+            if (Math.Abs(velPitch) < 0.5 && Math.Abs(frame.GyroRoll) < 0.5 && frame.SpeedCalibrated.MsToKts() > 249)
             {
                 _stage = "tuneB-climbtest";
                 _tgtPitch = 0;
@@ -247,7 +247,7 @@ class ClimbPerfTuneController : FlightControllerBase
             {
                 _stage = "tuneB-lvloff";
                 _actualVelPitch = velPitch;
-                _actualIAS = frame.SpeedIndicated.MsToKts();
+                _actualIAS = frame.SpeedCalibrated.MsToKts();
                 _actualTAS = frame.SpeedTrue.MsToKts();
                 _actualFuel = frame.FuelInternal + frame.FuelExternal;
             }
@@ -261,7 +261,7 @@ class ClimbPerfTuneController : FlightControllerBase
             if (velPitch <= 0)
             {
                 _stage = "tuneB-descend";
-                File.AppendAllLines("levelofftune.csv", new[] { Ut.FormatCsvRow(_curTestAngle, _actualVelPitch, _actualIAS, _actualTAS, _actualFuel, _lvloffAltByPitch[_curTestAngle], frame.AltitudeAsl.MetersToFeet(), frame.SpeedIndicated.MsToKts(), frame.SpeedTrue.MsToKts()) });
+                File.AppendAllLines("levelofftune.csv", new[] { Ut.FormatCsvRow(_curTestAngle, _actualVelPitch, _actualIAS, _actualTAS, _actualFuel, _lvloffAltByPitch[_curTestAngle], frame.AltitudeAsl.MetersToFeet(), frame.SpeedCalibrated.MsToKts(), frame.SpeedTrue.MsToKts()) });
                 _lvloffAltByPitch[_curTestAngle] -= frame.AltitudeAsl.MetersToFeet() - 35000;
                 _curTestAngle -= 2;
                 if (_curTestAngle < 28)
@@ -271,7 +271,7 @@ class ClimbPerfTuneController : FlightControllerBase
         else if (_stage == "tuneB-descend")
         {
             var wantedSpeed = 250;
-            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedIndicated, frame.dT), frame.SimTime);
+            ctl.ThrottleAxis = _throttle.MoveTo(_speed2axisPID.Update(wantedSpeed.KtsToMs() - frame.SpeedCalibrated, frame.dT), frame.SimTime);
             ctl.PitchAxis = _velpitch2axisHighPID.Update(-20 - velPitch, frame.dT);
             if (velPitch > -15) wantedBank = 0;
             if (frame.AltitudeAsl < 28000.FeetToMeters())

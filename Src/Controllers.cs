@@ -85,7 +85,7 @@ public class SmartThrottle : FlightControllerBase
         if (AutothrottleSpeedKts != null)
         {
             _pid.MaxControl = AutothrottleAfterburner ? 2.0 : 1.5;
-            var speedError = AutothrottleSpeedKts.Value - frame.SpeedIndicated.MsToKts();
+            var speedError = AutothrottleSpeedKts.Value - frame.SpeedCalibrated.MsToKts();
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
             if (speedError < -20)
                 ctrl.SpeedBrakeRate = 1;
@@ -127,7 +127,7 @@ public class SmartThrottle : FlightControllerBase
             }
             if (UseIdleSpeedbrake)
             {
-                if (throttlePos <= 0.01 && frame.SpeedIndicated.MsToKts() > 200)
+                if (throttlePos <= 0.01 && frame.SpeedCalibrated.MsToKts() > 200)
                     ctrl.SpeedBrakeRate = 1;
             }
         }
@@ -153,7 +153,7 @@ public class SmartThrottle : FlightControllerBase
     {
         if (e.Down && e.Key == Key.H && e.Modifiers == default)
         {
-            AutothrottleSpeedKts = Dcs.LastFrame.SpeedIndicated.MsToKts();
+            AutothrottleSpeedKts = Dcs.LastFrame.SpeedCalibrated.MsToKts();
             _autothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
             SndAutothrottleEngaged?.Play();
             return true;
@@ -195,7 +195,7 @@ class SoundWarnings : FlightControllerBase
 
     public override ControlData ProcessFrame(FrameData frame)
     {
-        var speedKts = frame.SpeedIndicated.MsToKts();
+        var speedKts = frame.SpeedCalibrated.MsToKts();
         var altitudeAglFt = frame.AltitudeRadar.MetersToFeet();
         if (!UseGearNotUp)
             IsGearNotUp = null;

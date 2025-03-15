@@ -244,7 +244,7 @@ static class ClimbPerfTests
 
                 ConsoleColoredString fmt(string num, string suff, int len, ConsoleColor numClr = ConsoleColor.White) => (num.Color(numClr) + suff.Color(ConsoleColor.DarkGray)).PadRight(len + suff.Length);
                 PrintLine(18, "    Altitude         Speed           Pitch             Bank".Color(ConsoleColor.DarkGray));
-                PrintLine(19, "    " + fmt($"{lf?.AltitudeAsl.MetersToFeet() ?? 0:#,0}", " ft", 6) + "        " + fmt($"{lf?.SpeedIndicated.MsToKts() ?? 0:0.00}", " IAS", 6) + "      " + fmt($"{lf?.Pitch ?? 0:0.00}", "° bore", 6) + "      " + fmt($"{lf?.Bank ?? 0:0.00}", "°", 5));
+                PrintLine(19, "    " + fmt($"{lf?.AltitudeAsl.MetersToFeet() ?? 0:#,0}", " ft", 6) + "        " + fmt($"{lf?.SpeedCalibrated.MsToKts() ?? 0:0.00}", " IAS", 6) + "      " + fmt($"{lf?.Pitch ?? 0:0.00}", "° bore", 6) + "      " + fmt($"{lf?.Bank ?? 0:0.00}", "°", 5));
                 PrintLine(20, "    " + fmt($"{(lf?.SpeedVertical.MetersToFeet() ?? 0) * 60:#,0}", " ft/min", 6) + "    " + fmt($"{lf?.SpeedMach ?? 0:0.0000}", " Mach", 6) + "     " + fmt($"{lf?.VelPitch ?? 0:0.00}", "° vector", 5, ConsoleColor.Yellow) + "     " + fmt($"{lf?.Heading ?? 0:0.00}", "° hdg", 6));
                 PrintLine(21, "                                     " + fmt($"{lf?.AngleOfAttack ?? 0:0.00}", "° AoA", 5));
 

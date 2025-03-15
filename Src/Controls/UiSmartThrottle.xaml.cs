@@ -40,7 +40,7 @@ public partial class UiSmartThrottle : UserControl
             return;
         MyProperties.SetIndicatorState(lblAftB, ctrl.AfterburnerActive ? "redtext" : "off");
         MyProperties.SetIndicatorState(lblSpdB, ctrl.SpeedbrakeActive ? "yellowtext" : "off");
-        MyProperties.SetIndicatorState(lblSpdHold, ctrl.AutothrottleSpeedKts == null ? "off" : Math.Abs(ctrl.AutothrottleSpeedKts.Value - (Dcs.LastFrame?.SpeedIndicated ?? 0).MsToKts()) <= 15 ? "greentext" : "yellowtext");
+        MyProperties.SetIndicatorState(lblSpdHold, ctrl.AutothrottleSpeedKts == null ? "off" : Math.Abs(ctrl.AutothrottleSpeedKts.Value - (Dcs.LastFrame?.SpeedCalibrated ?? 0).MsToKts()) <= 15 ? "greentext" : "yellowtext");
     }
 
     private void chkUseIdleSpeedbrake_Checked(object sender, RoutedEventArgs e)

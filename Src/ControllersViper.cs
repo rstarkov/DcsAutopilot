@@ -24,7 +24,7 @@ public class ViperClimber : FlightControllerBase
         _pidThrottle.MinControl = tgtThrottle - 1.0; // limit error integration beyond these limits
         _pidThrottle.MaxControl = tgtThrottle + 1.0;
 
-        var speedError = _tgtSpeedKts - frame.SpeedIndicated.MsToKts();
+        var speedError = _tgtSpeedKts - frame.SpeedCalibrated.MsToKts();
         ctrl.ThrottleAxis = _pidThrottle.Update(speedError.KtsToMs(), frame.dT).Clip(0, tgtThrottle); // allow it to throttle below target, which makes it much easier for the pitch PID to stay in the stable region
         var throttleError = tgtThrottle - _pidThrottle.OutputRaw;
         var pitchAxis = _pidPitch.Update(throttleError, frame.dT);
@@ -72,8 +72,8 @@ public class ViperControl
 
     public void ControlSpeedIAS(FrameData frame, ControlData ctrl, double tgtKts)
     {
-        PidSpeed2Throttle.Update(new Vec(frame.SpeedIndicated.MsToKts(), frame.AltitudeAsl.MetersToFeet(), frame.VelPitch));
-        ctrl.ThrottleAxis = PidSpeed2Throttle.PID.Update(tgtKts.KtsToMs() - frame.SpeedIndicated, frame.dT);
+        PidSpeed2Throttle.Update(new Vec(frame.SpeedCalibrated.MsToKts(), frame.AltitudeAsl.MetersToFeet(), frame.VelPitch));
+        ctrl.ThrottleAxis = PidSpeed2Throttle.PID.Update(tgtKts.KtsToMs() - frame.SpeedCalibrated, frame.dT);
     }
 }
 
@@ -103,11 +103,11 @@ class ViperTune : FlightControllerBase
     {
         _Dmin = Math.Min(_Dmin, _control.PidSpeed2Throttle.PID.Derivative);
         _Dmax = Math.Max(_Dmax, _control.PidSpeed2Throttle.PID.Derivative);
-        _Vmin = Math.Min(_Vmin, frame.SpeedIndicated);
-        _Vmax = Math.Max(_Vmax, frame.SpeedIndicated);
+        _Vmin = Math.Min(_Vmin, frame.SpeedCalibrated);
+        _Vmax = Math.Max(_Vmax, frame.SpeedCalibrated);
         var ctl = new ControlData();
         _control.ControlSpeedIAS(frame, ctl, 500);
-        _gyro2pitchPID.Update(new Vec(frame.SpeedIndicated));
+        _gyro2pitchPID.Update(new Vec(frame.SpeedCalibrated));
         ctl.PitchAxis = fixPitchAxis(2 * _gyro2pitchPID.PID.Update(_tgtPitchRate - frame.GyroPitch, frame.dT));
         // feed an estimate of what the pitch axis should be OUTSIDE the PID
         return ctl;
@@ -129,7 +129,7 @@ class ViperTune : FlightControllerBase
         {
             _Dmin = 0;
             _Dmax = 0;
-            _Vmin = _Vmax = Dcs.LastFrame.SpeedIndicated;
+            _Vmin = _Vmax = Dcs.LastFrame.SpeedCalibrated;
         }
         else if (signal == "B")
             _tgtPitchRate = 0;

@@ -69,7 +69,7 @@ public class ChartPopulate : FlightControllerBase
         {
             Data.Times.Enqueue(frame.SimTime);
             Data["VelPitch"].Data.Enqueue(frame.VelPitch);
-            Data["Spd"].Data.Enqueue(frame.SpeedIndicated);
+            Data["Spd"].Data.Enqueue(frame.SpeedCalibrated);
             Data["Thr"].Data.Enqueue(Dcs.LastControl?.ThrottleAxis ?? 0);
         }
         _skip++;
