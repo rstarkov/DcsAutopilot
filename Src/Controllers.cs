@@ -158,6 +158,13 @@ public class SmartThrottle : FlightControllerBase
             SndAutothrottleEngaged?.Play();
             return true;
         }
+        else if (e.Down && e.Key == Key.D3 && e.Modifiers == default)
+        {
+            AutothrottleSpeedKts = 300;
+            _autothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
+            SndAutothrottleEngaged?.Play();
+            return true;
+        }
         return false;
     }
 
