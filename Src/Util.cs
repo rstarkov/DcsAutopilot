@@ -38,6 +38,7 @@ public static class Util
     }
 
     public static double Linterp(double x1, double x2, double y1, double y2, double x) => y1 + (x - x1) / (x2 - x1) * (y2 - y1);
+    public static double? Linterp(double x1, double x2, double y1, double y2, double? x) => x == null ? null : Linterp(x1, x2, y1, y2, x.Value);
 
     public static double Median(this IEnumerable<double> values, double removeOutliersFraction = 0)
     {

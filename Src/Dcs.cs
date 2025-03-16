@@ -87,7 +87,7 @@ public class DcsController
     public FrameData LastFrame { get; private set; }
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
-    public JoystickReader Joystick => _joystick.Reader;
+    public JoystickReader Joystick => _joystick?.Reader;
 
     public void LoadConfig()
     {

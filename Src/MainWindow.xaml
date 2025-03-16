@@ -61,7 +61,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <local:UiChart x:Name="uiChart" Margin="0,0,0,15" Grid.Row="0" />
-                        <local:UiControlPositions x:Name="uiControlPositions" Grid.Row="1" />
+                        <local:UiControlPositions x:Name="uiControlPositions" Margin="10,0,10,10" MinWidth="200" MinHeight="200" Grid.Row="1" />
                     </Grid>
                 </Grid>
             </TabItem>
