@@ -3,6 +3,8 @@ using RT.Serialization.Settings;
 using RT.Util.Forms;
 using Windows.Win32;
 
+[assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
+
 namespace DcsAutopilot;
 
 public partial class App : Application
