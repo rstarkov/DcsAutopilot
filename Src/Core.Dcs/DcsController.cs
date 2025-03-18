@@ -121,88 +121,88 @@ public class DcsController
             BulkData parsedBulk = null;
             try
             {
-                var data = bytes.FromUtf8().Split(";");
-                if (data[0] == "frame")
+                var data = new DataPacket(bytes);
+                if (data.PacketType == "frame")
                 {
                     var fd = new FrameData();
-                    for (int i = 1; i < data.Length;)
-                        switch (data[i++])
+                    foreach (var e in data.Entries)
+                        switch (e.Key)
                         {
-                            case "sess": fd.Session = double.Parse(data[i++]); break;
-                            case "fr": fd.FrameNum = int.Parse(data[i++]); break;
-                            case "ufof": fd.Underflows = int.Parse(data[i++]); fd.Overflows = int.Parse(data[i++]); break;
-                            case "time": fd.SimTime = double.Parse(data[i++]); break;
-                            case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(data[i++]); break;
-                            case "ltcy": fd.LatencyControl = double.Parse(data[i++]); break;
-                            case "exp": fd.ExportAllowed = data[i++] == "true"; break;
-                            case "pitch": fd.Pitch = double.Parse(data[i++]).ToDeg(); break;
-                            case "bank": fd.Bank = double.Parse(data[i++]).ToDeg(); break;
-                            case "hdg": fd.Heading = double.Parse(data[i++]).ToDeg(); break;
-                            case "ang": fd.GyroRoll = double.Parse(data[i++]).ToDeg(); fd.GyroYaw = -double.Parse(data[i++]).ToDeg(); fd.GyroPitch = double.Parse(data[i++]).ToDeg(); break;
-                            case "pos": fd.PosX = double.Parse(data[i++]); fd.PosY = double.Parse(data[i++]); fd.PosZ = double.Parse(data[i++]); break;
-                            case "vel": fd.VelX = double.Parse(data[i++]); fd.VelY = double.Parse(data[i++]); fd.VelZ = double.Parse(data[i++]); break;
-                            case "acc": fd.AccX = double.Parse(data[i++]); fd.AccY = double.Parse(data[i++]); fd.AccZ = double.Parse(data[i++]); break;
-                            case "asl": fd.AltitudeAsl = double.Parse(data[i++]); break;
-                            case "agl": fd.AltitudeAgl = double.Parse(data[i++]); break;
-                            case "balt": fd.AltitudeBaro = double.Parse(data[i++]); break;
-                            case "ralt": fd.AltitudeRadar = double.Parse(data[i++]); break;
-                            case "vspd": fd.SpeedVertical = double.Parse(data[i++]); break;
-                            case "tas": fd.SpeedTrue = double.Parse(data[i++]); break;
-                            case "ias": fd.SpeedIndicatedBad = double.Parse(data[i++]); break;
-                            case "mach": fd.SpeedMachBad = double.Parse(data[i++]); break;
-                            case "aoa": fd.AngleOfAttack = double.Parse(data[i++]); break;
-                            case "aoss": fd.AngleOfSideSlip = -double.Parse(data[i++]); break;
-                            case "fuint": fd.FuelInternal = double.Parse(data[i++]); break;
-                            case "fuext": fd.FuelExternal = double.Parse(data[i++]); break;
-                            case "fufl": fd.FuelFlow = double.Parse(data[i++]); break;
+                            case "sess": fd.Session = double.Parse(e[0]); break;
+                            case "fr": fd.FrameNum = int.Parse(e[0]); break;
+                            case "ufof": fd.Underflows = int.Parse(e[0]); fd.Overflows = int.Parse(e[1]); break;
+                            case "time": fd.SimTime = double.Parse(e[0]); break;
+                            case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(e[0]); break;
+                            case "ltcy": fd.LatencyControl = double.Parse(e[0]); break;
+                            case "exp": fd.ExportAllowed = e[0] == "true"; break;
+                            case "pitch": fd.Pitch = double.Parse(e[0]).ToDeg(); break;
+                            case "bank": fd.Bank = double.Parse(e[0]).ToDeg(); break;
+                            case "hdg": fd.Heading = double.Parse(e[0]).ToDeg(); break;
+                            case "ang": fd.GyroRoll = double.Parse(e[0]).ToDeg(); fd.GyroYaw = -double.Parse(e[1]).ToDeg(); fd.GyroPitch = double.Parse(e[2]).ToDeg(); break;
+                            case "pos": fd.PosX = double.Parse(e[0]); fd.PosY = double.Parse(e[1]); fd.PosZ = double.Parse(e[2]); break;
+                            case "vel": fd.VelX = double.Parse(e[0]); fd.VelY = double.Parse(e[1]); fd.VelZ = double.Parse(e[2]); break;
+                            case "acc": fd.AccX = double.Parse(e[0]); fd.AccY = double.Parse(e[1]); fd.AccZ = double.Parse(e[2]); break;
+                            case "asl": fd.AltitudeAsl = double.Parse(e[0]); break;
+                            case "agl": fd.AltitudeAgl = double.Parse(e[0]); break;
+                            case "balt": fd.AltitudeBaro = double.Parse(e[0]); break;
+                            case "ralt": fd.AltitudeRadar = double.Parse(e[0]); break;
+                            case "vspd": fd.SpeedVertical = double.Parse(e[0]); break;
+                            case "tas": fd.SpeedTrue = double.Parse(e[0]); break;
+                            case "ias": fd.SpeedIndicatedBad = double.Parse(e[0]); break;
+                            case "mach": fd.SpeedMachBad = double.Parse(e[0]); break;
+                            case "aoa": fd.AngleOfAttack = double.Parse(e[0]); break;
+                            case "aoss": fd.AngleOfSideSlip = -double.Parse(e[0]); break;
+                            case "fuint": fd.FuelInternal = double.Parse(e[0]); break;
+                            case "fuext": fd.FuelExternal = double.Parse(e[0]); break;
+                            case "fufl": fd.FuelFlow = double.Parse(e[0]); break;
                             case "surf":
-                                fd.AileronL = double.Parse(data[i++]); fd.AileronR = double.Parse(data[i++]);
-                                fd.ElevatorL = double.Parse(data[i++]); fd.ElevatorR = double.Parse(data[i++]);
-                                fd.RudderL = double.Parse(data[i++]); fd.RudderR = double.Parse(data[i++]);
+                                fd.AileronL = double.Parse(e[0]); fd.AileronR = double.Parse(e[1]);
+                                fd.ElevatorL = double.Parse(e[2]); fd.ElevatorR = double.Parse(e[3]);
+                                fd.RudderL = double.Parse(e[4]); fd.RudderR = double.Parse(e[5]);
                                 break;
-                            case "flap": fd.Flaps = double.Parse(data[i++]); break;
-                            case "airbrk": fd.Airbrakes = double.Parse(data[i++]); break;
-                            case "lg": fd.LandingGear = double.Parse(data[i++]); break;
-                            case "wind": fd.WindX = double.Parse(data[i++]); fd.WindY = double.Parse(data[i++]); fd.WindZ = double.Parse(data[i++]); break;
-                            case "joyp": fd.JoyPitch = double.Parse(data[i++]); break;
-                            case "joyr": fd.JoyRoll = double.Parse(data[i++]); break;
-                            case "joyy": fd.JoyYaw = double.Parse(data[i++]); break;
-                            case "joyt1": fd.JoyThrottle1 = double.Parse(data[i++]); break;
-                            case "joyt2": fd.JoyThrottle2 = double.Parse(data[i++]); break;
-                            case "ptrm": fd.TrimPitch = double.Parse(data[i++]); break;
-                            case "rtrm": fd.TrimRoll = double.Parse(data[i++]); break;
-                            case "ytrm": fd.TrimYaw = double.Parse(data[i++]); break;
-                            case "test1": fd.Test1 = double.Parse(data[i++]); break;
-                            case "test2": fd.Test2 = double.Parse(data[i++]); break;
-                            case "test3": fd.Test3 = double.Parse(data[i++]); break;
-                            case "test4": fd.Test4 = double.Parse(data[i++]); break;
+                            case "flap": fd.Flaps = double.Parse(e[0]); break;
+                            case "airbrk": fd.Airbrakes = double.Parse(e[0]); break;
+                            case "lg": fd.LandingGear = double.Parse(e[0]); break;
+                            case "wind": fd.WindX = double.Parse(e[0]); fd.WindY = double.Parse(e[1]); fd.WindZ = double.Parse(e[2]); break;
+                            case "joyp": fd.JoyPitch = double.Parse(e[0]); break;
+                            case "joyr": fd.JoyRoll = double.Parse(e[0]); break;
+                            case "joyy": fd.JoyYaw = double.Parse(e[0]); break;
+                            case "joyt1": fd.JoyThrottle1 = double.Parse(e[0]); break;
+                            case "joyt2": fd.JoyThrottle2 = double.Parse(e[0]); break;
+                            case "ptrm": fd.TrimPitch = double.Parse(e[0]); break;
+                            case "rtrm": fd.TrimRoll = double.Parse(e[0]); break;
+                            case "ytrm": fd.TrimYaw = double.Parse(e[0]); break;
+                            case "test1": fd.Test1 = double.Parse(e[0]); break;
+                            case "test2": fd.Test2 = double.Parse(e[0]); break;
+                            case "test3": fd.Test3 = double.Parse(e[0]); break;
+                            case "test4": fd.Test4 = double.Parse(e[0]); break;
                             default:
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
-                                Warnings[$"Unrecognized frame data entry: \"{data[i - 1]}\""] = true;
+                                Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
                                 LastReceiveWithWarnings = bytes;
-                                goto exitloop; // can't continue parsing because we don't know how long this entry is
+                                break;
                         }
-                    exitloop:;
                     parsedFrame = fd;
                 }
-                else if (data[0] == "bulk")
+                else if (data.PacketType == "bulk")
                 {
                     var bd = new BulkData();
-                    for (int i = 1; i < data.Length;)
-                        switch (data[i++])
+                    foreach (var e in data.Entries)
+                        switch (e.Key)
                         {
-                            case "sess": bd.Session = double.Parse(data[i++]); break;
-                            case "exp": bd.ExportAllowed = data[i++] == "true"; break;
-                            case "aircraft": bd.Aircraft = data[i++]; break;
-                            case "ver": bd.DcsVersion = data[i++]; break;
+                            case "sess": bd.Session = double.Parse(e[0]); break;
+                            case "exp": bd.ExportAllowed = e[0] == "true"; break;
+                            case "aircraft": bd.Aircraft = e[0]; break;
+                            case "ver": bd.DcsVersion = e[0]; break;
                             default:
-                                Warnings[$"Unrecognized bulk data entry: \"{data[i - 1]}\""] = true;
+                                Warnings[$"Unrecognized bulk data entry: \"{e.Key}\""] = true;
                                 LastReceiveWithWarnings = bytes;
-                                goto exitloop; // can't continue parsing because we don't know how long this entry is
+                                break;
                         }
-                    exitloop:;
                     parsedBulk = bd;
                 }
+                else
+                    Warnings[$"Unrecognized data type: \"{data.PacketType}\""] = true;
             }
             catch (Exception e)
             {
@@ -397,5 +397,46 @@ public class DcsController
             FlightControllers.Add(ctrl);
         }
         return ctrl;
+    }
+}
+
+public class DataPacket
+{
+    public string PacketType { get; private set; }
+    public IReadOnlyList<Entry> Entries { get; private set; }
+
+    public DataPacket(byte[] raw)
+    {
+        parse(raw);
+    }
+
+    private void parse(byte[] raw)
+    {
+        var data = raw.FromUtf8().Split(";");
+        if (data[0] != "v2")
+            throw new InvalidOperationException("Data packet format not supported.");
+        PacketType = data[1];
+        var entries = new List<Entry>();
+        Entries = entries.AsReadOnly();
+        for (int i = 2; i < data.Length;)
+        {
+            var key = data[i++];
+            int len = 1;
+            int lenPos = key.IndexOf(':');
+            if (lenPos >= 0)
+            {
+                len = int.Parse(key[(lenPos + 1)..]);
+                key = key[..lenPos];
+            }
+            entries.Add(new(key, len, data, i));
+            i += len;
+        }
+    }
+
+    public class Entry(string _key, int _length, string[] _data, int _offset)
+    {
+        public string Key => _key;
+        public int Length => _length;
+        public string this[int index] => index >= 0 && index < _length ? _data[_offset + index] : throw new IndexOutOfRangeException();
     }
 }

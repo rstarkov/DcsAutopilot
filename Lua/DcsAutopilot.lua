@@ -36,12 +36,13 @@ function LuaExportAfterNextFrame()
     -- table.insert is very slow even for pure appends, because Lua. #dt+1 is noticeably slower than
     -- a manual counter, also because Lua. We can't inline increment either, so the optimal performance
     -- option is to insert a counter increment after each line. That's too cumbersome. Isn't Lua amazing.
+    dt[#dt+1] = "v2"
     dt[#dt+1] = "frame"
     dt[#dt+1] = "sess"
     dt[#dt+1] = Session
     dt[#dt+1] = "fr"
     dt[#dt+1] = CurFrame
-    dt[#dt+1] = "ufof"
+    dt[#dt+1] = "ufof:2"
     dt[#dt+1] = Underflows
     dt[#dt+1] = Overflows
     dt[#dt+1] = "time"
@@ -64,30 +65,30 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = sdata.Bank
         dt[#dt+1] = "hdg"
         dt[#dt+1] = sdata.Heading
-        dt[#dt+1] = "ang"
+        dt[#dt+1] = "ang:3"
         local ang = LoGetAngularVelocity()
         dt[#dt+1] = ang.x
         dt[#dt+1] = ang.y
         dt[#dt+1] = ang.z
-        dt[#dt+1] = "pos" -- cheaty
+        dt[#dt+1] = "pos:3" -- cheaty
         dt[#dt+1] = sdata.Position.x
         dt[#dt+1] = sdata.Position.y
         dt[#dt+1] = sdata.Position.z
-        dt[#dt+1] = "vel" -- cheaty
+        dt[#dt+1] = "vel:3" -- cheaty
         local vel = LoGetVectorVelocity()
         dt[#dt+1] = vel.x
         dt[#dt+1] = vel.y
         dt[#dt+1] = vel.z
-        dt[#dt+1] = "acc"
+        dt[#dt+1] = "acc:3"
         local acc = LoGetAccelerationUnits()
         dt[#dt+1] = acc.x
         dt[#dt+1] = acc.y
         dt[#dt+1] = acc.z
-        dt[#dt+1] = "asl" -- cheaty?
+        dt[#dt+1] = "asl"
         dt[#dt+1] = LoGetAltitudeAboveSeaLevel()
-        dt[#dt+1] = "agl" -- cheaty?
+        dt[#dt+1] = "agl"
         dt[#dt+1] = LoGetAltitudeAboveGroundLevel()
-        dt[#dt+1] = "balt" -- this is just nil on the Hornet
+        dt[#dt+1] = "balt"
         dt[#dt+1] = LoGetAltitude() or 0
         dt[#dt+1] = "ralt"
         dt[#dt+1] = LoGetRadarAltimeter()
@@ -107,7 +108,7 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = engine.fuel_internal
         dt[#dt+1] = "fuext"
         dt[#dt+1] = engine.fuel_external
-        dt[#dt+1] = "surf"
+        dt[#dt+1] = "surf:6"
         dt[#dt+1] = mech.controlsurfaces.eleron.left
         dt[#dt+1] = mech.controlsurfaces.eleron.right
         dt[#dt+1] = mech.controlsurfaces.elevator.left
@@ -118,7 +119,7 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = mech.flaps.value
         dt[#dt+1] = "airbrk"
         dt[#dt+1] = mech.speedbrakes.value
-        dt[#dt+1] = "wind"
+        dt[#dt+1] = "wind:3"
         local wind = LoGetVectorWindVelocity()
         dt[#dt+1] = wind.x
         dt[#dt+1] = wind.y
@@ -167,6 +168,7 @@ end
 function SendBulkData()
     -- see comments on dt[#dt+1] in LuaExportAfterNextFrame
     local dt = { }
+    dt[#dt+1] = "v2"
     dt[#dt+1] = "bulk"
     dt[#dt+1] = "sess"
     dt[#dt+1] = Session
