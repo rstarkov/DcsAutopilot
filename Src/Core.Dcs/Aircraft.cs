@@ -1,8 +1,14 @@
-﻿namespace DcsAutopilot;
+﻿using System.Text;
+using RT.Util.ExtensionMethods;
+
+namespace DcsAutopilot;
 
 public class Aircraft
 {
     public virtual string DcsId => "generic";
+    public virtual bool SupportsSetSpeedBrakeRate => false;
+    public virtual bool SupportsSetTrim => false;
+    public virtual bool SupportsSetTrimRate => false;
 
     private IFilter _bankRateFilter = Filters.BesselD5;
 
@@ -61,14 +67,87 @@ public class Aircraft
     {
         frame.BankRate = _bankRateFilter.Step((frame.Bank - prevFrame.Bank) / frame.dT);
     }
+
+    public virtual void BuildControlPacket(ControlData ctrl, StringBuilder pkt)
+    {
+        if (ctrl.PitchAxis != null)
+            pkt.Append($"2;sc;2001;{ctrl.PitchAxis.Value};");
+        if (ctrl.RollAxis != null)
+            pkt.Append($"2;sc;2002;{ctrl.RollAxis.Value};");
+        if (ctrl.YawAxis != null)
+            pkt.Append($"2;sc;2003;{ctrl.YawAxis.Value};");
+        if (ctrl.ThrottleAxis != null)
+            pkt.Append($"2;sc;2004;{1 - ctrl.ThrottleAxis.Value};");
+    }
 }
+
+
 
 public class ViperAircraft : Aircraft
 {
     public override string DcsId => "F-16C_50";
+    public override bool SupportsSetSpeedBrakeRate => true;
+    public override bool SupportsSetTrim => true;
+    public override bool SupportsSetTrimRate => true;
+
+    private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");
+    private ThreeWayButtonRateHelper _rollTrimRateCtrl = new("16;3004;3005");
+
+    public override void BuildControlPacket(ControlData ctrl, StringBuilder pkt)
+    {
+        base.BuildControlPacket(ctrl, pkt);
+        if (ctrl.SpeedBrakeRate != null)
+            pkt.Append($"3;pca;16;3031;{-ctrl.SpeedBrakeRate};"); // 1=retract, -1=extend; 16 from devices.lua, 3031 from command_defs.lua
+        if (ctrl.PitchTrim != null)
+            pkt.Append($"3;pca;2;3008;{ctrl.PitchTrim.Value};");
+        if (ctrl.RollTrim != null)
+            pkt.Append($"3;pca;2;3007;{-ctrl.RollTrim.Value};");
+        if (ctrl.YawTrim != null)
+            pkt.Append($"3;pca;2;3009;{ctrl.YawTrim.Value};");
+        _pitchTrimRateCtrl.AppendControl(ctrl.PitchTrimRate, pkt);
+        _rollTrimRateCtrl.AppendControl(ctrl.RollTrimRate, pkt);
+    }
 }
+
+
 
 public class HornetAircraft : Aircraft
 {
     public override string DcsId => "FA-18C_hornet";
+    public override bool SupportsSetSpeedBrakeRate => true;
+    public override bool SupportsSetTrimRate => true;
+
+    private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("13;3015;3014");
+    private ThreeWayButtonRateHelper _rollTrimRateCtrl = new("13;3016;3017");
+
+    public override void BuildControlPacket(ControlData ctrl, StringBuilder pkt)
+    {
+        base.BuildControlPacket(ctrl, pkt);
+        if (ctrl.SpeedBrakeRate != null)
+            pkt.Append($"3;pca;13;3035;{-ctrl.SpeedBrakeRate};"); // 1=retract, -1=extend // 13 from devices.lua, 3035 from command_defs.lua
+        _pitchTrimRateCtrl.AppendControl(ctrl.PitchTrimRate, pkt);
+        _rollTrimRateCtrl.AppendControl(ctrl.RollTrimRate, pkt);
+    }
+}
+
+public class ThreeWayButtonRateHelper(string _pca3wConfig)
+{
+    private double _counter = 0;
+
+    public void AppendControl(double? rate, StringBuilder pkt)
+    {
+        _counter += (rate ?? 0).Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
+        if (_counter >= 0.5)
+        {
+            pkt.Append($"4;pca3w;{_pca3wConfig};1;");
+            _counter -= 1.0;
+        }
+        else if (_counter < -0.5)
+        {
+            pkt.Append($"4;pca3w;{_pca3wConfig};-1;");
+            _counter += 1.0;
+        }
+        else
+            pkt.Append($"4;pca3w;{_pca3wConfig};0;");
+    }
 }

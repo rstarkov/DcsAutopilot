@@ -165,8 +165,6 @@ public class ControlData
     ///     controls the HOTAS trim switch, with -1/1 being full down, and smaller values implemented as PWM (pressing and
     ///     releasing the switch).</summary>
     public double? RollTrimRate;
-    /// <summary>Rate of change for yaw trim: -1.0 (max rate trim left), 0 (no change), 1.0 (max rate trim right).</summary>
-    public double? YawTrimRate;
     public double? SpeedBrakeRate; // 1=more brake, -1=less brake
 
     /// <summary>
@@ -184,7 +182,6 @@ public class ControlData
         YawTrim = merge(YawTrim, other.YawTrim);
         PitchTrimRate = merge(PitchTrimRate, other.PitchTrimRate);
         RollTrimRate = merge(RollTrimRate, other.RollTrimRate);
-        YawTrimRate = merge(YawTrimRate, other.YawTrimRate);
         SpeedBrakeRate = merge(SpeedBrakeRate, other.SpeedBrakeRate);
         return ok;
 

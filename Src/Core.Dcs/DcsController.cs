@@ -151,28 +151,31 @@ public class DcsController
             try
             {
                 var data = new DataPacket(bytes);
-                if (data.PacketType == "frame")
+                if (data.PacketType == "frame" && Aircraft != null)
                 {
-                    var fd = new FrameData();
-                    foreach (var e in data.Entries)
-                        switch (e.Key)
-                        {
-                            case "sess": fd.Session = double.Parse(e[0]); break;
-                            case "fr": fd.FrameNum = int.Parse(e[0]); break;
-                            case "ufof": fd.Underflows = int.Parse(e[0]); fd.Overflows = int.Parse(e[1]); break;
-                            case "time": fd.SimTime = double.Parse(e[0]); break;
-                            case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(e[0]); break;
-                            case "ltcy": fd.LatencyControl = double.Parse(e[0]); break;
-                            case "exp": fd.ExportAllowed = e[0] == "true"; break;
-                            default:
-                                if (Aircraft.ProcessFrameEntry(fd, e))
+                    if (Aircraft != null) // will be null for a few frames when starting DcsAutopilot in the middle of a live session
+                    {
+                        var fd = new FrameData();
+                        foreach (var e in data.Entries)
+                            switch (e.Key)
+                            {
+                                case "sess": fd.Session = double.Parse(e[0]); break;
+                                case "fr": fd.FrameNum = int.Parse(e[0]); break;
+                                case "ufof": fd.Underflows = int.Parse(e[0]); fd.Overflows = int.Parse(e[1]); break;
+                                case "time": fd.SimTime = double.Parse(e[0]); break;
+                                case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(e[0]); break;
+                                case "ltcy": fd.LatencyControl = double.Parse(e[0]); break;
+                                case "exp": fd.ExportAllowed = e[0] == "true"; break;
+                                default:
+                                    if (Aircraft.ProcessFrameEntry(fd, e))
+                                        break;
+                                    if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
+                                    Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
+                                    LastReceiveWithWarnings = bytes;
                                     break;
-                                if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
-                                Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
-                                LastReceiveWithWarnings = bytes;
-                                break;
-                        }
-                    parsedFrame = fd;
+                            }
+                        parsedFrame = fd;
+                    }
                 }
                 else if (data.PacketType == "bulk")
                 {
@@ -270,88 +273,12 @@ public class DcsController
         }
     }
 
-    private double _pitchTrimRateCounter = 0;
-    private double _rollTrimRateCounter = 0;
-
     private void Send(ControlData data)
     {
         var cmd = new StringBuilder();
 
         cmd.Append($"1;ts;{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:0.000};");
-        if (data.PitchAxis != null)
-            cmd.Append($"2;sc;2001;{data.PitchAxis.Value};");
-        if (data.RollAxis != null)
-            cmd.Append($"2;sc;2002;{data.RollAxis.Value};");
-        if (data.YawAxis != null)
-            cmd.Append($"2;sc;2003;{data.YawAxis.Value};");
-        if (data.ThrottleAxis != null)
-            cmd.Append($"2;sc;2004;{1 - data.ThrottleAxis.Value};");
-        if (data.PitchTrim != null)
-        {
-            if (LastBulk?.Aircraft == "F-16C_50")
-                cmd.Append($"3;pca;2;3008;{data.PitchTrim.Value};");
-            else
-                throw new NotSupportedException($"Don't know how to apply pitch trim on {LastBulk?.Aircraft}");
-        }
-        if (data.RollTrim != null)
-        {
-            if (LastBulk?.Aircraft == "F-16C_50")
-                cmd.Append($"3;pca;2;3007;{-data.RollTrim.Value};");
-            else
-                throw new NotSupportedException($"Don't know how to apply roll trim on {LastBulk?.Aircraft}");
-        }
-        if (data.YawTrim != null)
-        {
-            if (LastBulk?.Aircraft == "F-16C_50")
-                cmd.Append($"3;pca;2;3009;{data.YawTrim.Value};");
-            else
-                throw new NotSupportedException($"Don't know how to apply yaw trim on {LastBulk?.Aircraft}");
-        }
-        if (data.PitchTrimRate != null)
-        {
-            var btn = LastBulk?.Aircraft switch { "FA-18C_hornet" => "13;3015;3014", "F-16C_50" => "16;3002;3003", _ => throw new NotSupportedException($"Don't know how to apply pitch trim rate on {LastBulk?.Aircraft}") };
-            _pitchTrimRateCounter += data.PitchTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
-            if (_pitchTrimRateCounter >= 0.5)
-            {
-                cmd.Append($"4;pca3w;{btn};1;");
-                _pitchTrimRateCounter -= 1.0;
-            }
-            else if (_pitchTrimRateCounter < -0.5)
-            {
-                cmd.Append($"4;pca3w;{btn};-1;");
-                _pitchTrimRateCounter += 1.0;
-            }
-            else
-                cmd.Append($"4;pca3w;{btn};0;");
-        }
-        if (data.RollTrimRate != null)
-        {
-            var btn = LastBulk?.Aircraft switch { "FA-18C_hornet" => "13;3016;3017", "F-16C_50" => "16;3004;3005", _ => throw new NotSupportedException($"Don't know how to apply roll trim rate on {LastBulk?.Aircraft}") };
-            _rollTrimRateCounter += data.RollTrimRate.Value.Clip(-0.95, 0.95); // 0.95 max to ensure that we occasionally release and press the button again (fixes it getting stuck occasionally...)
-            if (_rollTrimRateCounter >= 0.5)
-            {
-                cmd.Append($"4;pca3w;{btn};1;");
-                _rollTrimRateCounter -= 1.0;
-            }
-            else if (_rollTrimRateCounter < -0.5)
-            {
-                cmd.Append($"4;pca3w;{btn};-1;");
-                _rollTrimRateCounter += 1.0;
-            }
-            else
-                cmd.Append($"4;pca3w;{btn};0;");
-        }
-        if (data.YawTrimRate != null)
-        {
-            throw new NotSupportedException($"Don't know how to apply yaw trim rate on {LastBulk?.Aircraft}");
-        }
-        if (data.SpeedBrakeRate != null)
-            if (LastBulk?.Aircraft == "FA-18C_hornet")
-                cmd.Append($"3;pca;13;3035;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend // 13 from devices.lua, 3035 from command_defs.lua
-            else if (LastBulk?.Aircraft == "F-16C_50")
-                cmd.Append($"3;pca;16;3031;{-data.SpeedBrakeRate};"); // 1=retract, -1=extend // 16 from devices.lua, 3031 from command_defs.lua
-            else
-                throw new NotSupportedException($"Don't know how to apply speedbrake on {LastBulk?.Aircraft}");
+        Aircraft.BuildControlPacket(data, cmd);
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
