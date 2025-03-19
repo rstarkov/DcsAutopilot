@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 using System.Windows.Input;
 using RT.Keyboard;
@@ -34,6 +35,7 @@ public class DcsController
     public int LastFrameBytes { get; private set; }
     public DateTime LastFrameUtc { get; private set; }
     public IEnumerable<(double data, double ctrl)> Latencies => _latencies;
+    public Aircraft Aircraft { get; private set; }
     /// <summary>
     ///     The frame that preceded <see cref="LastFrame"/>. Not null during all <see cref="FlightControllerBase"/> callbacks.</summary>
     public FrameData PrevFrame { get; private set; }
@@ -44,6 +46,35 @@ public class DcsController
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
     public JoystickReader Joystick => _joystick?.Reader;
+
+    public static Dictionary<string, Func<Aircraft>> AircraftTypes;
+
+    static DcsController()
+    {
+        AircraftTypes = new();
+        discoverAircraftTypes(Assembly.GetExecutingAssembly());
+        discoverAircraftTypes(Assembly.GetEntryAssembly());
+
+        void discoverAircraftTypes(Assembly assy)
+        {
+            foreach (var type in assy.GetTypes().Where(t => t.IsSubclassOf(typeof(Aircraft))))
+            {
+                var ctor = type.GetConstructor(Type.EmptyTypes);
+                var make = () => (Aircraft)ctor.Invoke([]);
+                AircraftTypes[make().DcsId] = make;
+            }
+        }
+    }
+
+    public DcsController()
+    {
+        FlightControllers.CollectionChanged += (s, e) =>
+        {
+            if (e.NewItems != null)
+                foreach (FlightControllerBase c in e.NewItems)
+                    c.Dcs = this;
+        };
+    }
 
     public void LoadConfig()
     {
@@ -96,6 +127,7 @@ public class DcsController
 
         IsRunning = false;
         Status = "Stopped";
+        Aircraft = null;
         PrevFrame = null;
         LastFrameUtc = DateTime.MinValue;
         LastFrame = null;
@@ -106,11 +138,8 @@ public class DcsController
 
     private void thread(CancellationToken token)
     {
-        var bankRateFilter = Filters.BesselD5;
         while (!token.IsCancellationRequested)
         {
-            foreach (var ctl in FlightControllers)
-                ctl.Dcs = this; // kind of dirty but the easiest way to set this property
             var task = _udp.ReceiveAsync(token).AsTask();
             task.ContinueWith(t => { }).Wait(); // the only way to wait that doesn't throw on cancellation?
             if (task.IsCanceled || token.IsCancellationRequested)
@@ -135,48 +164,9 @@ public class DcsController
                             case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(e[0]); break;
                             case "ltcy": fd.LatencyControl = double.Parse(e[0]); break;
                             case "exp": fd.ExportAllowed = e[0] == "true"; break;
-                            case "pitch": fd.Pitch = double.Parse(e[0]).ToDeg(); break;
-                            case "bank": fd.Bank = double.Parse(e[0]).ToDeg(); break;
-                            case "hdg": fd.Heading = double.Parse(e[0]).ToDeg(); break;
-                            case "ang": fd.GyroRoll = double.Parse(e[0]).ToDeg(); fd.GyroYaw = -double.Parse(e[1]).ToDeg(); fd.GyroPitch = double.Parse(e[2]).ToDeg(); break;
-                            case "pos": fd.PosX = double.Parse(e[0]); fd.PosY = double.Parse(e[1]); fd.PosZ = double.Parse(e[2]); break;
-                            case "vel": fd.VelX = double.Parse(e[0]); fd.VelY = double.Parse(e[1]); fd.VelZ = double.Parse(e[2]); break;
-                            case "acc": fd.AccX = double.Parse(e[0]); fd.AccY = double.Parse(e[1]); fd.AccZ = double.Parse(e[2]); break;
-                            case "asl": fd.AltitudeAsl = double.Parse(e[0]); break;
-                            case "agl": fd.AltitudeAgl = double.Parse(e[0]); break;
-                            case "balt": fd.AltitudeBaro = double.Parse(e[0]); break;
-                            case "ralt": fd.AltitudeRadar = double.Parse(e[0]); break;
-                            case "vspd": fd.SpeedVertical = double.Parse(e[0]); break;
-                            case "tas": fd.SpeedTrue = double.Parse(e[0]); break;
-                            case "ias": fd.SpeedIndicatedBad = double.Parse(e[0]); break;
-                            case "mach": fd.SpeedMachBad = double.Parse(e[0]); break;
-                            case "aoa": fd.AngleOfAttack = double.Parse(e[0]); break;
-                            case "aoss": fd.AngleOfSideSlip = -double.Parse(e[0]); break;
-                            case "fuint": fd.FuelInternal = double.Parse(e[0]); break;
-                            case "fuext": fd.FuelExternal = double.Parse(e[0]); break;
-                            case "fufl": fd.FuelFlow = double.Parse(e[0]); break;
-                            case "surf":
-                                fd.AileronL = double.Parse(e[0]); fd.AileronR = double.Parse(e[1]);
-                                fd.ElevatorL = double.Parse(e[2]); fd.ElevatorR = double.Parse(e[3]);
-                                fd.RudderL = double.Parse(e[4]); fd.RudderR = double.Parse(e[5]);
-                                break;
-                            case "flap": fd.Flaps = double.Parse(e[0]); break;
-                            case "airbrk": fd.Airbrakes = double.Parse(e[0]); break;
-                            case "lg": fd.LandingGear = double.Parse(e[0]); break;
-                            case "wind": fd.WindX = double.Parse(e[0]); fd.WindY = double.Parse(e[1]); fd.WindZ = double.Parse(e[2]); break;
-                            case "joyp": fd.JoyPitch = double.Parse(e[0]); break;
-                            case "joyr": fd.JoyRoll = double.Parse(e[0]); break;
-                            case "joyy": fd.JoyYaw = double.Parse(e[0]); break;
-                            case "joyt1": fd.JoyThrottle1 = double.Parse(e[0]); break;
-                            case "joyt2": fd.JoyThrottle2 = double.Parse(e[0]); break;
-                            case "ptrm": fd.TrimPitch = double.Parse(e[0]); break;
-                            case "rtrm": fd.TrimRoll = double.Parse(e[0]); break;
-                            case "ytrm": fd.TrimYaw = double.Parse(e[0]); break;
-                            case "test1": fd.Test1 = double.Parse(e[0]); break;
-                            case "test2": fd.Test2 = double.Parse(e[0]); break;
-                            case "test3": fd.Test3 = double.Parse(e[0]); break;
-                            case "test4": fd.Test4 = double.Parse(e[0]); break;
                             default:
+                                if (Aircraft.ProcessFrameEntry(fd, e))
+                                    break;
                                 if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
                                 Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
                                 LastReceiveWithWarnings = bytes;
@@ -232,7 +222,7 @@ public class DcsController
                         if (PrevFrame != null) // don't do control on the very first frame
                         {
                             LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
-                            LastFrame.BankRate = bankRateFilter.Step((LastFrame.Bank - PrevFrame.Bank) / LastFrame.dT);
+                            Aircraft.ProcessFrame(LastFrame, PrevFrame);
                             _joystick?.Update();
                             ControlData control = null;
                             foreach (var ctl in FlightControllers)
@@ -266,8 +256,8 @@ public class DcsController
                 else
                 {
                     _session = parsedBulk.Session;
+                    Aircraft = AircraftTypes.TryGetValue(parsedBulk.Aircraft, out var make) ? make() : new Aircraft(); // TODO: detect aircraft change within session and reset everything
                     PrevFrame = LastFrame = null;
-                    bankRateFilter.Reset();
                     foreach (var ctrl in FlightControllers)
                         if (ctrl.Enabled)
                         {
