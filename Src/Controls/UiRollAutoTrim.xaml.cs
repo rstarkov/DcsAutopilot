@@ -39,7 +39,7 @@ public partial class UiRollAutoTrim : UserControl
             return;
         lblRollLabel.Content = ctrl.UsingBankRate ? "Bank:" : "Roll:";
         lblRoll.Content = Dcs.LastFrame == null ? "?" : ctrl.UsingBankRate ? (Util.SignStr(Dcs.LastFrame.Bank, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°") : (Util.SignStr(Dcs.LastFrame.GyroRoll, "0.00", "⮜ ", "⮞ ", "⬥ ") + "°/s");
-        lblTrim.Content = Dcs.LastFrame?.TrimRoll == null ? "?" : Util.SignStr(Dcs.LastFrame.TrimRoll.Value * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
+        lblTrim.Content = (Dcs.LastFrame == null || double.IsNaN(Dcs.LastFrame.TrimRoll)) ? "?" : Util.SignStr(Dcs.LastFrame.TrimRoll * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + "%";
         lblState.Content = ctrl.Status;
     }
 }

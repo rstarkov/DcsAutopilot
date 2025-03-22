@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -12,60 +12,66 @@ public class Aircraft
 
     private IFilter _bankRateFilter = Filters.BesselD5;
 
-    public virtual bool ProcessFrameEntry(FrameData fd, DataPacket.Entry e)
+    public virtual void ProcessBulk(DataPacket pkt, BulkData bulk)
     {
-        switch (e.Key)
-        {
-            case "pitch": fd.Pitch = double.Parse(e[0]).ToDeg(); break;
-            case "bank": fd.Bank = double.Parse(e[0]).ToDeg(); break;
-            case "hdg": fd.Heading = double.Parse(e[0]).ToDeg(); break;
-            case "ang": fd.GyroRoll = double.Parse(e[0]).ToDeg(); fd.GyroYaw = -double.Parse(e[1]).ToDeg(); fd.GyroPitch = double.Parse(e[2]).ToDeg(); break;
-            case "pos": fd.PosX = double.Parse(e[0]); fd.PosY = double.Parse(e[1]); fd.PosZ = double.Parse(e[2]); break;
-            case "vel": fd.VelX = double.Parse(e[0]); fd.VelY = double.Parse(e[1]); fd.VelZ = double.Parse(e[2]); break;
-            case "acc": fd.AccX = double.Parse(e[0]); fd.AccY = double.Parse(e[1]); fd.AccZ = double.Parse(e[2]); break;
-            case "asl": fd.AltitudeAsl = double.Parse(e[0]); break;
-            case "agl": fd.AltitudeAgl = double.Parse(e[0]); break;
-            case "balt": fd.AltitudeBaro = double.Parse(e[0]); break;
-            case "ralt": fd.AltitudeRadar = double.Parse(e[0]); break;
-            case "vspd": fd.SpeedVertical = double.Parse(e[0]); break;
-            case "tas": fd.SpeedTrue = double.Parse(e[0]); break;
-            case "ias": fd.SpeedIndicatedBad = double.Parse(e[0]); break;
-            case "mach": fd.SpeedMachBad = double.Parse(e[0]); break;
-            case "aoa": fd.AngleOfAttack = double.Parse(e[0]); break;
-            case "aoss": fd.AngleOfSideSlip = -double.Parse(e[0]); break;
-            case "fuint": fd.FuelInternal = double.Parse(e[0]); break;
-            case "fuext": fd.FuelExternal = double.Parse(e[0]); break;
-            case "fufl": fd.FuelFlow = double.Parse(e[0]); break;
-            case "surf":
-                fd.AileronL = double.Parse(e[0]); fd.AileronR = double.Parse(e[1]);
-                fd.ElevatorL = double.Parse(e[2]); fd.ElevatorR = double.Parse(e[3]);
-                fd.RudderL = double.Parse(e[4]); fd.RudderR = double.Parse(e[5]);
-                break;
-            case "flap": fd.Flaps = double.Parse(e[0]); break;
-            case "airbrk": fd.Airbrakes = double.Parse(e[0]); break;
-            case "lg": fd.LandingGear = double.Parse(e[0]); break;
-            case "wind": fd.WindX = double.Parse(e[0]); fd.WindY = double.Parse(e[1]); fd.WindZ = double.Parse(e[2]); break;
-            case "joyp": fd.JoyPitch = double.Parse(e[0]); break;
-            case "joyr": fd.JoyRoll = double.Parse(e[0]); break;
-            case "joyy": fd.JoyYaw = double.Parse(e[0]); break;
-            case "joyt1": fd.JoyThrottle1 = double.Parse(e[0]); break;
-            case "joyt2": fd.JoyThrottle2 = double.Parse(e[0]); break;
-            case "ptrm": fd.TrimPitch = double.Parse(e[0]); break;
-            case "rtrm": fd.TrimRoll = double.Parse(e[0]); break;
-            case "ytrm": fd.TrimYaw = double.Parse(e[0]); break;
-            case "test1": fd.Test1 = double.Parse(e[0]); break;
-            case "test2": fd.Test2 = double.Parse(e[0]); break;
-            case "test3": fd.Test3 = double.Parse(e[0]); break;
-            case "test4": fd.Test4 = double.Parse(e[0]); break;
-            default:
-                return false;
-        }
-        return true;
     }
 
-    public virtual void ProcessFrame(FrameData frame, FrameData prevFrame)
+    /// <param name="pkt">
+    ///     Data packet to process.</param>
+    /// <param name="frame">
+    ///     Frame to populate with data received in this packet. For first frame, <c>dT</c> is zero.</param>
+    /// <param name="prevFrame">
+    ///     Previous frame. For first frame in a session it's <c>null</c>.</param>
+    public virtual void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)
     {
-        frame.BankRate = _bankRateFilter.Step((frame.Bank - prevFrame.Bank) / frame.dT);
+        frame.Pitch = double.Parse(pkt.Entries["pitch"][0]).ToDeg();
+        frame.Bank = double.Parse(pkt.Entries["bank"][0]).ToDeg();
+        frame.Heading = double.Parse(pkt.Entries["hdg"][0]).ToDeg();
+        frame.GyroRoll = double.Parse(pkt.Entries["ang"][0]).ToDeg(); frame.GyroYaw = -double.Parse(pkt.Entries["ang"][1]).ToDeg(); frame.GyroPitch = double.Parse(pkt.Entries["ang"][2]).ToDeg();
+        frame.PosX = double.Parse(pkt.Entries["pos"][0]); frame.PosY = double.Parse(pkt.Entries["pos"][1]); frame.PosZ = double.Parse(pkt.Entries["pos"][2]);
+        frame.VelX = double.Parse(pkt.Entries["vel"][0]); frame.VelY = double.Parse(pkt.Entries["vel"][1]); frame.VelZ = double.Parse(pkt.Entries["vel"][2]);
+        frame.AccX = double.Parse(pkt.Entries["acc"][0]); frame.AccY = double.Parse(pkt.Entries["acc"][1]); frame.AccZ = double.Parse(pkt.Entries["acc"][2]);
+        frame.AltitudeAsl = double.Parse(pkt.Entries["asl"][0]);
+        frame.AltitudeAgl = double.Parse(pkt.Entries["agl"][0]);
+        frame.AltitudeBaro = double.Parse(pkt.Entries["balt"][0]);
+        frame.AltitudeRadar = double.Parse(pkt.Entries["ralt"][0]);
+        frame.SpeedVertical = double.Parse(pkt.Entries["vspd"][0]);
+        frame.SpeedTrue = double.Parse(pkt.Entries["tas"][0]);
+        frame.SpeedIndicatedBad = double.Parse(pkt.Entries["ias"][0]);
+        frame.SpeedMachBad = double.Parse(pkt.Entries["mach"][0]);
+        frame.AngleOfAttack = double.Parse(pkt.Entries["aoa"][0]);
+        frame.AngleOfSideSlip = -double.Parse(pkt.Entries["aoss"][0]);
+        frame.FuelInternal = double.Parse(pkt.Entries["fuint"][0]);
+        frame.FuelExternal = double.Parse(pkt.Entries["fuext"][0]);
+        frame.FuelFlow = double.Parse(pkt.Entries["fufl"][0]);
+        frame.AileronL = double.Parse(pkt.Entries["surf"][0]); frame.AileronR = double.Parse(pkt.Entries["surf"][1]);
+        frame.ElevatorL = double.Parse(pkt.Entries["surf"][2]); frame.ElevatorR = double.Parse(pkt.Entries["surf"][3]);
+        frame.RudderL = double.Parse(pkt.Entries["surf"][4]); frame.RudderR = double.Parse(pkt.Entries["surf"][5]);
+        frame.Flaps = double.Parse(pkt.Entries["flap"][0]);
+        frame.Airbrakes = double.Parse(pkt.Entries["airbrk"][0]);
+        frame.LandingGear = double.Parse(pkt.Entries["lg"][0]);
+        frame.WindX = double.Parse(pkt.Entries["wind"][0]); frame.WindY = double.Parse(pkt.Entries["wind"][1]); frame.WindZ = double.Parse(pkt.Entries["wind"][2]);
+        //frame.JoyPitch = double.Parse(pkt.Entries["joyp"][0]); // WIP
+        //frame.JoyRoll = double.Parse(pkt.Entries["joyr"][0]);
+        //frame.JoyYaw = double.Parse(pkt.Entries["joyy"][0]);
+        //frame.JoyThrottle1 = double.Parse(pkt.Entries["joyt1"][0]);
+        //frame.JoyThrottle2 = double.Parse(pkt.Entries["joyt2"][0]);
+        frame.TrimPitch = double.Parse(pkt.Entries["ptrm"][0]);
+        frame.TrimRoll = double.Parse(pkt.Entries["rtrm"][0]);
+        frame.TrimYaw = double.Parse(pkt.Entries["ytrm"][0]);
+        if (pkt.Entries.TryGetValue("test1", out var e))
+            frame.Test1 = double.Parse(e[0]);
+        if (pkt.Entries.TryGetValue("test2", out e))
+            frame.Test2 = double.Parse(e[0]);
+        if (pkt.Entries.TryGetValue("test3", out e))
+            frame.Test3 = double.Parse(e[0]);
+        if (pkt.Entries.TryGetValue("test4", out e))
+            frame.Test4 = double.Parse(e[0]);
+
+        if (prevFrame != null)
+        {
+            frame.BankRate = _bankRateFilter.Step((frame.Bank - prevFrame.Bank) / frame.dT);
+        }
     }
 
     public virtual void BuildControlPacket(ControlData ctrl, StringBuilder pkt)
@@ -129,6 +135,8 @@ public class HornetAircraft : Aircraft
         _rollTrimRateCtrl.AppendControl(ctrl.RollTrimRate, pkt);
     }
 }
+
+
 
 public class ThreeWayButtonRateHelper(string _pca3wConfig)
 {

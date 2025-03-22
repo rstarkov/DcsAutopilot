@@ -51,7 +51,7 @@ public partial class MainWindow : ManagedWindow
         uiControlPositions.UpdateGuiTimer();
 
         var status = Dcs.Status;
-        if (status == "Active control" && (DateTime.UtcNow - Dcs.LastFrameUtc).TotalMilliseconds > 250)
+        if (status == "Active control" && Dcs.LastFrame != null && (DateTime.UtcNow - Dcs.LastFrame.ReceivedUtc).TotalMilliseconds > 250)
             status = $"Stalled; waiting for DCS";
         if (Dcs.Warnings.Count > 0)
             status = $"{Dcs.Warnings.Count} warnings: {Dcs.Warnings.First().Key} ...";
@@ -62,7 +62,7 @@ public partial class MainWindow : ManagedWindow
         while (_fps.Count > 0 && _fps.Peek().ts < DateTime.UtcNow.AddSeconds(-1))
             _fps.Dequeue();
         var fps = _fps.Count > 1 ? (fpsnew.Item2 - _fps.Peek().frames) / (fpsnew.Item1 - _fps.Peek().ts).TotalSeconds : 0;
-        var statsStr = $"FPS: {fps:0}   Frames: {Dcs.LastFrame?.FrameNum ?? 0:#,0} ({Dcs.LastFrame?.Underflows ?? 0}/{Dcs.LastFrame?.Overflows ?? 0})   Bytes: {Dcs.LastFrameBytes:#,0}";
+        var statsStr = $"FPS: {fps:0}   Frames: {Dcs.LastFrame?.FrameNum ?? 0:#,0} ({Dcs.LastFrame?.Underflows ?? 0}/{Dcs.LastFrame?.Overflows ?? 0})   Bytes: {Dcs.LastFrame?.Bytes ?? 0:#,0}";
         if (Dcs.Latencies.Count() > 0)
         {
             var avgD = Dcs.Latencies.Average(x => x.data) * 1000;

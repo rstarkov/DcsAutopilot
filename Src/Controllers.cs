@@ -1,4 +1,4 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -26,7 +26,7 @@ public class RollAutoTrim : FlightControllerBase
         }
         var ctrl = new ControlData();
         var rollRate = UsingBankRate ? frame.BankRate : frame.GyroRoll; // BankRate works better for keeping a turn absolutely steady, as the GyroRoll is never exactly zero in this scenario
-        bool supportsAbsoluteTrim = Dcs.LastBulk?.Aircraft == "F-16C_50"; // can not only set absolute trim, but also read it back (critical to interop with manual trim nicely)
+        bool supportsAbsoluteTrim = Dcs.Aircraft.SupportsSetTrim && !double.IsNaN(frame.TrimRoll); // can not only set absolute trim, but also read it back (critical to interop with manual trim nicely)
         var P = supportsAbsoluteTrim ? 0.1 : Math.Abs(rollRate) < 2 ? 0.1 : 0.5;
         var trimRateLimit = !supportsAbsoluteTrim ? 1.0 : 0.2; // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
         var trimRate = -(P * rollRate).Clip(-trimRateLimit, trimRateLimit);
@@ -34,7 +34,7 @@ public class RollAutoTrim : FlightControllerBase
             trimRate = 0;
         Status = Util.SignStr(trimRate * 100, "0.0", "⮜ ", "⮞ ", "⬥ ") + (supportsAbsoluteTrim ? "%/s" : "%");
         if (supportsAbsoluteTrim)
-            ctrl.RollTrim = (frame.TrimRoll.Value + trimRate * frame.dT).Clip(-1, 1);
+            ctrl.RollTrim = (frame.TrimRoll + trimRate * frame.dT).Clip(-1, 1);
         else
             ctrl.RollTrimRate = trimRate;
         return ctrl;

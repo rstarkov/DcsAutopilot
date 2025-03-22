@@ -59,6 +59,8 @@ function LuaExportAfterNextFrame()
         local engine = LoGetEngineInfo()
         local mech = LoGetMechInfo()
 
+        dt[#dt+1] = "aircraft"
+        dt[#dt+1] = sdata.Name
         dt[#dt+1] = "pitch"
         dt[#dt+1] = sdata.Pitch
         dt[#dt+1] = "bank"

@@ -2,17 +2,17 @@
 
 public class BulkData
 {
-    public double Session;
+    public DateTime ReceivedUtc;
+    public int Bytes;
     public bool ExportAllowed;
-    public string Aircraft;
     public string DcsVersion;
 }
 
 public class FrameData
 {
-    public double Session;
+    public DateTime ReceivedUtc;
+    public int Bytes;
     public int FrameNum;
-    public bool ExportAllowed;
     /// <summary>
     ///     Number of times DCS Lua tried to receive a UDP control frame before a tick and either got none, or more than one.</summary>
     public int Underflows, Overflows;
@@ -92,10 +92,10 @@ public class FrameData
     /// <summary>Position of the landing gear lever: 0 for gear up, 1 for gear down, 0..1 while the lever is moving.</summary>
     public double LandingGear;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
-    public double? TrimRoll, TrimPitch, TrimYaw;
+    public double TrimRoll = double.NaN, TrimPitch = double.NaN, TrimYaw = double.NaN;
     public double WindX, WindY, WindZ;
     public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
-    public double Test1, Test2, Test3, Test4;
+    public double Test1 = double.NaN, Test2 = double.NaN, Test3 = double.NaN, Test4 = double.NaN;
 
     /// <summary>
     ///     Rate of change of <see cref="Bank"/> in degrees/second. Computed directly from <see cref="Bank"/> with a short

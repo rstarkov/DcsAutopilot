@@ -30,7 +30,7 @@ abstract class MultiTester
         _dcs = new();
         _dcs.FlightControllers.Add(_ctrl);
         _dcs.Start();
-        while (_dcs.Status != "Active control" || _dcs.LastFrameUtc < DateTime.UtcNow.AddMilliseconds(-50))
+        while (_dcs.Status != "Active control" || _dcs.LastFrame == null || _dcs.LastFrame.ReceivedUtc < DateTime.UtcNow.AddMilliseconds(-50))
             Thread.Sleep(100);
         for (int i = 1; i < SpeedUp; i++)
             DcsWindow.SpeedUp();
@@ -55,7 +55,7 @@ abstract class MultiTester
         Console.CursorVisible = false;
         Console.Write("Initial conditions... ");
         var w = 22;
-        if (_dcs == null || _dcs.LastFrame == null || _dcs.LastFrame.FuelInternal < InitialMinFuel || (DateTime.UtcNow - _dcs.LastFrameUtc).TotalSeconds > 5)
+        if (_dcs == null || _dcs.LastFrame == null || _dcs.LastFrame.FuelInternal < InitialMinFuel || (DateTime.UtcNow - _dcs.LastFrame.ReceivedUtc).TotalSeconds > 5)
             Restart();
         again:;
         DefaultPids();

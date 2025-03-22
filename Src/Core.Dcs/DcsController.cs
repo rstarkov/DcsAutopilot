@@ -22,18 +22,15 @@ public class DcsController
     private GlobalKeyboardListener _keyboardListener;
     private JoystickState _joystick;
     private JoystickConfig _joystickConfig = new();
-    private double _session;
+    private string _session;
     private ConcurrentQueue<(double data, double ctrl)> _latencies = new();
 
     public ObservableCollection<FlightControllerBase> FlightControllers { get; private set; } = new();
     public int Port { get; private set; }
     public ConcurrentDictionary<string, bool> Warnings { get; private set; } = new(); // client can remove seen warnings but they may get re-added on next occurrence
-    public byte[] LastReceiveWithWarnings { get; private set; }
 
     public bool IsRunning { get; private set; } = false;
     public string Status { get; private set; } = "Stopped";
-    public int LastFrameBytes { get; private set; }
-    public DateTime LastFrameUtc { get; private set; }
     public IEnumerable<(double data, double ctrl)> Latencies => _latencies;
     public Aircraft Aircraft { get; private set; }
     /// <summary>
@@ -127,13 +124,17 @@ public class DcsController
 
         IsRunning = false;
         Status = "Stopped";
+        _latencies.Clear();
+        ClearSession();
+    }
+
+    private void ClearSession()
+    {
         Aircraft = null;
         PrevFrame = null;
-        LastFrameUtc = DateTime.MinValue;
         LastFrame = null;
         LastBulk = null;
         LastControl = null;
-        _latencies.Clear();
     }
 
     private void thread(CancellationToken token)
@@ -146,134 +147,114 @@ public class DcsController
                 return;
             var bytes = task.Result.Buffer;
             _endpoint = task.Result.RemoteEndPoint;
-            FrameData parsedFrame = null;
-            BulkData parsedBulk = null;
             try
             {
-                var data = new DataPacket(bytes);
-                if (data.PacketType == "frame" && Aircraft != null)
-                {
-                    if (Aircraft != null) // will be null for a few frames when starting DcsAutopilot in the middle of a live session
-                    {
-                        var fd = new FrameData();
-                        foreach (var e in data.Entries)
-                            switch (e.Key)
-                            {
-                                case "sess": fd.Session = double.Parse(e[0]); break;
-                                case "fr": fd.FrameNum = int.Parse(e[0]); break;
-                                case "ufof": fd.Underflows = int.Parse(e[0]); fd.Overflows = int.Parse(e[1]); break;
-                                case "time": fd.SimTime = double.Parse(e[0]); break;
-                                case "sent": fd.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(e[0]); break;
-                                case "ltcy": fd.LatencyControl = double.Parse(e[0]); break;
-                                case "exp": fd.ExportAllowed = e[0] == "true"; break;
-                                default:
-                                    if (Aircraft.ProcessFrameEntry(fd, e))
-                                        break;
-                                    if (Warnings.Count > 100) Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
-                                    Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
-                                    LastReceiveWithWarnings = bytes;
-                                    break;
-                            }
-                        parsedFrame = fd;
-                    }
-                }
-                else if (data.PacketType == "bulk")
-                {
-                    var bd = new BulkData();
-                    foreach (var e in data.Entries)
-                        switch (e.Key)
-                        {
-                            case "sess": bd.Session = double.Parse(e[0]); break;
-                            case "exp": bd.ExportAllowed = e[0] == "true"; break;
-                            case "aircraft": bd.Aircraft = e[0]; break;
-                            case "ver": bd.DcsVersion = e[0]; break;
-                            default:
-                                Warnings[$"Unrecognized bulk data entry: \"{e.Key}\""] = true;
-                                LastReceiveWithWarnings = bytes;
-                                break;
-                        }
-                    parsedBulk = bd;
-                }
+                var pkt = new DataPacket(bytes);
+                if (pkt.PacketType == "bulk")
+                    ProcessBulkPacket(pkt);
+                else if (pkt.PacketType == "frame")
+                    ProcessFramePacket(pkt);
                 else
-                    Warnings[$"Unrecognized data type: \"{data.PacketType}\""] = true;
+                    Warnings[$"Unrecognized packet type: \"{pkt.PacketType}\""] = true;
             }
             catch (Exception e)
             {
                 Warnings[$"Exception while parsing UDP message: \"{e.Message}\""] = true;
-                LastReceiveWithWarnings = bytes;
             }
-
-            if (parsedFrame != null)
-            {
-                if (_session != parsedFrame.Session)
-                {
-                    PrevFrame = LastFrame = null;
-                    Status = "Session changed; synchronising";
-                }
-                else
-                {
-                    Status = "Active control";
-                    if (LastFrame?.SimTime != parsedFrame.SimTime) // the frame we've just received may be a duplicate, which happens on pause / resume
-                    {
-                        PrevFrame = LastFrame;
-                        LastFrame = parsedFrame;
-                        LastFrameBytes = bytes.Length;
-                        LastFrameUtc = DateTime.UtcNow;
-                        _latencies.Enqueue((LastFrame.LatencyData, LastFrame.LatencyControl));
-                        while (_latencies.Count > 200)
-                            _latencies.TryDequeue(out _);
-                        if (PrevFrame != null) // don't do control on the very first frame
-                        {
-                            LastFrame.dT = LastFrame.SimTime - PrevFrame.SimTime;
-                            Aircraft.ProcessFrame(LastFrame, PrevFrame);
-                            _joystick?.Update();
-                            ControlData control = null;
-                            foreach (var ctl in FlightControllers)
-                                if (ctl.Enabled)
-                                {
-                                    var cd = ctl.ProcessFrame(LastFrame);
-                                    if (cd != null)
-                                    {
-                                        if (control == null)
-                                            control = cd;
-                                        else if (!control.Merge(cd))
-                                            Warnings[$"Controller \"{ctl.Name}\" is setting the same controls as an earlier controller; partially ignored."] = true;
-                                    }
-                                }
-                            LastControl = control;
-                            if (control != null)
-                                Send(control);
-                        }
-                    }
-                }
-            }
-            if (parsedBulk != null)
-            {
-                LastBulk = parsedBulk;
-                if (_session == parsedBulk.Session)
-                {
-                    foreach (var ctrl in FlightControllers)
-                        if (ctrl.Enabled)
-                            ctrl.ProcessBulkUpdate(parsedBulk);
-                }
-                else
-                {
-                    _session = parsedBulk.Session;
-                    Aircraft = AircraftTypes.TryGetValue(parsedBulk.Aircraft, out var make) ? make() : new Aircraft(); // TODO: detect aircraft change within session and reset everything
-                    PrevFrame = LastFrame = null;
-                    foreach (var ctrl in FlightControllers)
-                        if (ctrl.Enabled)
-                        {
-                            ctrl.Reset();
-                            ctrl.NewSession(parsedBulk);
-                        }
-                    Status = "Session started; waiting for data";
-                }
-            }
+            if (Warnings.Count > 100)
+                Warnings.Clear(); // some warnings change all the time; ugly but good enough fix for that
         }
     }
 
-    private void Send(ControlData data)
+    private void ProcessBulkPacket(DataPacket pkt)
+    {
+        var bulk = new BulkData();
+        bulk.ReceivedUtc = DateTime.UtcNow;
+        bulk.Bytes = pkt.Bytes;
+        bulk.ExportAllowed = pkt.Entries["exp"][0] == "true";
+        bulk.DcsVersion = pkt.Entries["ver"][0];
+
+        if (pkt.Session != _session || pkt.Aircraft != Aircraft?.DcsId)
+        {
+            ClearSession();
+            _session = pkt.Session;
+            Aircraft = AircraftTypes.TryGetValue(pkt.Aircraft, out var make) ? make() : new Aircraft();
+            Aircraft.ProcessBulk(pkt, bulk);
+            LastBulk = bulk;
+            foreach (var ctrl in FlightControllers)
+                if (ctrl.Enabled)
+                {
+                    ctrl.Reset();
+                    ctrl.NewSession(bulk);
+                }
+            Status = "Session started; waiting for data";
+        }
+        else
+        {
+            Aircraft.ProcessBulk(pkt, bulk);
+            LastBulk = bulk;
+            foreach (var ctrl in FlightControllers)
+                if (ctrl.Enabled)
+                    ctrl.ProcessBulkUpdate(bulk);
+        }
+        // Warnings[$"Unrecognized bulk data entry: \"{e.Key}\""] = true;
+    }
+
+    private void ProcessFramePacket(DataPacket pkt)
+    {
+        if (pkt.Session != _session || pkt.Aircraft != Aircraft?.DcsId)
+        {
+            Status = "Session changed; synchronising";
+            return;
+        }
+
+        Status = "Active control";
+        var frame = new FrameData();
+        frame.ReceivedUtc = DateTime.UtcNow;
+        frame.Bytes = pkt.Bytes;
+        frame.SimTime = double.Parse(pkt.Entries["time"][0]);
+        if (LastFrame?.SimTime == frame.SimTime)
+            return; // the frame we've just received may be a duplicate, which happens on pause / resume
+        frame.FrameNum = int.Parse(pkt.Entries["fr"][0]);
+        frame.Underflows = int.Parse(pkt.Entries["ufof"][0]);
+        frame.Overflows = int.Parse(pkt.Entries["ufof"][1]);
+        frame.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(pkt.Entries["sent"][0]);
+        frame.LatencyControl = double.Parse(pkt.Entries["ltcy"][0]);
+        if (LastFrame != null)
+            frame.dT = frame.SimTime - LastFrame.SimTime;
+        Aircraft.ProcessFrame(pkt, frame, LastFrame);
+        // Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
+
+        PrevFrame = LastFrame;
+        LastFrame = frame;
+
+        _latencies.Enqueue((LastFrame.LatencyData, LastFrame.LatencyControl));
+        while (_latencies.Count > 200)
+            _latencies.TryDequeue(out _);
+
+        if (PrevFrame != null) // don't do control on the very first frame
+        {
+            _joystick?.Update();
+            ControlData control = null;
+            foreach (var ctl in FlightControllers)
+                if (ctl.Enabled)
+                {
+                    var cd = ctl.ProcessFrame(LastFrame);
+                    if (cd != null)
+                    {
+                        if (control == null)
+                            control = cd;
+                        else if (!control.Merge(cd))
+                            Warnings[$"Controller \"{ctl.Name}\" is setting the same controls as an earlier controller; partially ignored."] = true;
+                    }
+                }
+            LastControl = control;
+            if (control != null)
+                SendControl(control);
+        }
+    }
+
+    private void SendControl(ControlData data)
     {
         var cmd = new StringBuilder();
 
@@ -320,10 +301,14 @@ public class DcsController
 public class DataPacket
 {
     public string PacketType { get; private set; }
-    public IReadOnlyList<Entry> Entries { get; private set; }
+    public string Session { get; private set; }
+    public string Aircraft { get; private set; }
+    public int Bytes { get; private set; }
+    public IReadOnlyDictionary<string, Entry> Entries { get; private set; }
 
     public DataPacket(byte[] raw)
     {
+        Bytes = raw.Length;
         parse(raw);
     }
 
@@ -333,7 +318,7 @@ public class DataPacket
         if (data[0] != "v2")
             throw new InvalidOperationException("Data packet format not supported.");
         PacketType = data[1];
-        var entries = new List<Entry>();
+        var entries = new Dictionary<string, Entry>();
         Entries = entries.AsReadOnly();
         for (int i = 2; i < data.Length;)
         {
@@ -345,14 +330,15 @@ public class DataPacket
                 len = int.Parse(key[(lenPos + 1)..]);
                 key = key[..lenPos];
             }
-            entries.Add(new(key, len, data, i));
+            entries.Add(key, new(len, data, i));
             i += len;
         }
+        Session = entries["sess"][0];
+        Aircraft = entries["aircraft"][0];
     }
 
-    public class Entry(string _key, int _length, string[] _data, int _offset)
+    public class Entry(int _length, string[] _data, int _offset)
     {
-        public string Key => _key;
         public int Length => _length;
         public string this[int index] => index >= 0 && index < _length ? _data[_offset + index] : throw new IndexOutOfRangeException();
     }
