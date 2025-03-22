@@ -32,6 +32,10 @@ end
 
 
 function LuaExportAfterNextFrame()
+    if socket.gettime() - LastBulkData > 1 then
+        SendBulkData()
+    end
+
     local dt = { }
     -- table.insert is very slow even for pure appends, because Lua. #dt+1 is noticeably slower than
     -- a manual counter, also because Lua. We can't inline increment either, so the optimal performance
@@ -159,10 +163,6 @@ function LuaExportAfterNextFrame()
     end
 
     socket.try(UdpSocket:sendto(table.concat(dt,";"), "127.0.0.1", 9876))
-
-    if socket.gettime() - LastBulkData > 1 then
-        SendBulkData()
-    end
 end
 
 
