@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -9,6 +9,7 @@ public class Aircraft
     public virtual bool SupportsSetSpeedBrakeRate => false;
     public virtual bool SupportsSetTrim => false;
     public virtual bool SupportsSetTrimRate => false;
+    public virtual IEnumerable<(string key, string[] req)> DataRequests => [];
 
     private IFilter _bankRateFilter = Filters.BesselD5;
 
@@ -43,22 +44,12 @@ public class Aircraft
         frame.AngleOfSideSlip = -double.Parse(pkt.Entries["aoss"][0]);
         frame.FuelInternal = double.Parse(pkt.Entries["fuint"][0]);
         frame.FuelExternal = double.Parse(pkt.Entries["fuext"][0]);
-        frame.FuelFlow = double.Parse(pkt.Entries["fufl"][0]);
         frame.AileronL = double.Parse(pkt.Entries["surf"][0]); frame.AileronR = double.Parse(pkt.Entries["surf"][1]);
         frame.ElevatorL = double.Parse(pkt.Entries["surf"][2]); frame.ElevatorR = double.Parse(pkt.Entries["surf"][3]);
         frame.RudderL = double.Parse(pkt.Entries["surf"][4]); frame.RudderR = double.Parse(pkt.Entries["surf"][5]);
         frame.Flaps = double.Parse(pkt.Entries["flap"][0]);
         frame.Airbrakes = double.Parse(pkt.Entries["airbrk"][0]);
-        frame.LandingGear = double.Parse(pkt.Entries["lg"][0]);
         frame.WindX = double.Parse(pkt.Entries["wind"][0]); frame.WindY = double.Parse(pkt.Entries["wind"][1]); frame.WindZ = double.Parse(pkt.Entries["wind"][2]);
-        //frame.JoyPitch = double.Parse(pkt.Entries["joyp"][0]); // WIP
-        //frame.JoyRoll = double.Parse(pkt.Entries["joyr"][0]);
-        //frame.JoyYaw = double.Parse(pkt.Entries["joyy"][0]);
-        //frame.JoyThrottle1 = double.Parse(pkt.Entries["joyt1"][0]);
-        //frame.JoyThrottle2 = double.Parse(pkt.Entries["joyt2"][0]);
-        frame.TrimPitch = double.Parse(pkt.Entries["ptrm"][0]);
-        frame.TrimRoll = double.Parse(pkt.Entries["rtrm"][0]);
-        frame.TrimYaw = double.Parse(pkt.Entries["ytrm"][0]);
         if (pkt.Entries.TryGetValue("test1", out var e))
             frame.Test1 = double.Parse(e[0]);
         if (pkt.Entries.TryGetValue("test2", out e))
@@ -96,6 +87,25 @@ public class ViperAircraft : Aircraft
     public override bool SupportsSetTrim => true;
     public override bool SupportsSetTrimRate => true;
 
+    public override IEnumerable<(string key, string[] req)> DataRequests => [
+        ("fuel_flow", ["deva;0;88;", "deva;0;89;", "deva;0;90;"]),
+        ("pitch_trim_pos", ["deva;0;562;"]),
+        ("roll_trim_pos", ["deva;0;560;"]),
+        ("yaw_trim_pos", ["deva;0;565;"]),
+        ("landing_gear_lever", ["deva;0;362;"]),
+    ];
+
+    public override void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)
+    {
+        base.ProcessFrame(pkt, frame, prevFrame);
+        var fuelflow = pkt.Entries["fuel_flow"];
+        frame.FuelFlow = 10000 * Math.Floor(10 * fuelflow[0].ParseDouble() + 0.5) + 1000 * Math.Floor(10 * fuelflow[1].ParseDouble() + 0.5) + 100 * 10 * fuelflow[2].ParseDouble();
+        frame.TrimPitch = pkt.Entries["pitch_trim_pos"][0].ParseDouble();
+        frame.TrimRoll = -pkt.Entries["roll_trim_pos"][0].ParseDouble();
+        frame.TrimYaw = pkt.Entries["yaw_trim_pos"][0].ParseDouble();
+        frame.LandingGear = 1 - pkt.Entries["landing_gear_lever"][0].ParseDouble();
+    }
+
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");
     private ThreeWayButtonRateHelper _rollTrimRateCtrl = new("16;3004;3005");
 
@@ -122,6 +132,31 @@ public class HornetAircraft : Aircraft
     public override string DcsId => "FA-18C_hornet";
     public override bool SupportsSetSpeedBrakeRate => true;
     public override bool SupportsSetTrimRate => true;
+
+    public override IEnumerable<(string key, string[] req)> DataRequests => [
+        ("ctrl_pitch", ["deva;0;71;"]),
+        ("ctrl_roll", ["deva;0;74;"]),
+        ("ctrl_yaw", ["deva;0;500;"]),
+        ("ctrl_throttle", ["deva;0;104;", "deva;0;105;"]),
+        ("yaw_trim_pos", ["deva;0;345;"]),
+        ("landing_gear_lever", ["deva;0;226;"]),
+        ("landing_gear_ext", ["adrw;115;", "adrw;0;"]),
+    ];
+
+    public override void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)
+    {
+        base.ProcessFrame(pkt, frame, prevFrame);
+        frame.JoyPitch = pkt.Entries["ctrl_pitch"][0].ParseDouble();
+        frame.JoyRoll = pkt.Entries["ctrl_roll"][0].ParseDouble();
+        frame.JoyYaw = pkt.Entries["ctrl_yaw"][0].ParseDouble();
+        var ctrl_throttle = pkt.Entries["ctrl_throttle"];
+        frame.JoyThrottle1 = ctrl_throttle[0].ParseDouble();
+        frame.JoyThrottle2 = ctrl_throttle[1].ParseDouble();
+        frame.TrimYaw = pkt.Entries["yaw_trim_pos"][0].ParseDouble();
+        frame.LandingGear = 1 - pkt.Entries["landing_gear_lever"][0].ParseDouble();
+        var landing_gear_ext = pkt.Entries["landing_gear_ext"];
+        //frame.ExtLandingGear = (landing_gear_ext[0].ParseDouble() + landing_gear_ext[1].ParseDouble()) / 2;
+    }
 
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("13;3015;3014");
     private ThreeWayButtonRateHelper _rollTrimRateCtrl = new("13;3016;3017");

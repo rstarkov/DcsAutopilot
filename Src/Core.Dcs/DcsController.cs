@@ -23,6 +23,7 @@ public class DcsController
     private JoystickState _joystick;
     private JoystickConfig _joystickConfig = new();
     private string _session;
+    private AircraftDataRequests _dataRequests;
     private ConcurrentQueue<(double data, double ctrl)> _latencies = new();
 
     public ObservableCollection<FlightControllerBase> FlightControllers { get; private set; } = new();
@@ -135,6 +136,7 @@ public class DcsController
         LastFrame = null;
         LastBulk = null;
         LastControl = null;
+        _dataRequests = null;
     }
 
     private void thread(CancellationToken token)
@@ -180,6 +182,7 @@ public class DcsController
             _session = pkt.Session;
             Aircraft = AircraftTypes.TryGetValue(pkt.Aircraft, out var make) ? make() : new Aircraft();
             Aircraft.ProcessBulk(pkt, bulk);
+            _dataRequests = new AircraftDataRequests(Aircraft);
             LastBulk = bulk;
             foreach (var ctrl in FlightControllers)
                 if (ctrl.Enabled)
@@ -207,6 +210,12 @@ public class DcsController
             Status = "Session changed; synchronising";
             return;
         }
+        if (pkt.Entries["reqsid"][0] != _dataRequests?.ReqsId)
+        {
+            Status = "Data requests not ready; synchronising";
+            SendControl(new());
+            return;
+        }
 
         Status = "Active control";
         var frame = new FrameData();
@@ -220,6 +229,7 @@ public class DcsController
         frame.Overflows = int.Parse(pkt.Entries["ufof"][1]);
         frame.LatencyData = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 - double.Parse(pkt.Entries["sent"][0]);
         frame.LatencyControl = double.Parse(pkt.Entries["ltcy"][0]);
+        frame.DataRequestsId = pkt.Entries["reqsid"][0];
         if (LastFrame != null)
             frame.dT = frame.SimTime - LastFrame.SimTime;
         Aircraft.ProcessFrame(pkt, frame, LastFrame);
@@ -260,6 +270,8 @@ public class DcsController
 
         cmd.Append($"1;ts;{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0:0.000};");
         Aircraft.BuildControlPacket(data, cmd);
+        if (_dataRequests.ReqsId != LastFrame?.DataRequestsId)
+            _dataRequests.BuildControlPacket(cmd);
 
         var bytes = cmd.ToString().ToUtf8();
         _udp.Send(bytes, bytes.Length, _endpoint);
@@ -295,6 +307,37 @@ public class DcsController
             FlightControllers.Add(ctrl);
         }
         return ctrl;
+    }
+
+    class AircraftDataRequests
+    {
+        public string ReqsId;
+        private string _requestDef;
+
+        public AircraftDataRequests(Aircraft acft)
+        {
+            ReqsId = Random.Shared.NextString(8);
+            var reqdef = new StringBuilder();
+            reqdef.Append($"req;{ReqsId};");
+            var reqs = acft.DataRequests.ToList();
+            foreach (var req in reqs)
+            {
+                reqdef.Append($"{req.key};{req.req.Length};");
+                foreach (var r in req.req)
+                {
+                    if (r.StartsWith(";") || !r.EndsWith(";")) throw new Exception($"Check semicolons in data request: {r}");
+                    reqdef.Append(r);
+                }
+            }
+            _requestDef = reqdef.ToString();
+            var argsCount = _requestDef.Count(c => c == ';') - 1;
+            _requestDef = argsCount + ";" + _requestDef;
+        }
+
+        public void BuildControlPacket(StringBuilder pkt)
+        {
+            pkt.Append(_requestDef);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿namespace DcsAutopilot;
+namespace DcsAutopilot;
 
 public class BulkData
 {
@@ -8,6 +8,7 @@ public class BulkData
     public string DcsVersion;
 }
 
+/// <summary>Values that are not present on every aircraft are initialised to NaN.</summary>
 public class FrameData
 {
     public DateTime ReceivedUtc;
@@ -20,6 +21,7 @@ public class FrameData
     public double LatencyData;
     /// <summary>Seconds between DcsAutopilot sending Control and DCS Lua receiving and parsing it (for prev control frame).</summary>
     public double LatencyControl;
+    public string DataRequestsId;
 
     public double SimTime, dT;
     /// <summary>
@@ -87,14 +89,14 @@ public class FrameData
     /// <summary>
     ///     Total fuel flow in pounds/hour. May be read off gauges which cause glitches in the reading as it goes through
     ///     changing decimal places.</summary>
-    public double FuelFlow;
+    public double FuelFlow = double.NaN;
     public double Flaps, Airbrakes;
     /// <summary>Position of the landing gear lever: 0 for gear up, 1 for gear down, 0..1 while the lever is moving.</summary>
-    public double LandingGear;
+    public double LandingGear = double.NaN;
     public double AileronL, AileronR, ElevatorL, ElevatorR, RudderL, RudderR;
     public double TrimRoll = double.NaN, TrimPitch = double.NaN, TrimYaw = double.NaN;
     public double WindX, WindY, WindZ;
-    public double JoyPitch, JoyRoll, JoyYaw, JoyThrottle1, JoyThrottle2;
+    public double JoyPitch = double.NaN, JoyRoll = double.NaN, JoyYaw = double.NaN, JoyThrottle1 = double.NaN, JoyThrottle2 = double.NaN;
     public double Test1 = double.NaN, Test2 = double.NaN, Test3 = double.NaN, Test4 = double.NaN;
 
     /// <summary>

@@ -9,6 +9,7 @@ local Session = socket.gettime()
 local Latency = 0
 local LastBulkData = 0
 local AutoResetPCA = { }
+local DataReqs = { "none" }
 
 
 
@@ -76,11 +77,11 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = ang.x
         dt[#dt+1] = ang.y
         dt[#dt+1] = ang.z
-        dt[#dt+1] = "pos:3" -- cheaty
+        dt[#dt+1] = "pos:3"
         dt[#dt+1] = sdata.Position.x
         dt[#dt+1] = sdata.Position.y
         dt[#dt+1] = sdata.Position.z
-        dt[#dt+1] = "vel:3" -- cheaty
+        dt[#dt+1] = "vel:3"
         local vel = LoGetVectorVelocity()
         dt[#dt+1] = vel.x
         dt[#dt+1] = vel.y
@@ -130,35 +131,27 @@ function LuaExportAfterNextFrame()
         dt[#dt+1] = wind.x
         dt[#dt+1] = wind.y
         dt[#dt+1] = wind.z
-        if sdata.Name == 'FA-18C_hornet' then
-            -- really these should be sent by the host so that only the host needs to understand different airplanes
-            dt[#dt+1] = "joyp"
-            dt[#dt+1] = GetDevice(0):get_argument_value(71)
-            dt[#dt+1] = "joyr"
-            dt[#dt+1] = GetDevice(0):get_argument_value(74)
-            dt[#dt+1] = "joyy"
-            dt[#dt+1] = GetDevice(0):get_argument_value(500)
-            dt[#dt+1] = "joyt1"
-            dt[#dt+1] = GetDevice(0):get_argument_value(104)
-            dt[#dt+1] = "joyt2"
-            dt[#dt+1] = GetDevice(0):get_argument_value(105)
-            dt[#dt+1] = "lg"
-            dt[#dt+1] = 1.0 - GetDevice(0):get_argument_value(226)
-            dt[#dt+1] = "lgp" -- actual gear extension
-            dt[#dt+1] = (LoGetAircraftDrawArgumentValue(115) + LoGetAircraftDrawArgumentValue(0)) / 2
-            dt[#dt+1] = "ytrm"
-            dt[#dt+1] = GetDevice(0):get_argument_value(345)
-        elseif sdata.Name == 'F-16C_50' then
-            dt[#dt+1] = "fufl"
-            dt[#dt+1] = 10000*math.floor(10*GetDevice(0):get_argument_value(88) + 0.5) + 1000*math.floor(10*GetDevice(0):get_argument_value(89) + 0.5) + 100*10*GetDevice(0):get_argument_value(90)
-            dt[#dt+1] = "ptrm" -- pitch trim
-            dt[#dt+1] = GetDevice(0):get_argument_value(562)
-            dt[#dt+1] = "rtrm"
-            dt[#dt+1] = -GetDevice(0):get_argument_value(560)
-            dt[#dt+1] = "ytrm"
-            dt[#dt+1] = GetDevice(0):get_argument_value(565)
-            dt[#dt+1] = "lg"
-            dt[#dt+1] = 1.0 - GetDevice(0):get_argument_value(362)
+
+        -- data requests
+        dt[#dt+1] = "reqsid"
+        dt[#dt+1] = DataReqs[1] -- 1st entry is a random ID used by the other end to determine whether the right set of requests is included
+        local i = 2
+        while DataReqs[i] do
+            local name = DataReqs[i]
+            local count = tonumber(DataReqs[i+1])
+            i = i + 2
+            dt[#dt+1] = name..":"..count
+            for r = 1, count do
+                local cmd = DataReqs[i]
+                i = i + 1
+                if cmd == "deva" then
+                    dt[#dt+1] = GetDevice(tonumber(DataReqs[i])):get_argument_value(tonumber(DataReqs[i+1]))
+                    i = i + 2;
+                elseif cmd == "adrw" then
+                    dt[#dt+1] = LoGetAircraftDrawArgumentValue(tonumber(DataReqs[i]))
+                    i = i + 1
+                end
+            end
         end
     end
 
@@ -273,6 +266,12 @@ function LuaExportBeforeNextFrame()
                     --LogFile:write(LoGetModelTime() .. " ["..key.."] 4 GetDevice("..dev.."):pca("..actN..", 0)\n")
                     AutoResetPCA[key] = nil
                 end
+            elseif cmd == "req" then -- data requests
+                DataReqs = { }
+                for di = i + 1, i + args do
+                    DataReqs[di - i] = data[di]
+                end
+                LogFile:write("DataRequests = "..debugdump(DataReqs).."\n\n")
             end
             i = i + args + 1
         end
