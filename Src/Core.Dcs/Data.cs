@@ -128,6 +128,11 @@ public class FrameData
     public double SpeedMach => SpeedTrue / SpeedOfSound;
     /// <summary>Calibrated airspeed, in m/s. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
     public double SpeedCalibrated => 340.27 * Math.Sqrt(5 * (Math.Pow(OutsideAirPress * (Math.Pow(1 + 0.2 * SpeedMach * SpeedMach, 3.5) - 1) / 101325 + 1, 2.0 / 7.0) - 1));
+
+    /// <summary>Airspeed, m/s, as indicated by the cockpit instrument, without calibration.</summary>
+    public double DialSpeedIndicated = double.NaN;
+    /// <summary>Mach number as indicated by the cockpit instrument. May have range limits (eg minimum 0.5 for Viper).</summary>
+    public double DialSpeedMach = double.NaN;
 }
 
 public class ControlData

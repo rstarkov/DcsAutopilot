@@ -93,6 +93,8 @@ public class ViperAircraft : Aircraft
         ("roll_trim_pos", ["deva;0;560;"]),
         ("yaw_trim_pos", ["deva;0;565;"]),
         ("landing_gear_lever", ["deva;0;362;"]),
+        ("spd_dial_ias", ["deva;0;48;"]),
+        ("spd_dial_mach", ["deva;0;49;"]),
     ];
 
     public override void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)
@@ -104,6 +106,9 @@ public class ViperAircraft : Aircraft
         frame.TrimRoll = -pkt.Entries["roll_trim_pos"][0].ParseDouble();
         frame.TrimYaw = pkt.Entries["yaw_trim_pos"][0].ParseDouble();
         frame.LandingGear = 1 - pkt.Entries["landing_gear_lever"][0].ParseDouble();
+        frame.DialSpeedIndicated = 1000 * pkt.Entries["spd_dial_ias"][0].ParseDouble().KtsToMs();
+        var dialMach = pkt.Entries["spd_dial_mach"][0].ParseDouble();
+        frame.DialSpeedMach = dialMach > 0.95792 ? 0.50 : dialMach > 0.9215 ? (13.4342 - 13.4976 * dialMach) : dialMach > 0.889 ? (1.88876 - 0.93113 * dialMach) : (3.7 - 2.95784 * dialMach);
     }
 
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");
