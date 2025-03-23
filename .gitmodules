@@ -1,0 +1,3 @@
+[submodule "External/Seekers"]
+	path = External/Seekers
+	url = git@github.com:rstarkov/Seekers.git
