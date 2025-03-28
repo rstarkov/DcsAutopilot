@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\External\Seekers\Seekers.csproj" />
     <ProjectReference Include="..\Src\DcsAutopilot.csproj" />
   </ItemGroup>
 

@@ -1,4 +1,6 @@
-﻿using System.Windows.Input;
+﻿using System.Collections.Concurrent;
+using System.IO;
+using System.Windows.Input;
 using RT.Util.ExtensionMethods;
 
 namespace DcsAutopilot;
@@ -228,6 +230,25 @@ class SoundWarnings : FlightControllerBase
             }
         }
 
+        return null;
+    }
+}
+
+class DataLogger : FlightControllerBase
+{
+    public override string Name { get; set; } = "Data logger";
+    public ConcurrentQueue<string> Log = new();
+
+    public override ControlData ProcessFrame(FrameData frame)
+    {
+        Log.Enqueue($"{frame.SimTime},{frame.SpeedTrue.MsToKts()},{frame.SpeedIndicatedBad.MsToKts()},{frame.SpeedMachBad},{frame.DialSpeedIndicated},{frame.DialSpeedMach},{frame.AltitudeAsl.MetersToFeet()},{frame.AngleOfAttack}");
+        if (Log.Count > 100)
+        {
+            var lines = new List<string>();
+            while (Log.TryDequeue(out var line))
+                lines.Add(line);
+            Task.Run(() => File.AppendAllLines("datalogger.csv", lines));
+        }
         return null;
     }
 }
