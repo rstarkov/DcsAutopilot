@@ -68,52 +68,53 @@ public class CharacteriseAirspeedDial
             SetShift(data, points, 0.31470); // from last run
         File.WriteAllLines(output, points.Where(pt => pt.Include).Select(pt => $"{pt.DialIAS},{pt.Error}, {0}"));
 
-        var segments = new List<Segment>();
-        segments.Add(new SineSegment { FromSpd = 0.5, ToSpd = 35 });
-        segments.Add(new LineSegment() { FromSpd = 35, ToSpd = 42 });
-        segments.Add(new LineSegment() { FromSpd = 42, ToSpd = 95 });
-        segments.Add(new LineSegment() { FromSpd = 95, ToSpd = 152 });
-        segments.Add(new LineSegment() { FromSpd = 152, ToSpd = 182 });
-        segments.Add(new LineSegment() { FromSpd = 182, ToSpd = 199 });
-        segments.Add(new LineSegment() { FromSpd = 199, ToSpd = 255 });
-        segments.Add(new LineSegment() { FromSpd = 255, ToSpd = 303 });
-        segments.Add(new LineSegment() { FromSpd = 303, ToSpd = 355 });
-        segments.Add(new LineSegment() { FromSpd = 355, ToSpd = 402 });
-        segments.Add(new LineSegment() { FromSpd = 402, ToSpd = 455 });
-        segments.Add(new LineSegment() { FromSpd = 455, ToSpd = 500 });
-        segments.Add(new LineSegment() { FromSpd = 500, ToSpd = 552 });
-        segments.Add(new LineSegment() { FromSpd = 554, ToSpd = 574 });
-        segments.Add(new LineSegment() { FromSpd = 575, ToSpd = 594 });
-        segments.Add(new LineSegment() { FromSpd = 596, ToSpd = 613 });
-        segments.Add(new LineSegment() { FromSpd = 613, ToSpd = 621 });
-        segments.Add(new LineSegment() { FromSpd = 623, ToSpd = 633 });
-        segments.Add(new LineSegment() { FromSpd = 633, ToSpd = 642 });
-        segments.Add(new LineSegment() { FromSpd = 642, ToSpd = 649 });
-        segments.Add(new LineSegment() { FromSpd = 653, ToSpd = 669 });
-        segments.Add(new LineSegment() { FromSpd = 672, ToSpd = 697 });
-        segments.Add(new LineSegment() { FromSpd = 699, ToSpd = 707 });
-        segments.Add(new LineSegment() { FromSpd = 709, ToSpd = 715 });
-        segments.Add(new LineSegment() { FromSpd = 717, ToSpd = 723 });
-        segments.Add(new LineSegment() { FromSpd = 726, ToSpd = 750 });
-        segments.Add(new LineSegment() { FromSpd = 750, ToSpd = 797 });
-        segments.Add(new LineSegment() { FromSpd = 797, ToSpd = 820 });
+        var segments = new List<CurveSegment>();
+        segments.Add(new SineSegment(0.5, 35));
+        segments.Add(new LineSegment(35, 42));
+        segments.Add(new LineSegment(42, 95));
+        segments.Add(new LineSegment(95, 152));
+        segments.Add(new LineSegment(152, 182));
+        segments.Add(new LineSegment(182, 199));
+        segments.Add(new LineSegment(199, 255));
+        segments.Add(new LineSegment(255, 303));
+        segments.Add(new LineSegment(303, 355));
+        segments.Add(new LineSegment(355, 402));
+        segments.Add(new LineSegment(402, 455));
+        segments.Add(new LineSegment(455, 500));
+        segments.Add(new LineSegment(500, 552));
+        segments.Add(new LineSegment(554, 574));
+        segments.Add(new LineSegment(575, 594));
+        segments.Add(new LineSegment(596, 613));
+        segments.Add(new LineSegment(613, 621));
+        segments.Add(new LineSegment(623, 633));
+        segments.Add(new LineSegment(633, 642));
+        segments.Add(new LineSegment(642, 649));
+        segments.Add(new LineSegment(653, 669));
+        segments.Add(new LineSegment(672, 697));
+        segments.Add(new LineSegment(699, 707));
+        segments.Add(new LineSegment(709, 715));
+        segments.Add(new LineSegment(717, 723));
+        segments.Add(new LineSegment(726, 750));
+        segments.Add(new LineSegment(750, 797));
+        segments.Add(new LineSegment(797, 820));
         foreach (var seg in segments.OfType<LineSegment>())
-            fitLine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromSpd && pt.DialIAS < seg.ToSpd).ToList());
+            fitLine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
         foreach (var seg in segments.OfType<SineSegment>())
-            fitSine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromSpd && pt.DialIAS < seg.ToSpd).ToList());
+            fitSine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
         foreach (var (seg1, seg2) in segments.ConsecutivePairs(false).Where(p => p.Item1 is LineSegment && p.Item2 is LineSegment).Select(p => (p.Item1 as LineSegment, p.Item2 as LineSegment)))
         {
-            if (seg1.ToSpd == seg2.FromSpd)
+            if (seg1.ToX == seg2.FromX)
                 continue;
-            var intersect = Intersect.LineWithLine(seg1.Line, seg2.Line).point;
-            seg1.ToSpd = intersect.Value.X;
-            seg2.FromSpd = intersect.Value.X;
+            var intersect = Intersect.LineWithLine(seg1.Edge, seg2.Edge).point;
+            seg1.ToX = intersect.Value.X;
+            seg2.FromX = intersect.Value.X;
         }
         foreach (var seg in segments)
         {
-            var pts = points.Where(pt => pt.DialIAS >= seg.FromSpd && pt.DialIAS < seg.ToSpd);
-            SetShift(data, pts, seg.Shift);
-            seg.Apply(pts);
+            var pts = points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX);
+            SetShift(data, pts, seg.Misc1);
+            foreach (var pt in pts)
+                pt.ErrorFit = seg.Calc(pt.DialIAS);
         }
         File.WriteAllLines(output, points.Select(pt => pt.Include ? $"{pt.DialIAS},{pt.Error},{pt.ErrorFit},,{pt.Raw1?.Time}" : $"{pt.DialIAS},,,{pt.Error},{pt.Raw1?.Time}"));
     }
@@ -130,13 +131,12 @@ public class CharacteriseAirspeedDial
         var bestVector = new double[] { 0.32 };
         var bestEval = opt.Evaluate(bestVector);
         opt.OptimizeOnce(ref bestEval, ref bestVector);
-        seg.Shift = bestVector[0];
+        seg.Misc1 = bestVector[0];
         SetShift(data, pts, bestVector[0]);
         var finalEval = Fit.OrthoLinReg(pts);
-        seg.Err = -finalEval.PerpRMS;
-        seg.Gradient = finalEval.Slope;
-        seg.Intercept = finalEval.Intercept;
-        Console.WriteLine($"Line {seg.FromSpd}-{seg.ToSpd}: MSE={seg.Err:0.00000}, shift={seg.Shift:0.00000}, grad={seg.Gradient:0.00000}, offs={seg.Intercept:0.00000}");
+        seg.Slope = finalEval.Slope;
+        seg.Offset = finalEval.Intercept;
+        Console.WriteLine($"Line {seg.FromX}-{seg.ToX}: MSE={-finalEval.PerpRMS:0.00000}, shift={seg.Misc1:0.00000}, grad={seg.Slope:0.00000}, offs={seg.Offset:0.00000}");
     }
 
     private static void fitSine(SineSegment seg, List<PtRaw> data, List<Pt> pts)
@@ -160,11 +160,12 @@ public class CharacteriseAirspeedDial
         opt.GenerateRandomVector = _ => [Random.Shared.NextDouble(0.25, 0.4), Random.Shared.NextDouble(-100, 100), Random.Shared.NextDouble(-100, 100), Random.Shared.NextDouble(-100, 100)];
         var bestEval = opt.Evaluate(bestVector);
         opt.OptimizeOnce(ref bestEval, ref bestVector);
-        Console.WriteLine($"Sine {seg.FromSpd}-{seg.ToSpd}: MSE={-bestEval:0.00000}, shift={bestVector[0]:0.00000}, a={bestVector[1]:0.0000}, b={bestVector[2]:0.00000}, c={bestVector[3]:0.0000}");
-        seg.Shift = bestVector[0];
-        seg.A = bestVector[1];
-        seg.B = bestVector[2];
-        seg.C = bestVector[3];
+        Console.WriteLine($"Sine {seg.FromX}-{seg.ToX}: MSE={-bestEval:0.00000}, shift={bestVector[0]:0.00000}, a={bestVector[1]:0.0000}, b={bestVector[2]:0.00000}, c={bestVector[3]:0.0000}");
+        seg.Misc1 = bestVector[0];
+        seg.Ampl = bestVector[1];
+        seg.Freq = bestVector[2];
+        seg.Phase = bestVector[3];
+        seg.Offset = bestVector[3];
     }
 
     private static void SetShift(List<PtRaw> data, IEnumerable<Pt> pts, double shift)
@@ -216,35 +217,6 @@ public class CharacteriseAirspeedDial
         bool Fit.IPt.Include => Include;
         double Fit.IPt.X => DialIAS;
         double Fit.IPt.Y => Error;
-    }
-
-    abstract class Segment
-    {
-        public double FromSpd, ToSpd;
-        public double Shift;
-        public double Err;
-        public abstract void Apply(IEnumerable<Pt> points);
-    }
-
-    class LineSegment : Segment
-    {
-        public double Gradient, Intercept;
-        public override void Apply(IEnumerable<Pt> points)
-        {
-            foreach (var pt in points)
-                pt.ErrorFit = Gradient * pt.DialIAS + Intercept;
-        }
-        public EdgeD Line => new(FromSpd, Gradient * FromSpd + Intercept, ToSpd, Gradient * ToSpd + Intercept);
-    }
-
-    class SineSegment : Segment
-    {
-        public double A, B, C;
-        public override void Apply(IEnumerable<Pt> points)
-        {
-            foreach (var pt in points)
-                pt.ErrorFit = A * Math.Sin(B * pt.DialIAS + C) + C;
-        }
     }
 }
 
