@@ -107,6 +107,8 @@ public class ViperAircraft : Aircraft
         ("spd_dial_mach", ["deva;0;49;"]),
     ];
 
+    private double _seaLevelEstimateQual = 0;
+
     public override void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)
     {
         base.ProcessFrame(pkt, frame, prevFrame);
@@ -121,6 +123,39 @@ public class ViperAircraft : Aircraft
         frame.DialSpeedCalibrated = frame.DialSpeedIndicated < 0.01 ? 0 : (dialAirspeed - DialAirspeedCalibration.Calc(dialAirspeed)).KtsToMs();
         var dialMach = pkt.Entries["spd_dial_mach"][0].ParseDouble();
         frame.DialSpeedMach = dialMach > 0.95792 ? 0.50 : dialMach > 0.9215 ? (13.4342 - 13.4976 * dialMach) : dialMach > 0.889 ? (1.88876 - 0.93113 * dialMach) : (3.7 - 2.95784 * dialMach);
+
+        // Notes on Viper airspeed:
+        // DCS gives us SpeedIndicated and SpeedMach, but they are computed for ISA conditions and do not match the dial readings.
+        // The theory is that DCS Viper FM computes its own, accurate airspeed with true atmospheric conditions, and its flight characteristics are based on that airspeed.
+        // Lua gets no access to that airspeed. Lua can read the IAS dial, but that differs to the CAS displayed in the HUD. To get the HUD indication, we read the IAS dial
+        // and apply a calibration curve. This gives us a value that is "realistic", but it is delayed and its resolution is limited. We can then obtain a cheaty real-time high-res
+        // CAS value by estimating atmospheric parameters and calculating a CAS from the cheaty true airspeed (which is absolutely exact).
+        if (frame.DialSpeedMach < 0.51 || frame.DialSpeedCalibrated < 150 || frame.AngleOfAttack > 15)
+        {
+            // data is not good enough; just stick with the last estimate, if any
+            if (prevFrame != null)
+            {
+                frame.SeaLevelPress = prevFrame.SeaLevelPress;
+                frame.SeaLevelTemp = prevFrame.SeaLevelTemp;
+            }
+        }
+        else
+        {
+            // possible future improvement: DialSpeedCalibrated is delayed by 0.3 sec; we could delay true readings by about that much to match
+            var speedOfSound = frame.SpeedTrue / frame.DialSpeedMach;
+            var outsideAirTempK = speedOfSound * speedOfSound / 1.4 / 287.053;
+            var seaLevelTempK = outsideAirTempK + 0.0065 * frame.AltitudeAsl;
+            var outsideAirPress = 101325 * (Math.Pow(Math.Pow(frame.DialSpeedCalibrated / 340.27, 2) / 5 + 1, 3.5) - 1) / (Math.Pow(1 + 0.2 * frame.DialSpeedMach * frame.DialSpeedMach, 3.5) - 1);
+            var seaLevelPress = outsideAirPress / Math.Pow(outsideAirTempK / seaLevelTempK, 5.25588);
+            _seaLevelEstimateQual = (1 - (1 - _seaLevelEstimateQual) * 0.995).ClipMax(0.9999);
+            frame.SeaLevelPress = seaLevelPress;
+            frame.SeaLevelTemp = seaLevelTempK - 273.15;
+            if (prevFrame != null)
+            {
+                frame.SeaLevelPress = _seaLevelEstimateQual * prevFrame.SeaLevelPress + (1 - _seaLevelEstimateQual) * frame.SeaLevelPress;
+                frame.SeaLevelTemp = _seaLevelEstimateQual * prevFrame.SeaLevelTemp + (1 - _seaLevelEstimateQual) * frame.SeaLevelTemp;
+            }
+        }
     }
 
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");

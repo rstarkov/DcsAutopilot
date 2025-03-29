@@ -117,7 +117,7 @@ public class FrameData
     ///     Sea level temperature, Celsius. Cannot be obtained from DCS API directly. Required to compute the correct <see
     ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
     ///     weather isn't 29.92 / 15degC.</summary>
-    public double SeaLevelTemp = 20;
+    public double SeaLevelTemp = 15;
     /// <summary>Outside air temperature, Celsius. Requires <see cref="SeaLevelTemp"/>!</summary>
     public double OutsideAirTemp => SeaLevelTemp - 0.0065 * AltitudeAsl;
     /// <summary>Outside air pressure, Celsius. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>

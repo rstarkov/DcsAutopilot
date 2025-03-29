@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 using RT.Util.Geometry;
 
 namespace DcsAutopilot;
@@ -17,6 +14,8 @@ public static class Util
     public static double MsToKts(this double ms) => ms / 0.51444444;
     public static double KtsToMs(this double kts) => kts * 0.51444444;
     public static double KtsToMs(this int kts) => kts * 0.51444444;
+    public static double InHgToPa(this double inHg) => inHg * 3386.389;
+    public static double PaToInHg(this double pa) => pa / 3386.389;
 
     public static string ToStringNullTerm(this Span<char> span) => span[..span.IndexOf('\0')].ToString(); // throws if no null terminator
     public static string ToStringNullTerm(this char[] chars) => chars.AsSpan().ToStringNullTerm();
