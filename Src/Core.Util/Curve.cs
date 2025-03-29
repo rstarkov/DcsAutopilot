@@ -2,6 +2,34 @@
 
 namespace DcsAutopilot;
 
+public class Curve
+{
+    public List<CurveSegment> Segments = [];
+
+    public double Calc(double x)
+    {
+        if (x < Segments[0].ToX)
+            return Segments[0].Calc(x);
+        if (x >= Segments[^1].FromX)
+            return Segments[^1].Calc(x);
+        foreach (var seg in Segments)
+            if (x >= seg.FromX && x < seg.ToX)
+                return seg.Calc(x);
+        throw new Exception();
+    }
+
+    public void Add(CurveSegment seg)
+    {
+        Segments.Add(seg);
+    }
+
+    public void AddPolyline(params (double x, double y)[] pts)
+    {
+        for (int i = 0; i < pts.Length - 1; i++)
+            Add(LineSegment.FromPts(pts[i], pts[i + 1]));
+    }
+}
+
 public abstract class CurveSegment
 {
     public double FromX, ToX;
@@ -12,11 +40,14 @@ public abstract class CurveSegment
         ToX = toX;
     }
     public abstract double Calc(double x);
+    public abstract string ToCsharp();
 }
 
 public class LineSegment : CurveSegment
 {
     public double Offset, Slope;
+    public double FromY => Calc(FromX);
+    public double ToY => Calc(ToX);
     public LineSegment(double fromX, double toX) : base(fromX, toX) { }
     public LineSegment(double fromX, double toX, double offset, double slope)
         : base(fromX, toX)
@@ -26,15 +57,26 @@ public class LineSegment : CurveSegment
     }
     public static LineSegment FromPts((double x, double y) fr, (double x, double y) to)
     {
-        double slope = (to.y - fr.y) / (to.x - fr.x);
-        double offset = fr.y - slope * fr.x;
-        return new LineSegment(fr.x, to.x, offset, slope);
+        var seg = new LineSegment(fr.x, to.x);
+        seg.SetPts(fr, to);
+        return seg;
     }
     public override double Calc(double x)
     {
         return Offset + Slope * x;
     }
-    public EdgeD Edge => new(FromX, Calc(FromX), ToX, Calc(ToX));
+
+    public void SetPts((double x, double y) fr, (double x, double y) to)
+    {
+        FromX = fr.x;
+        ToX = to.x;
+        Slope = (to.y - fr.y) / (to.x - fr.x);
+        Offset = fr.y - Slope * fr.x;
+    }
+
+    public override string ToCsharp() => $"LineSegment.FromPts(({FromX:0.#####}, {FromY:0..#####}), ({ToX:0..#####}, {ToY:0..#####}))";
+
+    public EdgeD Edge => new(FromX, FromY, ToX, ToY);
 }
 
 public class SineSegment : CurveSegment
@@ -53,4 +95,6 @@ public class SineSegment : CurveSegment
     {
         return Offset + Ampl * Math.Sin(Freq * x + Phase);
     }
+
+    public override string ToCsharp() => $"new SineSegment({FromX:0..#####}, {ToX:0..#####}, {Offset:0..#####}, {Ampl:0..#####}, {Freq:0..#####}, {Phase:0..#####})";
 }

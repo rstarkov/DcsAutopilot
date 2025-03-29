@@ -23,7 +23,7 @@ public class CharacteriseAirspeedDial
         var ctrl = new CharacteriseLogger();
         dcs.FlightControllers.Add(ctrl);
         ctrl.LogFrame = frame => $"{frame.SimTime},{frame.AltitudeAsl.MetersToFeet()},{frame.AngleOfAttack},{frame.SpeedVertical},{frame.SpeedTrue.MsToKts()},{frame.SpeedIndicatedBad.MsToKts()},{frame.SpeedMachBad},{frame.Test1},{frame.Test2}";
-        ctrl.LogConsole = frame => $"Accel: {(frame.SpeedTrue - dcs.PrevFrame.SpeedTrue).MsToKts() / frame.dT:0.000}";
+        ctrl.LogConsole = frame => $"Accel: {(frame.SpeedTrue - dcs.PrevFrame.SpeedTrue).MsToKts() / frame.dT:0.000}   TrueCAS?: {frame.SpeedIndicatedBad.MsToKts():0.000}";
         ctrl.Enabled = true;
         dcs.Start();
         while (dcs.LastFrame == null)
@@ -68,54 +68,95 @@ public class CharacteriseAirspeedDial
             SetShift(data, points, 0.31470); // from last run
         File.WriteAllLines(output, points.Where(pt => pt.Include).Select(pt => $"{pt.DialIAS},{pt.Error}, {0}"));
 
-        var segments = new List<CurveSegment>();
-        segments.Add(new SineSegment(0.5, 35));
-        segments.Add(new LineSegment(35, 42));
-        segments.Add(new LineSegment(42, 95));
-        segments.Add(new LineSegment(95, 152));
-        segments.Add(new LineSegment(152, 182));
-        segments.Add(new LineSegment(182, 199));
-        segments.Add(new LineSegment(199, 255));
-        segments.Add(new LineSegment(255, 303));
-        segments.Add(new LineSegment(303, 355));
-        segments.Add(new LineSegment(355, 402));
-        segments.Add(new LineSegment(402, 455));
-        segments.Add(new LineSegment(455, 500));
-        segments.Add(new LineSegment(500, 552));
-        segments.Add(new LineSegment(554, 574));
-        segments.Add(new LineSegment(575, 594));
-        segments.Add(new LineSegment(596, 613));
-        segments.Add(new LineSegment(613, 621));
-        segments.Add(new LineSegment(623, 633));
-        segments.Add(new LineSegment(633, 642));
-        segments.Add(new LineSegment(642, 649));
-        segments.Add(new LineSegment(653, 669));
-        segments.Add(new LineSegment(672, 697));
-        segments.Add(new LineSegment(699, 707));
-        segments.Add(new LineSegment(709, 715));
-        segments.Add(new LineSegment(717, 723));
-        segments.Add(new LineSegment(726, 750));
-        segments.Add(new LineSegment(750, 797));
-        segments.Add(new LineSegment(797, 820));
-        foreach (var seg in segments.OfType<LineSegment>())
+        var curve = new Curve();
+        curve.Segments = [
+            new SineSegment(0.5, 35),
+            new LineSegment(35, 42),
+            new LineSegment(42, 95),
+            new LineSegment(95, 152),
+            new LineSegment(152, 182),
+            new LineSegment(182, 199),
+            new LineSegment(199, 255),
+            new LineSegment(255, 303),
+            new LineSegment(303, 355),
+            new LineSegment(355, 402),
+            new LineSegment(402, 455),
+            new LineSegment(455, 500),
+            new LineSegment(500, 552),
+            new LineSegment(554, 574),
+            new LineSegment(575, 594),
+            new LineSegment(596, 613),
+            new LineSegment(613, 621),
+            new LineSegment(623, 633),
+            new LineSegment(633, 642),
+            new LineSegment(642, 649),
+            new LineSegment(653, 669),
+            new LineSegment(672, 697),
+            new LineSegment(699, 707),
+            new LineSegment(709, 715),
+            new LineSegment(717, 723),
+            new LineSegment(726, 750),
+            new LineSegment(750, 797),
+            new LineSegment(797, 820),
+        ];
+        foreach (var seg in curve.Segments.OfType<LineSegment>())
             fitLine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
-        foreach (var seg in segments.OfType<SineSegment>())
+        foreach (var seg in curve.Segments.OfType<SineSegment>())
             fitSine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
-        foreach (var (seg1, seg2) in segments.ConsecutivePairs(false).Where(p => p.Item1 is LineSegment && p.Item2 is LineSegment).Select(p => (p.Item1 as LineSegment, p.Item2 as LineSegment)))
+        // Make all lines join where they intersect
+        foreach (var (seg1, seg2) in curve.Segments.ConsecutivePairs(false).Where(p => p.Item1 is LineSegment && p.Item2 is LineSegment).Select(p => (p.Item1 as LineSegment, p.Item2 as LineSegment)))
         {
-            if (seg1.ToX == seg2.FromX)
-                continue;
             var intersect = Intersect.LineWithLine(seg1.Edge, seg2.Edge).point;
             seg1.ToX = intersect.Value.X;
             seg2.FromX = intersect.Value.X;
         }
-        foreach (var seg in segments)
+        saveResult(curve, points, data, output);
+        curve = new Curve();
+        curve.Add(new SineSegment(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
+        curve.AddPolyline((34.8, -35.61), (42, -41.46), (95.2, -7.87), (152, -0.55), (182, 9.65), (199, -3.28), (255, 2.71), (303, 0.77), (355, 2.86), (402, 0.09), (455, 3.39), (504.8, 3.34), (553.8, 3.35), (573.3, 3.27), (592.7, 3.11), (612.7, 2.74), (622, 2.52), (632.5, 2.08), (641.8, 1.52), (651, 0.14), (670.6, -9.91), (695.5, 0.69), (707.4, 6.27), (716.4, 4.97), (725.8, 4.3), (750, 3.13), (796, -4.93), (820, -6.52));
+        saveResult(curve, points, data, output);
+        fitCurve(curve, points, data);
+        saveResult(curve, points, data, output);
+    }
+
+    private static void tweakShifts(Curve curve, List<Pt> points, List<PtRaw> data)
+    {
+        foreach (var seg in curve.Segments)
+        {
+            var pts = points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList();
+            var opt = new RomanOptim();
+            opt.Evaluate = (double[] vec) => { SetShift(data, pts, vec[0]); return -segmentEval(seg, pts); };
+            opt.GenerateRandomVector = _ => [Random.Shared.NextDouble(0.29, 0.35)];
+            var bestVector = new double[] { seg.Misc1 };
+            var bestEval = opt.Evaluate(bestVector);
+            opt.OptimizeOnce(ref bestEval, ref bestVector);
+            seg.Misc1 = bestVector[0];
+            SetShift(data, pts, seg.Misc1);
+        }
+    }
+
+    private static void setShifts(Curve curve, List<Pt> points, List<PtRaw> data)
+    {
+        foreach (var seg in curve.Segments)
+            SetShift(data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX), seg.Misc1);
+    }
+
+    private static void saveResult(Curve curve, List<Pt> points, List<PtRaw> data, string output)
+    {
+        tweakShifts(curve, points, data);
+        Console.WriteLine($"Curve eval: {curveEval(curve, points)}");
+        foreach (var seg in curve.Segments)
         {
             var pts = points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX);
-            SetShift(data, pts, seg.Misc1);
             foreach (var pt in pts)
                 pt.ErrorFit = seg.Calc(pt.DialIAS);
         }
+        foreach (var grp in curve.Segments.GroupConsecutiveBy(s => s.GetType()))
+            if (grp.Key == typeof(SineSegment))
+                foreach (var seg in grp)
+                    Console.WriteLine(seg.ToCsharp());
+            else
+                Console.WriteLine(grp.Cast<LineSegment>().Select((seg, i) => (i == 0 ? $"({seg.FromX:0.###},{seg.FromY:0.###})," : "") + $"({seg.ToX:0.###},{seg.ToY:0.###})").JoinString(", "));
         File.WriteAllLines(output, points.Select(pt => pt.Include ? $"{pt.DialIAS},{pt.Error},{pt.ErrorFit},,{pt.Raw1?.Time}" : $"{pt.DialIAS},,,{pt.Error},{pt.Raw1?.Time}"));
     }
 
@@ -164,8 +205,7 @@ public class CharacteriseAirspeedDial
         seg.Misc1 = bestVector[0];
         seg.Ampl = bestVector[1];
         seg.Freq = bestVector[2];
-        seg.Phase = bestVector[3];
-        seg.Offset = bestVector[3];
+        seg.Phase = seg.Offset = bestVector[3]; // coincidence?
     }
 
     private static void SetShift(List<PtRaw> data, IEnumerable<Pt> pts, double shift)
@@ -191,6 +231,124 @@ public class CharacteriseAirspeedDial
                 }
             }
         }
+    }
+
+    private static double segmentEval(CurveSegment seg, List<Pt> points, bool mse = true)
+    {
+        var err = 0.0;
+        int n = 0;
+        foreach (var pt in points)
+            if (pt.Include)
+            {
+                if (mse)
+                    err += (pt.Error - pt.ErrorFit) * (pt.Error - pt.ErrorFit);
+                else
+                    err += Math.Abs(pt.Error - pt.ErrorFit); // MAE
+                n++;
+            }
+        if (mse)
+            return Math.Sqrt(err / n);
+        else
+            return err / n;
+    }
+
+    private static double curveEval(Curve curve, List<Pt> points, bool mse = true)
+    {
+        var err = 0.0;
+        int n = 0;
+        foreach (var pt in points)
+            if (pt.Include)
+            {
+                pt.ErrorFit = curve.Calc(pt.DialIAS);
+                if (mse)
+                    err += (pt.Error - pt.ErrorFit) * (pt.Error - pt.ErrorFit);
+                else
+                    err += Math.Abs(pt.Error - pt.ErrorFit); // MAE
+                n++;
+            }
+        if (mse)
+            return Math.Sqrt(err / n);
+        else
+            return err / n;
+    }
+
+    private static void fitCurve(Curve curve, List<Pt> points, List<PtRaw> data)
+    {
+        var opt = new RomanOptim();
+        //double snapX(double x) => x;
+        //double snapY(double x) => x;
+        //double snapX(double x) => Math.Abs(x - Math.Round(x)) < 0.1 ? Math.Round(x) : x;
+        double snapX(double x) => Math.Abs(x - Math.Round(x)) < 0.15 ? Math.Round(x) : Math.Round(x, 1);
+        double snapY(double x) => Math.Round(x, 2);
+        opt.Evaluate = (double[] vec) =>
+        {
+            int vp = 0;
+            CurveSegment prev = null;
+            foreach (var seg in curve.Segments)
+            {
+                if (seg is LineSegment ls)
+                {
+                    ls.SetPts((prev.ToX, snapY(prev.Calc(prev.ToX))), (snapX(vec[vp++]), snapY(vec[vp++])));
+                }
+                else if (seg is SineSegment ss)
+                {
+                    ss.ToX = snapX(vec[vp++]);
+                    ss.Phase = ss.Offset = snapX(vec[vp++]);
+                    ss.Ampl = snapY(vec[vp++]);
+                    ss.Freq = vec[vp++];
+                }
+                prev = seg;
+            }
+            curve.Segments[^1].ToX = 820;
+            //setShifts(curve, points, data); // called for but extremely slow
+            return -curveEval(curve, points);
+        };
+        var bestVectorL = new List<double>();
+        foreach (var seg in curve.Segments)
+            if (seg is LineSegment ls)
+            {
+                bestVectorL.Add(ls.ToX);
+                bestVectorL.Add(ls.ToY);
+            }
+            else if (seg is SineSegment ss)
+            {
+                bestVectorL.Add(ss.ToX);
+                bestVectorL.Add(ss.Phase);
+                bestVectorL.Add(ss.Ampl);
+                bestVectorL.Add(ss.Freq);
+            }
+        opt.GenerateRandomVector = vec => vec.Select(v => v * Random.Shared.NextDouble(0.999, 1.001)).ToArray();
+        var bestVector = bestVectorL.ToArray();
+        var bestEval = opt.Evaluate(bestVector);
+        Console.WriteLine($"Whole curve eval: {-bestEval}");
+        //for (int z = 0; z < 20; z++)
+        while (true)
+        {
+            // One random
+            var vector = opt.GenerateRandomVector(bestVector);
+            var eval = opt.Evaluate(vector);
+            opt.OrthogonalTraverse(ref eval, ref vector);
+            if (eval > bestEval)
+            {
+                bestEval = eval;
+                bestVector = vector.ToArray();
+            }
+            // Three from best
+            for (int i = 0; i < 3; i++)
+                opt.OrthogonalTraverse(ref bestEval, ref bestVector);
+            // Individual dimensions
+            var dir = new double[bestVector.Length];
+            for (int d = 0; d < bestVector.Length; d++)
+            {
+                Array.Fill(dir, 0);
+                dir[d] = 1;
+                opt.TraverseDirection(dir, ref bestEval, ref bestVector);
+            }
+            if (Random.Shared.NextDouble() < 0.1)
+                saveResult(curve, points, data, "dummy.csv");
+            Console.WriteLine($"Whole curve eval: {-bestEval}");
+        }
+        opt.Evaluate(bestVector); // just to update the curve back to best
     }
 
     class PtRaw
