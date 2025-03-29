@@ -92,7 +92,7 @@ public class ViperAircraft : Aircraft
     static ViperAircraft()
     {
         DialAirspeedCalibration = new Curve();
-        DialAirspeedCalibration.Add(new SineSegment(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
+        DialAirspeedCalibration.Add(new SineCurveSeg(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
         DialAirspeedCalibration.AddPolyline((34.8, -35.61), (42, -41.46), (95.2, -7.87), (152, -0.55), (182, 9.65), (199, -3.28), (255, 2.71), (303, 0.77), (355, 2.86), (402, 0.09), (455, 3.39), (504.8, 3.34), (553.8, 3.35),
             (573.3, 3.27), (592.7, 3.11), (612.7, 2.74), (622, 2.52), (632.5, 2.08), (641.8, 1.52), (651, 0.14), (670.6, -9.91), (695.5, 0.69), (707.4, 6.27), (716.4, 4.97), (725.8, 4.3), (750, 3.13), (796, -4.93), (820, -6.52));
     }

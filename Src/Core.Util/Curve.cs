@@ -4,7 +4,7 @@ namespace DcsAutopilot;
 
 public class Curve
 {
-    public List<CurveSegment> Segments = [];
+    public List<CurveSeg> Segments = [];
 
     public double Calc(double x)
     {
@@ -18,7 +18,7 @@ public class Curve
         throw new Exception();
     }
 
-    public void Add(CurveSegment seg)
+    public void Add(CurveSeg seg)
     {
         Segments.Add(seg);
     }
@@ -26,15 +26,15 @@ public class Curve
     public void AddPolyline(params (double x, double y)[] pts)
     {
         for (int i = 0; i < pts.Length - 1; i++)
-            Add(LineSegment.FromPts(pts[i], pts[i + 1]));
+            Add(LineCurveSeg.FromPts(pts[i], pts[i + 1]));
     }
 }
 
-public abstract class CurveSegment
+public abstract class CurveSeg
 {
     public double FromX, ToX;
     public double Misc1;
-    public CurveSegment(double fromX, double toX)
+    public CurveSeg(double fromX, double toX)
     {
         FromX = fromX;
         ToX = toX;
@@ -43,21 +43,21 @@ public abstract class CurveSegment
     public abstract string ToCsharp();
 }
 
-public class LineSegment : CurveSegment
+public class LineCurveSeg : CurveSeg
 {
     public double Offset, Slope;
     public double FromY => Calc(FromX);
     public double ToY => Calc(ToX);
-    public LineSegment(double fromX, double toX) : base(fromX, toX) { }
-    public LineSegment(double fromX, double toX, double offset, double slope)
+    public LineCurveSeg(double fromX, double toX) : base(fromX, toX) { }
+    public LineCurveSeg(double fromX, double toX, double offset, double slope)
         : base(fromX, toX)
     {
         Offset = offset;
         Slope = slope;
     }
-    public static LineSegment FromPts((double x, double y) fr, (double x, double y) to)
+    public static LineCurveSeg FromPts((double x, double y) fr, (double x, double y) to)
     {
-        var seg = new LineSegment(fr.x, to.x);
+        var seg = new LineCurveSeg(fr.x, to.x);
         seg.SetPts(fr, to);
         return seg;
     }
@@ -79,11 +79,11 @@ public class LineSegment : CurveSegment
     public EdgeD Edge => new(FromX, FromY, ToX, ToY);
 }
 
-public class SineSegment : CurveSegment
+public class SineCurveSeg : CurveSeg
 {
     public double Offset, Ampl, Freq, Phase;
-    public SineSegment(double fromX, double toX) : base(fromX, toX) { }
-    public SineSegment(double fromX, double toX, double offset, double amplitude, double freq, double phase)
+    public SineCurveSeg(double fromX, double toX) : base(fromX, toX) { }
+    public SineCurveSeg(double fromX, double toX, double offset, double amplitude, double freq, double phase)
         : base(fromX, toX)
     {
         Offset = offset;

@@ -18,7 +18,7 @@ public partial class UiControlPositions : UserControl
         _penAxis.Freeze();
         _penTick.Freeze();
         _penInner.Freeze();
-        _tickmark = new PathGeometry([new PathFigure(new(0, 0), new[] { new LineSegment(new(_tickmarkSize, _tickmarkSize), true), new LineSegment(new(-_tickmarkSize, _tickmarkSize), true) }, true)]);
+        _tickmark = new PathGeometry([new PathFigure(new(0, 0), [new LineSegment(new(_tickmarkSize, _tickmarkSize), true), new LineSegment(new(-_tickmarkSize, _tickmarkSize), true)], true)]);
         _tickmark.Freeze();
     }
 

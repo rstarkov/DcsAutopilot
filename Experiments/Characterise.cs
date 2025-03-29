@@ -70,41 +70,41 @@ public class CharacteriseAirspeedDial
 
         var curve = new Curve();
         curve.Segments = [
-            new SineSegment(0.5, 35),
-            new LineSegment(35, 42),
-            new LineSegment(42, 95),
-            new LineSegment(95, 152),
-            new LineSegment(152, 182),
-            new LineSegment(182, 199),
-            new LineSegment(199, 255),
-            new LineSegment(255, 303),
-            new LineSegment(303, 355),
-            new LineSegment(355, 402),
-            new LineSegment(402, 455),
-            new LineSegment(455, 500),
-            new LineSegment(500, 552),
-            new LineSegment(554, 574),
-            new LineSegment(575, 594),
-            new LineSegment(596, 613),
-            new LineSegment(613, 621),
-            new LineSegment(623, 633),
-            new LineSegment(633, 642),
-            new LineSegment(642, 649),
-            new LineSegment(653, 669),
-            new LineSegment(672, 697),
-            new LineSegment(699, 707),
-            new LineSegment(709, 715),
-            new LineSegment(717, 723),
-            new LineSegment(726, 750),
-            new LineSegment(750, 797),
-            new LineSegment(797, 820),
+            new SineCurveSeg(0.5, 35),
+            new LineCurveSeg(35, 42),
+            new LineCurveSeg(42, 95),
+            new LineCurveSeg(95, 152),
+            new LineCurveSeg(152, 182),
+            new LineCurveSeg(182, 199),
+            new LineCurveSeg(199, 255),
+            new LineCurveSeg(255, 303),
+            new LineCurveSeg(303, 355),
+            new LineCurveSeg(355, 402),
+            new LineCurveSeg(402, 455),
+            new LineCurveSeg(455, 500),
+            new LineCurveSeg(500, 552),
+            new LineCurveSeg(554, 574),
+            new LineCurveSeg(575, 594),
+            new LineCurveSeg(596, 613),
+            new LineCurveSeg(613, 621),
+            new LineCurveSeg(623, 633),
+            new LineCurveSeg(633, 642),
+            new LineCurveSeg(642, 649),
+            new LineCurveSeg(653, 669),
+            new LineCurveSeg(672, 697),
+            new LineCurveSeg(699, 707),
+            new LineCurveSeg(709, 715),
+            new LineCurveSeg(717, 723),
+            new LineCurveSeg(726, 750),
+            new LineCurveSeg(750, 797),
+            new LineCurveSeg(797, 820),
         ];
-        foreach (var seg in curve.Segments.OfType<LineSegment>())
+        foreach (var seg in curve.Segments.OfType<LineCurveSeg>())
             fitLine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
-        foreach (var seg in curve.Segments.OfType<SineSegment>())
+        foreach (var seg in curve.Segments.OfType<SineCurveSeg>())
             fitSine(seg, data, points.Where(pt => pt.DialIAS >= seg.FromX && pt.DialIAS < seg.ToX).ToList());
         // Make all lines join where they intersect
-        foreach (var (seg1, seg2) in curve.Segments.ConsecutivePairs(false).Where(p => p.Item1 is LineSegment && p.Item2 is LineSegment).Select(p => (p.Item1 as LineSegment, p.Item2 as LineSegment)))
+        foreach (var (seg1, seg2) in curve.Segments.ConsecutivePairs(false).Where(p => p.Item1 is LineCurveSeg && p.Item2 is LineCurveSeg).Select(p => (p.Item1 as LineCurveSeg, p.Item2 as LineCurveSeg)))
         {
             var intersect = Intersect.LineWithLine(seg1.Edge, seg2.Edge).point;
             seg1.ToX = intersect.Value.X;
@@ -112,7 +112,7 @@ public class CharacteriseAirspeedDial
         }
         saveResult(curve, points, data, output);
         curve = new Curve();
-        curve.Add(new SineSegment(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
+        curve.Add(new SineCurveSeg(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
         curve.AddPolyline((34.8, -35.61), (42, -41.46), (95.2, -7.87), (152, -0.55), (182, 9.65), (199, -3.28), (255, 2.71), (303, 0.77), (355, 2.86), (402, 0.09), (455, 3.39), (504.8, 3.34), (553.8, 3.35), (573.3, 3.27), (592.7, 3.11), (612.7, 2.74), (622, 2.52), (632.5, 2.08), (641.8, 1.52), (651, 0.14), (670.6, -9.91), (695.5, 0.69), (707.4, 6.27), (716.4, 4.97), (725.8, 4.3), (750, 3.13), (796, -4.93), (820, -6.52));
         saveResult(curve, points, data, output);
         fitCurve(curve, points, data);
@@ -152,15 +152,15 @@ public class CharacteriseAirspeedDial
                 pt.ErrorFit = seg.Calc(pt.DialIAS);
         }
         foreach (var grp in curve.Segments.GroupConsecutiveBy(s => s.GetType()))
-            if (grp.Key == typeof(SineSegment))
+            if (grp.Key == typeof(SineCurveSeg))
                 foreach (var seg in grp)
                     Console.WriteLine(seg.ToCsharp());
             else
-                Console.WriteLine(grp.Cast<LineSegment>().Select((seg, i) => (i == 0 ? $"({seg.FromX:0.###},{seg.FromY:0.###})," : "") + $"({seg.ToX:0.###},{seg.ToY:0.###})").JoinString(", "));
+                Console.WriteLine(grp.Cast<LineCurveSeg>().Select((seg, i) => (i == 0 ? $"({seg.FromX:0.###},{seg.FromY:0.###})," : "") + $"({seg.ToX:0.###},{seg.ToY:0.###})").JoinString(", "));
         File.WriteAllLines(output, points.Select(pt => pt.Include ? $"{pt.DialIAS},{pt.Error},{pt.ErrorFit},,{pt.Raw1?.Time}" : $"{pt.DialIAS},,,{pt.Error},{pt.Raw1?.Time}"));
     }
 
-    private static void fitLine(LineSegment seg, List<PtRaw> data, List<Pt> pts)
+    private static void fitLine(LineCurveSeg seg, List<PtRaw> data, List<Pt> pts)
     {
         var opt = new RomanOptim();
         opt.Evaluate = (double[] vec) =>
@@ -180,7 +180,7 @@ public class CharacteriseAirspeedDial
         Console.WriteLine($"Line {seg.FromX}-{seg.ToX}: MSE={-finalEval.PerpRMS:0.00000}, shift={seg.Misc1:0.00000}, grad={seg.Slope:0.00000}, offs={seg.Offset:0.00000}");
     }
 
-    private static void fitSine(SineSegment seg, List<PtRaw> data, List<Pt> pts)
+    private static void fitSine(SineCurveSeg seg, List<PtRaw> data, List<Pt> pts)
     {
         var opt = new RomanOptim();
         opt.Evaluate = (double[] vec) =>
@@ -233,7 +233,7 @@ public class CharacteriseAirspeedDial
         }
     }
 
-    private static double segmentEval(CurveSegment seg, List<Pt> points, bool mse = true)
+    private static double segmentEval(CurveSeg seg, List<Pt> points, bool mse = true)
     {
         var err = 0.0;
         int n = 0;
@@ -283,14 +283,14 @@ public class CharacteriseAirspeedDial
         opt.Evaluate = (double[] vec) =>
         {
             int vp = 0;
-            CurveSegment prev = null;
+            CurveSeg prev = null;
             foreach (var seg in curve.Segments)
             {
-                if (seg is LineSegment ls)
+                if (seg is LineCurveSeg ls)
                 {
                     ls.SetPts((prev.ToX, snapY(prev.Calc(prev.ToX))), (snapX(vec[vp++]), snapY(vec[vp++])));
                 }
-                else if (seg is SineSegment ss)
+                else if (seg is SineCurveSeg ss)
                 {
                     ss.ToX = snapX(vec[vp++]);
                     ss.Phase = ss.Offset = snapX(vec[vp++]);
@@ -305,12 +305,12 @@ public class CharacteriseAirspeedDial
         };
         var bestVectorL = new List<double>();
         foreach (var seg in curve.Segments)
-            if (seg is LineSegment ls)
+            if (seg is LineCurveSeg ls)
             {
                 bestVectorL.Add(ls.ToX);
                 bestVectorL.Add(ls.ToY);
             }
-            else if (seg is SineSegment ss)
+            else if (seg is SineCurveSeg ss)
             {
                 bestVectorL.Add(ss.ToX);
                 bestVectorL.Add(ss.Phase);
