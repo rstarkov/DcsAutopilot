@@ -87,6 +87,16 @@ public class ViperAircraft : Aircraft
     public override bool SupportsSetTrim => true;
     public override bool SupportsSetTrimRate => true;
 
+    public static Curve DialAirspeedCalibration;
+
+    static ViperAircraft()
+    {
+        DialAirspeedCalibration = new Curve();
+        DialAirspeedCalibration.Add(new SineSegment(0.5, 34.8, -35.6, 12.37, -0.06033, -35.6));
+        DialAirspeedCalibration.AddPolyline((34.8, -35.61), (42, -41.46), (95.2, -7.87), (152, -0.55), (182, 9.65), (199, -3.28), (255, 2.71), (303, 0.77), (355, 2.86), (402, 0.09), (455, 3.39), (504.8, 3.34), (553.8, 3.35),
+            (573.3, 3.27), (592.7, 3.11), (612.7, 2.74), (622, 2.52), (632.5, 2.08), (641.8, 1.52), (651, 0.14), (670.6, -9.91), (695.5, 0.69), (707.4, 6.27), (716.4, 4.97), (725.8, 4.3), (750, 3.13), (796, -4.93), (820, -6.52));
+    }
+
     public override IEnumerable<(string key, string[] req)> DataRequests => [
         ("fuel_flow", ["deva;0;88;", "deva;0;89;", "deva;0;90;"]),
         ("pitch_trim_pos", ["deva;0;562;"]),
@@ -106,7 +116,9 @@ public class ViperAircraft : Aircraft
         frame.TrimRoll = -pkt.Entries["roll_trim_pos"][0].ParseDouble();
         frame.TrimYaw = pkt.Entries["yaw_trim_pos"][0].ParseDouble();
         frame.LandingGear = 1 - pkt.Entries["landing_gear_lever"][0].ParseDouble();
-        frame.DialSpeedIndicated = 1000 * pkt.Entries["spd_dial_ias"][0].ParseDouble().KtsToMs();
+        var dialAirspeed = 1000 * pkt.Entries["spd_dial_ias"][0].ParseDouble();
+        frame.DialSpeedIndicated = dialAirspeed.KtsToMs();
+        frame.DialSpeedCalibrated = frame.DialSpeedIndicated < 0.01 ? 0 : (dialAirspeed - DialAirspeedCalibration.Calc(dialAirspeed)).KtsToMs();
         var dialMach = pkt.Entries["spd_dial_mach"][0].ParseDouble();
         frame.DialSpeedMach = dialMach > 0.95792 ? 0.50 : dialMach > 0.9215 ? (13.4342 - 13.4976 * dialMach) : dialMach > 0.889 ? (1.88876 - 0.93113 * dialMach) : (3.7 - 2.95784 * dialMach);
     }

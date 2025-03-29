@@ -1,4 +1,4 @@
-namespace DcsAutopilot;
+﻿namespace DcsAutopilot;
 
 public class BulkData
 {
@@ -131,6 +131,8 @@ public class FrameData
 
     /// <summary>Airspeed, m/s, as indicated by the cockpit instrument, without calibration.</summary>
     public double DialSpeedIndicated = double.NaN;
+    /// <summary>Airspeed, m/s, as indicated by the cockpit instrument, after calibration.</summary>
+    public double DialSpeedCalibrated = double.NaN;
     /// <summary>Mach number as indicated by the cockpit instrument. May have range limits (eg minimum 0.5 for Viper).</summary>
     public double DialSpeedMach = double.NaN;
 }
