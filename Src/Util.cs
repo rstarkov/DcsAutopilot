@@ -72,4 +72,26 @@ public static class Util
         else
             return pos + str;
     }
+
+    /// <summary>
+    ///     Read a number from a set of decimal drums. Each drum is a number from 0 to 10, with a fractional part for drums
+    ///     partway between digits. Drums are passed with least significant digit (LSD) first.</summary>
+    public static double ReadDrums(params double[] drums)
+    {
+        // When a lower digit rotates between 9 and 0, it drags the next drum with it, with approximately the same fractional part.
+        // Even if several digits are dragged through this transition, they will all have roughly the same fractional part.
+        // The remaining digits will be roughly aligned on a digit.
+        var transitionPos = drums[0] - Math.Floor(drums[0]); // Math.Frac of first drum
+        var result = transitionPos;
+        var scale = 1.0;
+        for (int d = 0; d < drums.Length; d++)
+        {
+            var digit = Math.Round(drums[d] - transitionPos) % 10.0; // "special_floor(val [at] pos)": 4.49 and 4.51 floor to 4 at both 0.49 and 0.51; 5.01 at 0.99 floors to 4; 9.99 at 0.01 floors to 0
+            result += scale * digit;
+            if (digit < 9)
+                transitionPos = 0;
+            scale *= 10;
+        }
+        return result;
+    }
 }
