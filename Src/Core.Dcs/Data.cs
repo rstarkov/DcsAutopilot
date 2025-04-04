@@ -135,6 +135,10 @@ public class FrameData
     public double DialSpeedCalibrated = double.NaN;
     /// <summary>Mach number as indicated by the cockpit instrument. May have range limits (eg minimum 0.5 for Viper).</summary>
     public double DialSpeedMach = double.NaN;
+    /// <summary>Barometric altitude, meters, as indicated by the cockpit instrument. Affected by QNH setting.</summary>
+    public double DialAltitudeBaro = double.NaN;
+    /// <summary>Altimeter setting, Pascals, as selected on cockpit instruments.</summary>
+    public double DialQnh = double.NaN;
 }
 
 public class ControlData
