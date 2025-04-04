@@ -89,7 +89,7 @@ public class ViperAircraft : Aircraft
     public override bool SupportsSetTrimRate => true;
 
     public static Curve DialAirspeedCalibration;
-    public AtmosphericHelper AtmoHelper = new() { MinQual = 0.15, KeepMin = 0.60, KeepSteep = 4300, CasDelay = 0.28, MachDelay = 0.34, AltDelay = 0.36 };
+    public AtmosphericFit Atmo = new() { MinQual = 0.15, KeepMin = 0.60, KeepSteep = 4300, CasDelay = 0.28, MachDelay = 0.34, AltDelay = 0.36 };
 
     static ViperAircraft()
     {
@@ -140,13 +140,13 @@ public class ViperAircraft : Aircraft
         // CAS value by estimating atmospheric parameters and calculating a CAS from the cheaty true airspeed (which is absolutely exact).
         // The situation is similar with altitude, except Lua doesn't even give us a "bad" barometric altitude, just a zero, but we can still read the cockpit dials.
         // That value, along with QNH setting and a cheaty true exact altitude, give us another data point for atmospheric conditions. This dial also appears to be delayed.
-        AtmoHelper.Update(new()
+        Atmo.Update(new()
         {
             Time = frame.SimTime, SpeedTrue = frame.SpeedTrue, AltTrue = frame.AltitudeAsl,
             DialCas = frame.DialSpeedCalibrated, DialMach = frame.DialSpeedMach, DialAlt = frame.DialAltitudeBaro, DialQnh = frame.DialQnh,
         });
-        frame.SeaLevelTemp = AtmoHelper.EstSeaLevelTemp - 273.15;
-        frame.SeaLevelPress = AtmoHelper.EstSeaLevelPress;
+        frame.SeaLevelTemp = Atmo.EstSeaLevelTemp;
+        frame.SeaLevelPress = Atmo.EstSeaLevelPress;
     }
 
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");

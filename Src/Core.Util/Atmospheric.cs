@@ -16,6 +16,7 @@ public static class Atmospheric
 
     public static (double cas, double mach, double alt) CalcDials(double speedTrue, double altitudeTrue, double qnhDialPa, double seaLevelTemp, double seaLevelPress)
     {
+        // source: https://aerotoolbox.com/airspeed-conversions/
         var outsideAirTemp = seaLevelTemp - IsaLapse * altitudeTrue;
         var outsideAirPress = seaLevelPress * Math.Pow(outsideAirTemp / seaLevelTemp, IsaBaroPow);
         var speedOfSound = Math.Sqrt(outsideAirTemp * 1.4 * IsaSGC);

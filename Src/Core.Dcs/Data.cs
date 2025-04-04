@@ -105,25 +105,22 @@ public class FrameData
     ///     especially when trying to keep it steady.</summary>
     public double BankRate;
 
-    // Calculate CAS because the IAS reported by DCS uses the wrong weather (ISA: 29.92 / 15degC)
-    // from https://aerotoolbox.com/airspeed-conversions/
-
     /// <summary>
     ///     Sea level pressure, Pascals. Cannot be obtained from DCS API directly. Required to compute the correct <see
     ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
     ///     weather isn't 29.92 / 15degC.</summary>
-    public double SeaLevelPress = 29.92 * 3386;
+    public double SeaLevelPress = Atmospheric.IsaSeaPress;
     /// <summary>
-    ///     Sea level temperature, Celsius. Cannot be obtained from DCS API directly. Required to compute the correct <see
+    ///     Sea level temperature, Kelvin. Cannot be obtained from DCS API directly. Required to compute the correct <see
     ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
     ///     weather isn't 29.92 / 15degC.</summary>
-    public double SeaLevelTemp = 15;
-    /// <summary>Outside air temperature, Celsius. Requires <see cref="SeaLevelTemp"/>!</summary>
+    public double SeaLevelTemp = Atmospheric.IsaSeaTemp;
+    /// <summary>Outside air temperature, Kelvin. Requires <see cref="SeaLevelTemp"/>!</summary>
     public double OutsideAirTemp => SeaLevelTemp - 0.0065 * AltitudeAsl;
-    /// <summary>Outside air pressure, Celsius. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
-    public double OutsideAirPress => SeaLevelPress * Math.Pow((OutsideAirTemp + 273.15) / (SeaLevelTemp + 273.15), 5.25588);
+    /// <summary>Outside air pressure, Pascals. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
+    public double OutsideAirPress => SeaLevelPress * Math.Pow(OutsideAirTemp / SeaLevelTemp, 5.25588);
     /// <summary>Speed of sound at current altitude, in m/s. Requires <see cref="SeaLevelTemp"/>!</summary>
-    public double SpeedOfSound => Math.Sqrt((OutsideAirTemp + 273.15) * 1.4 * 287.053);
+    public double SpeedOfSound => Math.Sqrt(OutsideAirTemp * 1.4 * 287.053);
     /// <summary>Mach number. Requires <see cref="SeaLevelTemp"/>!</summary>
     public double SpeedMach => SpeedTrue / SpeedOfSound;
     /// <summary>Calibrated airspeed, in m/s. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>

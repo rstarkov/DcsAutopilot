@@ -24,7 +24,7 @@ public partial class UiInfoDump : UserControl
         sb.AppendLine($"Flaps: {Dcs.LastFrame?.Flaps:0.000}   Speedbrakes: {Dcs.LastFrame?.Airbrakes:0.000}   Gear: {Dcs.LastFrame?.LandingGear:0.000}");
         sb.AppendLine($"Fuel: flow={Dcs.LastFrame?.FuelFlow:0.000}   int={Dcs.LastFrame?.FuelInternal:0.000}   ext={Dcs.LastFrame?.FuelExternal:0.000}");
         sb.AppendLine($"Acc: {Dcs.LastFrame?.AccX:0.000} / {Dcs.LastFrame?.AccY:0.000} / {Dcs.LastFrame?.AccZ:0.000}");
-        sb.AppendLine($"OAT: {Dcs.LastFrame?.OutsideAirTemp:0.0}°C   OAP: {Dcs.LastFrame?.OutsideAirPress / 101325 * 100:0.0}%");
+        sb.AppendLine($"OAT: {Dcs.LastFrame?.OutsideAirTemp.KtoC():0.0}°C   OAP: {Dcs.LastFrame?.OutsideAirPress / 101325 * 100:0.0}%");
         sb.AppendLine($"Test: {Dcs.LastFrame?.Test1:0.00000} / {Dcs.LastFrame?.Test2:0.00000} / {Dcs.LastFrame?.Test3:0.00000} / {Dcs.LastFrame?.Test4:0.000}");
         lblInfo.Text = sb.ToString();
     }
