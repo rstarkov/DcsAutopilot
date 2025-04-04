@@ -25,6 +25,20 @@ public static class Atmospheric
         var alt = IsaAltConst * (1 - Math.Pow(outsideAirPress / qnhDialPa, 1 / IsaBaroPow));
         return (cas, mach, alt);
     }
+
+    /// <summary>
+    ///     Requires: SeaLevelTemp, SeaLevelPress, DialQnh. Sets: OutsideAirTemp, OutsideAirPress, SpeedMach, SpeedCalibrated,
+    ///     AltitudeBaro.</summary>
+    public static void CalcDials(FrameData frame)
+    {
+        // same as above
+        frame.OutsideAirTemp = frame.SeaLevelTemp - IsaLapse * frame.AltitudeAsl;
+        frame.OutsideAirPress = frame.SeaLevelPress * Math.Pow(frame.OutsideAirTemp / frame.SeaLevelTemp, IsaBaroPow);
+        var speedOfSound = Math.Sqrt(frame.OutsideAirTemp * 1.4 * IsaSGC);
+        frame.SpeedMach = frame.SpeedTrue / speedOfSound;
+        frame.SpeedCalibrated = IsaSeaSpeedOfSound * Math.Sqrt(5 * (Math.Pow(frame.OutsideAirPress * (Math.Pow(1 + 0.2 * frame.SpeedMach * frame.SpeedMach, 7.0 / 2.0) - 1) / IsaSeaPress + 1, 2.0 / 7.0) - 1));
+        frame.AltitudeBaro = IsaAltConst * (1 - Math.Pow(frame.OutsideAirPress / frame.DialQnh, 1 / IsaBaroPow));
+    }
 }
 
 

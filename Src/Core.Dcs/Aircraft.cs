@@ -35,7 +35,8 @@ public class Aircraft
         frame.AccX = double.Parse(pkt.Entries["acc"][0]); frame.AccY = double.Parse(pkt.Entries["acc"][1]); frame.AccZ = double.Parse(pkt.Entries["acc"][2]);
         frame.AltitudeAsl = double.Parse(pkt.Entries["asl"][0]);
         frame.AltitudeAgl = double.Parse(pkt.Entries["agl"][0]);
-        frame.AltitudeBaro = double.Parse(pkt.Entries["balt"][0]);
+        var baroAlt = double.Parse(pkt.Entries["balt"][0]);
+        if (baroAlt != 0) frame.AltitudeBaro = baroAlt;
         frame.AltitudeRadar = double.Parse(pkt.Entries["ralt"][0]);
         frame.SpeedVertical = double.Parse(pkt.Entries["vspd"][0]);
         frame.SpeedTrue = double.Parse(pkt.Entries["tas"][0]);
@@ -147,6 +148,7 @@ public class ViperAircraft : Aircraft
         });
         frame.SeaLevelTemp = Atmo.EstSeaLevelTemp;
         frame.SeaLevelPress = Atmo.EstSeaLevelPress;
+        Atmospheric.CalcDials(frame);
     }
 
     private ThreeWayButtonRateHelper _pitchTrimRateCtrl = new("16;3002;3003");

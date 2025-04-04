@@ -40,8 +40,8 @@ public class FrameData
     ///     True AGL altitude in meters. Not affected by the pressure setting. Not affected by buildings. High altitude lakes
     ///     are "ground" for the purpose of this reading.</summary>
     public double AltitudeAgl;
-    /// <summary>Barometric altitude in meters. Possibly affected by the pressure setting, but always reads 0 on Hornet.</summary>
-    public double AltitudeBaro;
+    /// <summary>Barometric altitude in meters. Not available on every aircraft.</summary>
+    public double AltitudeBaro = double.NaN;
     /// <summary>Radar altitude in meters. Affected by buildings. Not affected by the radar range limit (eg in Hornet).</summary>
     public double AltitudeRadar;
     /// <summary>
@@ -49,8 +49,7 @@ public class FrameData
     public double SpeedTrue;
     /// <summary>
     ///     Indicated airspeed in m/s. Reported directly by DCS but does not take weather into account, so is of little use
-    ///     except in 15degC / 29.92 weather. Use <see cref="SpeedCalibrated"/> instead. This is actually a calibrated
-    ///     airspeed as it equals the expected value and does not appear to have instrument error (not thoroughly verified).</summary>
+    ///     except in 15degC / 29.92 weather. Use <see cref="SpeedCalibrated"/> when available.</summary>
     public double SpeedIndicatedBad;
     /// <summary>
     ///     Mach number. Reported directly by DCS but does not take sea level temperature into account, so is of little use
@@ -105,26 +104,18 @@ public class FrameData
     ///     especially when trying to keep it steady.</summary>
     public double BankRate;
 
-    /// <summary>
-    ///     Sea level pressure, Pascals. Cannot be obtained from DCS API directly. Required to compute the correct <see
-    ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
-    ///     weather isn't 29.92 / 15degC.</summary>
-    public double SeaLevelPress = Atmospheric.IsaSeaPress;
-    /// <summary>
-    ///     Sea level temperature, Kelvin. Cannot be obtained from DCS API directly. Required to compute the correct <see
-    ///     cref="SpeedMach"/> and <see cref="SpeedCalibrated"/>, because the values reported by Lua API are incorrect if the
-    ///     weather isn't 29.92 / 15degC.</summary>
-    public double SeaLevelTemp = Atmospheric.IsaSeaTemp;
-    /// <summary>Outside air temperature, Kelvin. Requires <see cref="SeaLevelTemp"/>!</summary>
-    public double OutsideAirTemp => SeaLevelTemp - 0.0065 * AltitudeAsl;
-    /// <summary>Outside air pressure, Pascals. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
-    public double OutsideAirPress => SeaLevelPress * Math.Pow(OutsideAirTemp / SeaLevelTemp, 5.25588);
-    /// <summary>Speed of sound at current altitude, in m/s. Requires <see cref="SeaLevelTemp"/>!</summary>
-    public double SpeedOfSound => Math.Sqrt(OutsideAirTemp * 1.4 * 287.053);
-    /// <summary>Mach number. Requires <see cref="SeaLevelTemp"/>!</summary>
-    public double SpeedMach => SpeedTrue / SpeedOfSound;
-    /// <summary>Calibrated airspeed, in m/s. Requires <see cref="SeaLevelTemp"/> and <see cref="SeaLevelPress"/>!</summary>
-    public double SpeedCalibrated => 340.27 * Math.Sqrt(5 * (Math.Pow(OutsideAirPress * (Math.Pow(1 + 0.2 * SpeedMach * SpeedMach, 3.5) - 1) / 101325 + 1, 2.0 / 7.0) - 1));
+    /// <summary>Sea level pressure, Pascals.</summary>
+    public double SeaLevelPress = double.NaN;
+    /// <summary>Sea level temperature, Kelvin.</summary>
+    public double SeaLevelTemp = double.NaN;
+    /// <summary>Outside air temperature, Kelvin.</summary>
+    public double OutsideAirTemp = double.NaN;
+    /// <summary>Outside air pressure, Pascals.</summary>
+    public double OutsideAirPress = double.NaN;
+    /// <summary>Mach number.</summary>
+    public double SpeedMach = double.NaN;
+    /// <summary>Calibrated airspeed, in m/s.</summary>
+    public double SpeedCalibrated = double.NaN;
 
     /// <summary>Airspeed, m/s, as indicated by the cockpit instrument, without calibration.</summary>
     public double DialSpeedIndicated = double.NaN;
