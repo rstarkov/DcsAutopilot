@@ -43,7 +43,7 @@ class AxisResponseMap : MultiTester
             MapRoll = ResultsToAxis($"axis-{name}-roll.collate.csv", 1, -0.0083333m, 0.0083333m, symmetric: true, 0.001), // must manually determine deadzone
             MapPitch = ResultsToAxis($"axis-{name}-pitch.collate.csv", 4 /*gyro avg*/, -0.012m, 0.012m, symmetric: false, 0.001, -0.5m), // must manually determine deadzone and cutoffs; must clean up 4th column
         };
-        ClassifyXml.SerializeToFile(p, "hornet.xml");
+        ClassifyXml.SerializeToFile(p, $"{name}.xml");
         File.WriteAllLines($"axis-{name}-yaw.result.csv", p.MapYaw.Map.Select(p => $"{p.RawInput},{p.NormalisedInput}"));
         File.WriteAllLines($"axis-{name}-roll.result.csv", p.MapRoll.Map.Select(p => $"{p.RawInput},{p.NormalisedInput}"));
         File.WriteAllLines($"axis-{name}-pitch.result.csv", p.MapPitch.Map.Select(p => $"{p.RawInput},{p.NormalisedInput}"));
@@ -112,31 +112,6 @@ class AxisResponseMap : MultiTester
             if (!anyRemoved)
                 return;
         }
-    }
-
-    private IEnumerable<decimal> EqualCounts(string filename, IEnumerable<decimal> inputs)
-    {
-        var have = Ut.ParseCsvFile(filename).Skip(1).Select(r => decimal.Parse(r[0])).GroupBy(r => r).ToDictionary(g => g.Key, g => g.Count());
-        var minmax = inputs.Select(v => have.GetValueOrDefault(v)).MinMaxSumCount();
-        Console.WriteLine($"min={minmax.Min}, max={minmax.Max}");
-        if (minmax.Min == minmax.Max)
-            return inputs.Distinct();
-        else
-            return inputs.Where(v => have.GetValueOrDefault(v) < minmax.Max).Distinct().ToList();
-    }
-
-    private static IEnumerable<decimal> R(decimal start, decimal endInclusive, decimal step)
-    {
-        for (var v = start; v <= endInclusive; v += step)
-            yield return v;
-    }
-
-    private static IEnumerable<T> C<T>(params IEnumerable<T>[] enumerables)
-    {
-        IEnumerable<T> result = null;
-        foreach (var e in enumerables)
-            result = result == null ? e : result.Concat(e);
-        return result;
     }
 
     private void MapRollAxis(string filename)
@@ -258,5 +233,65 @@ class AxisResponseMap : MultiTester
             Console.WriteLine(result);
             File.AppendAllLines(filename, new[] { result });
         }
+    }
+}
+
+class AxisControlPositionMap : DirectTester
+{
+    public void Run()
+    {
+        Map("viper"); // Yaw: pos=0.23*ctrl, no dead zones, symmetric. Roll: pos=ctrl, no dead zones, symmetric. Pitch: pos=ctrl, no dead zones, symmetric.
+    }
+
+    private double _ctrlPitch, _ctrlRoll, _ctrlYaw;
+    private double _posPitch, _posRoll, _posYaw;
+
+    private void Map(string name)
+    {
+        Start();
+        _dcs.ProcessRawFrameData = pkt =>
+        {
+            _posPitch = pkt.Entries["ctrl_pitch"][0].ParseDouble();
+            _posRoll = pkt.Entries["ctrl_roll"][0].ParseDouble();
+            _posYaw = pkt.Entries["ctrl_yaw"][0].ParseDouble();
+        };
+        RunMap($"axis-pos-map-{name}-yaw.csv", v => _ctrlYaw = v, () => _posYaw);
+        RunMap($"axis-pos-map-{name}-roll.csv", v => _ctrlRoll = v, () => _posRoll);
+        RunMap($"axis-pos-map-{name}-pitch.csv", v => _ctrlPitch = v, () => _posPitch);
+    }
+
+    private void RunMap(string filename, Action<double> setCtrl, Func<double> getPos)
+    {
+        Console.WriteLine($"Starting on {filename}");
+        _ctrlPitch = _ctrlRoll = _ctrlYaw = 0;
+        var inputs = C(R(0.0m, 0.001m, 0.0001m), R(0.0m, 0.05m, 0.001m), R(0.0m, 1.0m, 0.01m)).SelectMany(v => new[] { v, -v }).Order();
+        foreach (var ctrl in EqualCounts(filename, inputs))
+        {
+            Console.Write($"{ctrl} ");
+            setCtrl(0);
+            WaitSimTime(0.01);
+            setCtrl((double)ctrl);
+            WaitSimTime(0.1);
+            var pos = getPos();
+            while (true)
+            {
+                WaitSimTime(0.01);
+                if (pos == getPos())
+                    break; // only when it's the same twice in a row
+                pos = getPos();
+            }
+            File.AppendAllLines(filename, [$"{ctrl},{getPos()}"]);
+        }
+        Console.WriteLine();
+    }
+
+    protected override ControlData ProcessFrame(FrameData frame)
+    {
+        return new ControlData
+        {
+            PitchAxis = _ctrlPitch,
+            RollAxis = _ctrlRoll,
+            YawAxis = _ctrlYaw,
+        };
     }
 }

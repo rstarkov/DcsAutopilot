@@ -1,11 +1,76 @@
 ﻿using DcsAutopilot;
+using RT.Util;
 using RT.Util.ExtensionMethods;
 
 namespace DcsExperiments;
 
-abstract class MultiTester
+abstract class Tester
 {
     protected DcsController _dcs;
+
+    protected void WaitSimTime(double time)
+    {
+        var start = _dcs.LastFrame.SimTime;
+        while (_dcs.LastFrame.SimTime < start + time)
+            Thread.Sleep(10);
+    }
+
+    protected IEnumerable<decimal> EqualCounts(string filename, IEnumerable<decimal> inputs)
+    {
+        if (!File.Exists(filename))
+            return inputs.Distinct();
+        var have = Ut.ParseCsvFile(filename).Skip(1).Select(r => decimal.Parse(r[0])).GroupBy(r => r).ToDictionary(g => g.Key, g => g.Count());
+        var minmax = inputs.Select(v => have.GetValueOrDefault(v)).MinMaxSumCount();
+        Console.WriteLine($"min={minmax.Min}, max={minmax.Max}");
+        if (minmax.Min == minmax.Max)
+            return inputs.Distinct();
+        else
+            return inputs.Where(v => have.GetValueOrDefault(v) < minmax.Max).Distinct().ToList();
+    }
+
+    protected static IEnumerable<decimal> R(decimal start, decimal endInclusive, decimal step)
+    {
+        for (var v = start; v <= endInclusive; v += step)
+            yield return v;
+    }
+
+    protected static IEnumerable<T> C<T>(params IEnumerable<T>[] enumerables)
+    {
+        IEnumerable<T> result = null;
+        foreach (var e in enumerables)
+            result = result == null ? e : result.Concat(e);
+        return result;
+    }
+}
+
+abstract class DirectTester : Tester
+{
+    protected void Start()
+    {
+        _dcs?.Stop();
+        var ctrl = new Ctrl(this) { Enabled = true };
+        _dcs = new();
+        _dcs.FlightControllers.Add(ctrl);
+        _dcs.Start();
+        while (_dcs.Status != "Active control" || _dcs.LastFrame == null || _dcs.LastFrame.ReceivedUtc < DateTime.UtcNow.AddMilliseconds(-50))
+            Thread.Sleep(100);
+    }
+
+    protected abstract ControlData ProcessFrame(FrameData frame);
+
+    public class Ctrl(DirectTester _tester) : FlightControllerBase
+    {
+        public override string Name { get; set; } = "Direct";
+
+        public override ControlData ProcessFrame(FrameData frame)
+        {
+            return _tester.ProcessFrame(frame);
+        }
+    }
+}
+
+abstract class MultiTester : Tester
+{
     protected TunePidController _ctrl;
 
     protected void DefaultPids()
@@ -25,7 +90,7 @@ abstract class MultiTester
     {
         _dcs?.Stop();
         DcsWindow.RestartMission();
-        _ctrl = new();
+        _ctrl = new() { Enabled = true };
         DefaultPids();
         _dcs = new();
         _dcs.FlightControllers.Add(_ctrl);

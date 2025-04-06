@@ -110,6 +110,10 @@ public class ViperAircraft : Aircraft
         ("spd_dial_mach", ["deva;0;49;"]),
         ("baro_alt", ["deva;0;52;", "deva;0;53;", "deva;0;54;"]), // also "deva;0;51;" is the big dial but it matches "deva;0;54;" to like 8 d.p.
         ("baro_qnh", ["deva;0;56;", "deva;0;57;", "deva;0;58;", "deva;0;59;"]),
+        ("ctrl_pitch", ["deva;0;736;"]),
+        ("ctrl_roll", ["deva;0;737;"]),
+        ("ctrl_yaw", ["deva;0;780;"]),
+        ("ctrl_throttle", ["deva;0;755;"]),
     ];
 
     public override void ProcessFrame(DataPacket pkt, FrameData frame, FrameData prevFrame)

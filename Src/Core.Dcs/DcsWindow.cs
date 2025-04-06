@@ -74,7 +74,7 @@ public static class DcsWindow
         Thread.Sleep(100);
         sendScancode(42, false); // LShift
         // Wait for restart to begin
-        Thread.Sleep(1000);
+        Thread.Sleep(3000);
         // Post Escape and call it a day; DCS buffers that and processes it the moment the mission is ready.
         sendScancode(1, true); // Esc
         Thread.Sleep(100);

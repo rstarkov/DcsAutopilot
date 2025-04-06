@@ -44,6 +44,7 @@ public class DcsController
     public BulkData LastBulk { get; private set; }
     public ControlData LastControl { get; private set; }
     public JoystickReader Joystick => _joystick?.Reader;
+    public Action<DataPacket> ProcessRawFrameData { get; set; } = null; // for testing and tuning
 
     public static Dictionary<string, Func<Aircraft>> AircraftTypes;
 
@@ -233,6 +234,7 @@ public class DcsController
         if (LastFrame != null)
             frame.dT = frame.SimTime - LastFrame.SimTime;
         Aircraft.ProcessFrame(pkt, frame, LastFrame);
+        ProcessRawFrameData?.Invoke(pkt);
         // Warnings[$"Unrecognized frame data entry: \"{e.Key}\""] = true;
 
         PrevFrame = LastFrame;
