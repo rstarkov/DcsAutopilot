@@ -68,6 +68,7 @@ public class SmartThrottle : FlightControllerBase
 
     private BasicPid _pid = new BasicPid { IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(1.3, 4.33); // F-16 at 20,000, 300kts, min weight
     private double _autothrottleInitialPos; // to detect throttle movement and disengage
+    private double _autothrottleDisengageTimer; // to prevent small bumps from disengaging autothrottle
     private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
     private bool _pastAfterburnerDetent;
     private double _lastAfterburnerSound;
@@ -89,13 +90,15 @@ public class SmartThrottle : FlightControllerBase
 
         if (AutothrottleSpeedKts != null)
         {
-            _pid.MaxControl = AutothrottleAfterburner ? 2.0 : 1.5;
             var speedError = AutothrottleSpeedKts.Value - frame.SpeedCalibrated.MsToKts();
+            _pid.MaxControl = AutothrottleAfterburner ? 2.0 : speedError > 40 ? 2.0 : 1.5;
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
             if (AutothrottleSpeedbrake && speedError < -20 && frame.Pitch < _speedbrakePitchLimit)
                 ctrl.SpeedBrakeRate = 1;
             // detect movement and disengage
-            if (Math.Abs(throttlePos - _autothrottleInitialPos) > 0.2)
+            if (Math.Abs(throttlePos - _autothrottleInitialPos) < 0.2)
+                _autothrottleDisengageTimer = frame.SimTime;
+            else if (frame.SimTime - _autothrottleDisengageTimer > 0.2)
             {
                 AutothrottleSpeedKts = null;
                 SndAutothrottleDisengaged?.Play();
