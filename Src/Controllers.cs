@@ -59,6 +59,7 @@ public class SmartThrottle : FlightControllerBase
     public override string Name { get; set; } = "Smart Throttle";
     public bool UseIdleSpeedbrake { get; set; } = true;
     public bool UseAfterburnerDetent { get; set; } = true;
+    public bool AutothrottleSpeedbrake { get; set; } = true;
     public bool AutothrottleAfterburner { get; set; } = false;
 
     public double? AutothrottleSpeedKts { get; set; }
@@ -70,6 +71,8 @@ public class SmartThrottle : FlightControllerBase
     private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
     private bool _pastAfterburnerDetent;
     private double _lastAfterburnerSound;
+    private double _speedbrakeSpeedLimit = 200; // only use auto speedbrake above this speed
+    private double _speedbrakePitchLimit = 10; // only use speedbrake below this pitch angle
 
     private Sound SndAfterburnerBump = new("LoudClick.mp3", 50);
     private Sound SndAfterburnerUnbump = new("ReverseLoudClick.mp3", 40);
@@ -89,10 +92,10 @@ public class SmartThrottle : FlightControllerBase
             _pid.MaxControl = AutothrottleAfterburner ? 2.0 : 1.5;
             var speedError = AutothrottleSpeedKts.Value - frame.SpeedCalibrated.MsToKts();
             ctrl.ThrottleAxis = _pid.Update(speedError.KtsToMs(), frame.dT);
-            if (speedError < -20)
+            if (AutothrottleSpeedbrake && speedError < -20 && frame.Pitch < _speedbrakePitchLimit)
                 ctrl.SpeedBrakeRate = 1;
             // detect movement and disengage
-            if (Math.Abs(throttlePos - _autothrottleInitialPos) > 0.1)
+            if (Math.Abs(throttlePos - _autothrottleInitialPos) > 0.2)
             {
                 AutothrottleSpeedKts = null;
                 SndAutothrottleDisengaged?.Play();
@@ -129,7 +132,7 @@ public class SmartThrottle : FlightControllerBase
             }
             if (UseIdleSpeedbrake)
             {
-                if (throttlePos <= 0.01 && frame.SpeedCalibrated.MsToKts() > 200)
+                if (throttlePos <= 0.01 && frame.SpeedCalibrated.MsToKts() > _speedbrakeSpeedLimit && frame.Pitch < _speedbrakePitchLimit)
                     ctrl.SpeedBrakeRate = 1;
             }
         }
@@ -165,6 +168,7 @@ public class SmartThrottle : FlightControllerBase
             AutothrottleSpeedKts = 300;
             _autothrottleInitialPos = mapThrottle(Dcs.Joystick.GetAxis("throttle"));
             SndAutothrottleEngaged?.Play();
+            _pastAfterburnerDetent = false;
             return true;
         }
         return false;
