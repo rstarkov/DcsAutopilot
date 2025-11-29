@@ -193,15 +193,15 @@ class SoundWarnings : FlightControllerBase
 
     public bool UseGearNotUp { get; set; } = true;
     public bool? IsGearNotUp { get; set; }
-    public double GearNotUpMinAltFt { get; set; } = 4000;
-    public double GearNotUpMinSpdKts { get; set; } = 300;
+    public double GearNotUpMinAltFt { get; set; } = 500;
+    public double GearNotUpMinSpdKts { get; set; } = 0;
     private Sound SndGearNotUp = new("SarahGearUp.mp3");
     private double _lastGearNotUpT;
 
     public bool UseGearNotDown { get; set; } = true;
     public bool? IsGearNotDown { get; set; }
-    public double GearNotDownMaxAltFt { get; set; } = 800;
-    public double GearNotDownMaxSpdKts { get; set; } = 220;
+    public double GearNotDownMaxAltFt { get; set; } = 500;
+    public double GearNotDownMaxSpdKts { get; set; } = 250;
     private Sound SndGearNotDown = new("SarahGearDown.mp3");
     private double _lastGearNotDownT;
 
@@ -224,7 +224,7 @@ class SoundWarnings : FlightControllerBase
             IsGearNotUp = null;
         else
         {
-            IsGearNotUp = frame.LandingGear > 0 && speedKts > GearNotUpMinSpdKts && altitudeAglFt > GearNotUpMinAltFt;
+            IsGearNotUp = frame.LandingGear > 0 && frame.VelPitch > 0 && speedKts > GearNotUpMinSpdKts && altitudeAglFt > GearNotUpMinAltFt;
             if (IsGearNotUp == true && frame.SimTime - _lastGearNotUpT > 60)
             {
                 SndGearNotUp?.Play();
@@ -236,7 +236,7 @@ class SoundWarnings : FlightControllerBase
             IsGearNotDown = null;
         else
         {
-            IsGearNotDown = frame.LandingGear < 1 && speedKts < GearNotDownMaxSpdKts && altitudeAglFt < GearNotDownMaxAltFt;
+            IsGearNotDown = frame.LandingGear < 1 && frame.VelPitch < 0 && speedKts < GearNotDownMaxSpdKts && altitudeAglFt < GearNotDownMaxAltFt;
             if (IsGearNotDown == true && frame.SimTime - _lastGearNotDownT > 60)
             {
                 SndGearNotDown?.Play();
