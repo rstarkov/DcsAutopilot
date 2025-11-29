@@ -29,7 +29,6 @@ public partial class UiSmartThrottle : UserControl
         var ctrl = Dcs.GetController<SmartThrottle>();
         chkUseIdleSpeedbrake.IsChecked = ctrl?.UseIdleSpeedbrake;
         chkUseAfterburnerDetent.IsChecked = ctrl?.UseAfterburnerDetent;
-        chkAutothrottleAfterburner.IsChecked = ctrl?.AutothrottleAfterburner;
         _updating = false;
     }
 
@@ -53,11 +52,5 @@ public partial class UiSmartThrottle : UserControl
     {
         if (_updating) return;
         Dcs.GetController<SmartThrottle>().UseAfterburnerDetent = chkUseAfterburnerDetent.IsChecked == true;
-    }
-
-    private void chkAutothrottleAfterburner_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_updating) return;
-        Dcs.GetController<SmartThrottle>().AutothrottleAfterburner = chkAutothrottleAfterburner.IsChecked == true;
     }
 }

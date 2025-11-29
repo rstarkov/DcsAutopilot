@@ -14,7 +14,6 @@
             </DockPanel>
             <CheckBox Name="chkUseIdleSpeedbrake" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkUseIdleSpeedbrake_Checked" Unchecked="chkUseIdleSpeedbrake_Checked">Idle speedbrake</CheckBox>
             <CheckBox Name="chkUseAfterburnerDetent" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkUseAfterburnerDetent_Checked" Unchecked="chkUseAfterburnerDetent_Checked">Afterburner detent</CheckBox>
-            <CheckBox Name="chkAutothrottleAfterburner" Margin="0,5,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}" Checked="chkAutothrottleAfterburner_Checked" Unchecked="chkAutothrottleAfterburner_Checked">Autothrottle AftB</CheckBox>
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0" IsEnabled="{Binding Enabled, FallbackValue=False}">
                 <Label Name="lblAftB" Style="{StaticResource Indicator}" Padding="4,0">AftB</Label>
                 <Label Name="lblSpdB" Style="{StaticResource Indicator}" Margin="8,0,0,0" Padding="4,0">SpdB</Label>
