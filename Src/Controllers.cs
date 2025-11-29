@@ -10,6 +10,7 @@ public class RollAutoTrim : FlightControllerBase
     public override string Name { get; set; } = "Roll Auto-Trim";
     private bool _active;
     public bool UsingBankRate { get; private set; }
+    private double _absoluteTrimP;
 
     public override void Reset()
     {
@@ -29,7 +30,8 @@ public class RollAutoTrim : FlightControllerBase
         var ctrl = new ControlData();
         var rollRate = UsingBankRate ? frame.BankRate : frame.GyroRoll; // BankRate works better for keeping a turn absolutely steady, as the GyroRoll is never exactly zero in this scenario
         bool supportsAbsoluteTrim = Dcs.Aircraft.SupportsSetTrim && !double.IsNaN(frame.TrimRoll); // can not only set absolute trim, but also read it back (critical to interop with manual trim nicely)
-        var P = supportsAbsoluteTrim ? 0.1 : Math.Abs(rollRate) < 2 ? 0.1 : 0.5;
+        _absoluteTrimP *= Math.Pow(0.99, 60 * frame.dT);
+        var P = supportsAbsoluteTrim ? _absoluteTrimP : Math.Abs(rollRate) < 2 ? 0.1 : 0.5;
         var trimRateLimit = !supportsAbsoluteTrim ? 1.0 : 0.2; // Viper: -1.0 to 1.0 trim takes 10 seconds, so 20%/s max
         var trimRate = -(P * rollRate).Clip(-trimRateLimit, trimRateLimit);
         if (!supportsAbsoluteTrim && Math.Abs(rollRate) < 0.10) // one tick of relative roll trim changes roll rate by about 0.1 deg/sec so don't try to make this trim any better
@@ -47,6 +49,8 @@ public class RollAutoTrim : FlightControllerBase
     {
         if (e.Key == Key.T && e.Modifiers == default)
         {
+            if (!_active)
+                _absoluteTrimP = 0.1;
             _active = e.Down;
             return true;
         }
