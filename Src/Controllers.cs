@@ -71,14 +71,14 @@ public class SmartThrottle : FlightControllerBase
     public bool AfterburnerActive { get; private set; }
     public bool SpeedbrakeActive { get; private set; }
 
-    private BasicPid _pid = new BasicPid { IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(1.3, 4.33); // F-16 at 20,000, 300kts, min weight
+    private BasicPid _pid = new BasicPid { IntegrationLimit = 1 /*m/s / sec*/ }.SetZiNiClassic(0.35, 4.9); // F-16 at 1,000, 300kts, min weight
     private double _autothrottleInitialPos; // to detect throttle movement and disengage
     private double _autothrottleDisengageTimer; // to prevent small bumps from disengaging autothrottle
     private double _lastSpeedBrake; // time at which speedbrake was last extended - to enable us to retract it for N seconds when no longer needed
     private bool _pastAfterburnerDetent;
     private double _lastAfterburnerSound;
     private double _speedbrakeSpeedLimit = 200; // only use auto speedbrake above this speed
-    private double _speedbrakePitchLimit = 10; // only use speedbrake below this pitch angle
+    private double _speedbrakePitchLimit = -10; // only use speedbrake below this velpitch angle
 
     private Sound SndAfterburnerBump = new("LoudClick.mp3", 50);
     private Sound SndAfterburnerUnbump = new("ReverseLoudClick.mp3", 40);
